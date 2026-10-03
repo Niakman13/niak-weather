@@ -3,7 +3,7 @@
 Niak Weather has two deliberately separate inputs:
 
 ```text
-Ecowitt station ── measured local conditions ──┐
+Ecowitt station or gateway ─ measured local conditions ─┐
                                                  ├── Niak Weather card
 Météo-France ─── forecast for the area ─────────┘
 ```
@@ -28,3 +28,16 @@ automations and history as well as to the card.
 The frontend owns presentation: responsive layout, the hourly curve, daily
 range, translations, status tiles and optional details. It reads the versioned
 data contract; it does not decide home-automation actions.
+
+## Capability-based configuration
+
+The card does not identify a station by model. A GW2000, another Ecowitt
+gateway, or a simpler Ecowitt station can all provide the local side of the
+model when exposed as Home Assistant entities.
+
+Each measurement is an independent capability selected in the visual editor.
+For example, a station with temperature and rain works without a UV sensor;
+the UV detail simply remains absent. The complete template package applies the
+same rule: it only derives a result from measurements that are actually
+available, and marks an unavailable conclusion as unavailable rather than
+inventing a value.
