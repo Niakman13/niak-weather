@@ -3,7 +3,9 @@ import { customElement, property } from "lit/decorators.js";
 import { displayState, weatherIcon } from "./format";
 import { forecastsFromResponse, toFiniteNumber } from "./forecast";
 import { localize } from "./localize";
+import { detectEcowittStation } from "./station-detection";
 import type { ForecastResponse, HomeAssistant, WeatherCardConfig, WeatherForecast } from "./types";
+import "./niak-weather-card-editor";
 
 @customElement("niak-weather-card")
 export class NiakWeatherCard extends LitElement {
@@ -23,19 +25,8 @@ export class NiakWeatherCard extends LitElement {
     return { type: "custom:niak-weather-card", weather_entity: "weather.home", mode: "detailed" };
   }
 
-  public static getConfigForm() {
-    return {
-      schema: [
-        { name: "weather_entity", required: true, selector: { entity: { domain: "weather" } } },
-        { name: "name", selector: { text: {} } },
-        { name: "mode", selector: { select: { options: [{ value: "compact", label: "Compact" }, { value: "detailed", label: "Detailed" }] } } },
-        { name: "temperature_entity", selector: { entity: { domain: "sensor" } } },
-        { name: "humidity_entity", selector: { entity: { domain: "sensor" } } },
-        { name: "wind_speed_entity", selector: { entity: { domain: "sensor" } } },
-        { name: "rain_rate_entity", selector: { entity: { domain: "sensor" } } },
-      ],
-      computeLabel: (schema: { name: string }) => schema.name,
-    };
+  public static getConfigElement(): HTMLElement {
+    return document.createElement("niak-weather-card-editor");
   }
 
   public getCardSize(): number { return 4; }
@@ -102,6 +93,12 @@ export class NiakWeatherCard extends LitElement {
 }
 
 window.customCards = window.customCards || [];
-window.customCards.push({ type: "niak-weather-card", name: "Niak Weather", description: "A configurable weather summary card", preview: true });
+window.customCards.push({
+  type: "niak-weather-card", name: "Niak Weather", description: "A configurable weather summary card", preview: true,
+  getEntitySuggestion: (hass: HomeAssistant, entityId: string) => {
+    if (!entityId.startsWith("weather.")) return null;
+    return { config: { type: "custom:niak-weather-card", weather_entity: entityId, mode: "detailed", ...detectEcowittStation(hass) } };
+  },
+});
 
 declare global { interface Window { customCards: Array<Record<string, unknown>>; } }

@@ -43,6 +43,7 @@ local condition when present. They are never fabricated when unavailable.
 
 - one HACS installation and one resource for the card;
 - visual configuration in Home Assistant — entity names are selected, never hard-coded;
+- Ecowitt entity detection to prefill the editor; every result remains editable;
 - a versioned template package for the full Ecowitt + Météo-France data model;
 - French and English interfaces, following the Home Assistant language;
 - hourly and daily Météo-France forecasts read directly from Home Assistant;

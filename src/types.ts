@@ -13,6 +13,10 @@ export interface HomeAssistant {
   callWS<T>(message: Record<string, unknown>): Promise<T>;
 }
 
+export interface HomeAssistantEntityRegistryEntry {
+  device_id?: string;
+}
+
 export interface WeatherForecast {
   datetime: string;
   condition?: string;

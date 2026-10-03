@@ -36,7 +36,11 @@ jour future apparaîtra dans HACS et se fera avec le même bouton de télécharg
 
 Dans un tableau de bord, clique **Ajouter une carte** puis recherche **Niak
 Weather**. L’éditeur permet de choisir l’entité Météo-France et les capteurs
-Ecowitt que tu souhaites afficher.
+Ecowitt que tu souhaites afficher. Dès qu’une entité météo est choisie,
+Niak Weather tente de préremplir les capteurs extérieurs de la même station.
+Le bouton **Détecter la station Ecowitt** relance cette recherche. Vérifie les
+résultats et modifie librement un champ si ton installation emploie un nom ou
+une unité inhabituels.
 
 Voici l’équivalent YAML minimal :
 
