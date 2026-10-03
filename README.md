@@ -3,7 +3,14 @@
 A weather dashboard card for Home Assistant, designed around the combination
 of a **local Ecowitt weather station** and the **Météo-France** integration.
 
-> Status: under active development. The first public release will be published after the complete weather experience and its editor have been validated in Home Assistant.
+> Status: **v0.1.0 is a functional preview.** It displays current conditions,
+> optional station measurements and Météo-France forecasts. The complete local
+> weather model (apparent temperature, wind/pressure trends and the detailed
+> visual dashboard) is still under development.
+
+[![Open Niak Weather in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
+
+French installation instructions: [docs/installation.md](docs/installation.md).
 
 ## Requirements
 
@@ -50,6 +57,15 @@ npm run validate
 ```
 
 `npm run build` creates `dist/niak-weather-card.js`, the file that HACS will install from each GitHub release.
+
+## Installation with HACS
+
+1. Install HACS first, then click the **Open Niak Weather in HACS** button above.
+2. In Home Assistant, choose **Open link**, then **Download** in HACS.
+3. HACS adds the dashboard resource automatically. Reload the dashboard and hard-refresh the browser if the card picker does not show Niak Weather immediately.
+4. Add **Niak Weather** from the card picker, then select the Météo-France weather entity and any available Ecowitt measurements.
+
+If the button cannot open your instance, go to **HACS → Dashboards → ⋮ → Custom repositories**, add `https://github.com/Niakman13/niak-weather`, choose **Dashboard**, and download it. Full French instructions and the manual resource fallback are in [docs/installation.md](docs/installation.md).
 
 ## Planned card configuration
 
