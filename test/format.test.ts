@@ -3,6 +3,7 @@ import { displayState, weatherIcon } from "../src/format";
 import { forecastsFromResponse, toFiniteNumber } from "../src/forecast";
 import { detectEcowittStation } from "../src/station-detection";
 import { buildWeatherVerdict } from "../src/weather-model";
+import { buildDailyRanges, buildHourlyChart } from "../src/forecast-chart";
 
 describe("weather presentation", () => {
   it("shows a measured value with its unit", () => {
@@ -13,6 +14,25 @@ describe("weather presentation", () => {
   });
   it("maps a weather condition to a recognisable icon", () => {
     expect(weatherIcon("lightning_rainy")).toBe("⛈️");
+  });
+});
+
+describe("forecast chart geometry", () => {
+  it("keeps the warmest hourly forecast highest on the graph", () => {
+    const chart = buildHourlyChart([
+      { datetime: "2026-10-03T10:00:00+02:00", temperature: 10 },
+      { datetime: "2026-10-03T11:00:00+02:00", temperature: 20, precipitation: 1 },
+    ]);
+    expect(chart[1].y).toBeLessThan(chart[0].y);
+    expect(chart[1].rain).toBeGreaterThan(0);
+  });
+  it("uses one shared scale for every daily low/high range", () => {
+    const days = buildDailyRanges([
+      { datetime: "2026-10-03T10:00:00+02:00", temperature: 20, templow: 10 },
+      { datetime: "2026-10-04T10:00:00+02:00", temperature: 30, templow: 20 },
+    ]);
+    expect(days[1].start).toBeGreaterThan(days[0].start);
+    expect(days[0].width).toBeGreaterThan(0);
   });
 });
 
