@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { displayState, weatherIcon } from "../src/format";
 import { forecastsFromResponse, toFiniteNumber } from "../src/forecast";
 import { detectEcowittStation } from "../src/station-detection";
+import { buildWeatherVerdict } from "../src/weather-model";
 
 describe("weather presentation", () => {
   it("shows a measured value with its unit", () => {
@@ -12,6 +13,25 @@ describe("weather presentation", () => {
   });
   it("maps a weather condition to a recognisable icon", () => {
     expect(weatherIcon("lightning_rainy")).toBe("⛈️");
+  });
+});
+
+describe("local weather model", () => {
+  it("makes measured rain take precedence over an area forecast", () => {
+    const verdict = buildWeatherVerdict({ temperature: 18, rainRate: 5 }, "cloudy");
+    expect(verdict.condition).toBe("pouring");
+    expect(verdict.conditionSource).toBe("station");
+  });
+  it("finds the first notable rain in the hourly forecast", () => {
+    const verdict = buildWeatherVerdict({}, "partlycloudy", [
+      { datetime: "2026-10-03T10:00:00+02:00", precipitation: 0 },
+      { datetime: "2026-10-03T11:00:00+02:00", precipitation: 0.4 },
+    ]);
+    expect(verdict.nextRainHours).toBe(1);
+    expect(verdict.nextRainAmount).toBe(0.4);
+  });
+  it("warns about rain while openings are left open", () => {
+    expect(buildWeatherVerdict({ rainRate: 1, openWindows: 2 }, "cloudy").alert).toBe("openings");
   });
 });
 
