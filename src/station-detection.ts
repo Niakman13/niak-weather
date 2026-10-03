@@ -5,8 +5,25 @@ type Metric = Exclude<keyof WeatherCardConfig, "type" | "weather_entity" | "name
 const metricRules: Record<Metric, { deviceClasses: string[]; id: RegExp; units: RegExp }> = {
   temperature_entity: { deviceClasses: ["temperature"], id: /(?:outdoor|outside|exterieur|external|temp)/i, units: /°[CF]/i },
   humidity_entity: { deviceClasses: ["humidity"], id: /(?:outdoor|outside|exterieur|external|humid)/i, units: /%/ },
+  humidex_entity: { deviceClasses: ["temperature"], id: /humidex/i, units: /°[CF]/i },
+  humidex_perception_entity: { deviceClasses: [], id: /(?:thermal.*comfort.*(?:sensation|perception)|(?:sensation|perception).*humidex)/i, units: /.*/ },
+  comfort_entity: { deviceClasses: [], id: /(?:confort.*(?:ouvr|aeration)|(?:ouvr|aeration).*confort)/i, units: /.*/ },
   wind_speed_entity: { deviceClasses: ["wind_speed"], id: /(?:wind.*(?:speed|vitesse)|(?:speed|vitesse).*wind|vent)/i, units: /(?:km\/h|m\/s|mph|kn)/i },
+  wind_gust_entity: { deviceClasses: ["wind_speed"], id: /(?:gust|rafale)/i, units: /(?:km\/h|m\/s|mph|kn)/i },
+  wind_bearing_entity: { deviceClasses: ["wind_bearing"], id: /(?:wind.*(?:bearing|direction)|(?:bearing|direction).*wind|vent.*direction)/i, units: /(?:°|deg)/i },
   rain_rate_entity: { deviceClasses: ["precipitation_intensity"], id: /(?:rain.*(?:rate|intensity)|(?:rate|intensity).*rain|pluie.*(?:taux|intensite)|precipitation)/i, units: /(?:mm|in)\s*\/?\s*h/i },
+  daily_rain_entity: { deviceClasses: ["precipitation"], id: /(?:daily|today|jour|quotidien).*rain|rain.*(?:daily|today|jour|quotidien)|pluie.*(?:jour|quotidien)/i, units: /(?:mm|in)/i },
+  rain_24h_entity: { deviceClasses: ["precipitation"], id: /(?:24h|24_h).*rain|rain.*(?:24h|24_h)|pluie.*24/i, units: /(?:mm|in)/i },
+  weekly_rain_entity: { deviceClasses: ["precipitation"], id: /(?:weekly|week|semaine).*rain|rain.*(?:weekly|week|semaine)|pluie.*semaine/i, units: /(?:mm|in)/i },
+  monthly_rain_entity: { deviceClasses: ["precipitation"], id: /(?:monthly|month|mois).*rain|rain.*(?:monthly|month|mois)|pluie.*mois/i, units: /(?:mm|in)/i },
+  yearly_rain_entity: { deviceClasses: ["precipitation"], id: /(?:yearly|year|annual|an).*rain|rain.*(?:yearly|year|annual|an)|pluie.*(?:an|annuel)/i, units: /(?:mm|in)/i },
+  event_rain_entity: { deviceClasses: ["precipitation"], id: /(?:event|episode).*rain|rain.*(?:event|episode)|pluie.*(?:event|episode)/i, units: /(?:mm|in)/i },
+  pressure_entity: { deviceClasses: ["atmospheric_pressure", "pressure"], id: /(?:relative.*pressure|pressure.*relative|pression)/i, units: /(?:hpa|mbar|pa)/i },
+  solar_radiation_entity: { deviceClasses: ["irradiance"], id: /(?:solar.*radiation|radiation.*solar|solar)/i, units: /w\s*\/?\s*m/i },
+  dew_point_entity: { deviceClasses: ["temperature"], id: /(?:dew.*point|point.*rosee|rosee)/i, units: /°[CF]/i },
+  uv_index_entity: { deviceClasses: ["uv_index"], id: /(?:uv.*index|index.*uv|\buv\b)/i, units: /.*/ },
+  illuminance_entity: { deviceClasses: ["illuminance"], id: /(?:lux|illuminance|luminos)/i, units: /lx/i },
+  lightning_distance_entity: { deviceClasses: ["distance"], id: /(?:lightning|foudre)/i, units: /(?:km|mi|m)/i },
 };
 
 function text(entity: HassEntity): string {

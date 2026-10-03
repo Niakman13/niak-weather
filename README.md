@@ -20,7 +20,7 @@ home** with what is **forecast for the area**.
 
 1. The [Météo-France integration](https://www.home-assistant.io/integrations/meteo_france/), configured with a weather entity. It provides the hourly and daily forecasts.
 2. An Ecowitt weather station exposed in Home Assistant. This includes any supported Ecowitt gateway or station — it is not limited to the GW2000. Entity names are chosen in the card editor; the installation does not assume a gateway model, location or language.
-3. For the complete experience, the Niak Weather template package (to be published in this repository). It turns the raw station measurements into a consistent local-weather model: apparent temperature, observed condition, rain narrative, wind and pressure trends.
+3. For the complete experience, [Thermal Comfort](https://www.home-assistant.io/integrations/thermal_comfort/) for humidex, plus the Niak Weather template package (to be published in this repository). It turns the raw station measurements into a consistent local-weather model: apparent temperature, observed condition, rain narrative, wind and pressure trends.
 
 The card can show current conditions and forecasts while the template package
 is being installed. The full model is the supported configuration for a
@@ -38,6 +38,11 @@ complete dashboard.
 
 An optional WH57 lightning detector and a Home Assistant sun entity enrich the
 local condition when present. They are never fabricated when unavailable.
+
+An optional Comfort/openings entity lets the weather verdict treat rain with
+open windows as an urgent event. This preserves the separation of roles from
+the original dashboard: the Comfort model decides whether ventilation is
+appropriate; Niak Weather only reports that decision.
 
 ## Project goals
 
