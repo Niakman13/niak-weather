@@ -14,6 +14,9 @@ const strings = {
     compact: "Compact",
     detailed: "Detailed",
     detectStation: "Detect Ecowitt station",
+    measuredHere: "measured here",
+    apparent: "apparent",
+    thermometer: "thermometer",
     unavailable: "Unavailable",
   },
   fr: {
@@ -31,6 +34,9 @@ const strings = {
     compact: "Compact",
     detailed: "Détaillé",
     detectStation: "Détecter la station Ecowitt",
+    measuredHere: "mesuré ici",
+    apparent: "ressenti",
+    thermometer: "thermomètre",
     unavailable: "Indisponible",
   },
 } as const;
