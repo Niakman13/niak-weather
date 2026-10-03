@@ -1,0 +1,28 @@
+{
+  "name": "niak-weather",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A configurable weather dashboard card for Home Assistant",
+  "type": "module",
+  "scripts": {
+    "build": "node ./scripts/build.mjs",
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "validate": "npm run check && npm run test && npm run build"
+  },
+  "keywords": [
+    "home-assistant",
+    "lovelace",
+    "hacs",
+    "weather-card"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "lit": "^3.3.0"
+  }
+}
