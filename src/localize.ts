@@ -2,6 +2,8 @@ const strings = {
   en: {
     cardName: "Niak Weather",
     forecast: "Forecast",
+    nextHours: "Next hours",
+    nextDays: "Next days",
     temperature: "Temperature",
     humidity: "Humidity",
     wind: "Wind",
@@ -11,6 +13,8 @@ const strings = {
   fr: {
     cardName: "Météo Niak",
     forecast: "Prévisions",
+    nextHours: "Prochaines heures",
+    nextDays: "Prochains jours",
     temperature: "Température",
     humidity: "Humidité",
     wind: "Vent",

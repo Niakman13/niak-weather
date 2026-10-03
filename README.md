@@ -9,6 +9,7 @@ A modern, configurable weather card for Home Assistant.
 - one HACS installation and one resource for the card;
 - visual configuration in Home Assistant — no templates to copy;
 - French and English interfaces, following the Home Assistant language;
+- hourly and daily forecasts read directly from Home Assistant — no template sensor to create;
 - optional sensors: temperature, humidity, wind and rain rate;
 - release assets generated and verified automatically.
 
@@ -30,6 +31,7 @@ temperature_entity: sensor.outdoor_temperature
 humidity_entity: sensor.outdoor_humidity
 wind_speed_entity: sensor.wind_speed
 rain_rate_entity: sensor.rain_rate
+mode: detailed # or compact
 ```
 
 All sensor fields are optional. The card never assumes entity names or a specific weather-station brand.

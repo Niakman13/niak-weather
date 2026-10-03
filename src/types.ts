@@ -10,6 +10,19 @@ export interface HomeAssistant {
   locale: { language: string };
   formatEntityState(state: HassEntity): string;
   formatEntityName(state: HassEntity): string;
+  callWS<T>(message: Record<string, unknown>): Promise<T>;
+}
+
+export interface WeatherForecast {
+  datetime: string;
+  condition?: string;
+  temperature?: number;
+  templow?: number;
+  precipitation?: number;
+}
+
+export interface ForecastResponse {
+  response?: Record<string, { forecast?: WeatherForecast[] }>;
 }
 
 export interface WeatherCardConfig {
@@ -20,4 +33,5 @@ export interface WeatherCardConfig {
   wind_speed_entity?: string;
   rain_rate_entity?: string;
   name?: string;
+  mode?: "compact" | "detailed";
 }
