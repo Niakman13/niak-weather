@@ -43,12 +43,16 @@ describe("Ecowitt station detection", () => {
       "sensor.gw2000a_wind_speed": { entity_id: "sensor.gw2000a_wind_speed", state: "5", attributes: { device_class: "wind_speed", unit_of_measurement: "km/h" } },
       "sensor.gw2000a_rain_rate": { entity_id: "sensor.gw2000a_rain_rate", state: "0", attributes: { device_class: "precipitation_intensity", unit_of_measurement: "mm/h" } },
       "sensor.indoor_temperature": { entity_id: "sensor.indoor_temperature", state: "23", attributes: { device_class: "temperature", unit_of_measurement: "°C" } },
+      "sensor.thermal_comfort_humidex": { entity_id: "sensor.thermal_comfort_humidex", state: "13", attributes: { device_class: "temperature", unit_of_measurement: "°C" } },
+      "sensor.confort_ouvertures": { entity_id: "sensor.confort_ouvertures", state: "ok", attributes: {} },
     };
     expect(detectEcowittStation({ states })).toMatchObject({
       temperature_entity: "sensor.gw2000a_outdoor_temperature",
       humidity_entity: "sensor.gw2000a_outdoor_humidity",
       wind_speed_entity: "sensor.gw2000a_wind_speed",
       rain_rate_entity: "sensor.gw2000a_rain_rate",
+      humidex_entity: "sensor.thermal_comfort_humidex",
+      comfort_entity: "sensor.confort_ouvertures",
     });
   });
 });

@@ -7,7 +7,7 @@ const metricRules: Record<Metric, { deviceClasses: string[]; id: RegExp; units: 
   humidity_entity: { deviceClasses: ["humidity"], id: /(?:outdoor|outside|exterieur|external|humid)/i, units: /%/ },
   humidex_entity: { deviceClasses: ["temperature"], id: /humidex/i, units: /°[CF]/i },
   humidex_perception_entity: { deviceClasses: [], id: /(?:thermal.*comfort.*(?:sensation|perception)|(?:sensation|perception).*humidex)/i, units: /.*/ },
-  comfort_entity: { deviceClasses: [], id: /(?:confort.*(?:ouvr|aeration)|(?:ouvr|aeration).*confort)/i, units: /.*/ },
+  comfort_entity: { deviceClasses: [], id: /(?:confort.*(?:ouv|aeration)|(?:ouv|aeration).*confort)/i, units: /.*/ },
   wind_speed_entity: { deviceClasses: ["wind_speed"], id: /(?:wind.*(?:speed|vitesse)|(?:speed|vitesse).*wind|vent)/i, units: /(?:km\/h|m\/s|mph|kn)/i },
   wind_gust_entity: { deviceClasses: ["wind_speed"], id: /(?:gust|rafale)/i, units: /(?:km\/h|m\/s|mph|kn)/i },
   wind_bearing_entity: { deviceClasses: ["wind_bearing"], id: /(?:wind.*(?:bearing|direction)|(?:bearing|direction).*wind|vent.*direction)/i, units: /(?:°|deg)/i },
@@ -36,9 +36,10 @@ function score(entity: HassEntity, rule: (typeof metricRules)[Metric]): number {
   const entityText = text(entity);
   let result = 0;
   if (rule.deviceClasses.includes(deviceClass)) result += 100;
-  if (rule.id.test(entityText)) result += 70;
+  if (rule.id.test(entityText)) result += 80;
   if (rule.units.test(unit)) result += 30;
   if (/(?:ecowitt|gw\d{4}|wh\d{2})/i.test(entityText)) result += 25;
+  if (/(?:thermal_comfort|confort_ouv)/i.test(entityText)) result += 30;
   return result;
 }
 
