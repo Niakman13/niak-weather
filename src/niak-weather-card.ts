@@ -7,6 +7,7 @@ import { renderLocal } from './local-renderer';
 import { localStyles } from './local-styles';
 import { detectEcowittStation } from './station-detection';
 import { cleanConfig } from './niak-weather-card-editor';
+import { atmoStyles, renderAtmo, usesAtmoPollens } from './atmo-view';
 import type { ForecastResponse, HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
 
 const zones = ['heros', 'essentiels', 'sect1', 'tuiles', 'pastilles', 'sect2', 'courbe', 'jours', 'sect3', 'bilan'] as const;
@@ -107,14 +108,15 @@ export class NiakWeatherCard extends LitElement {
     const variables = { mode: config.mode === 'compact' ? 'accueil' : 'complet', ent: '__niak_model', ent_prev: '__niak_forecast',
       ent_air: config.air_quality_entity, lieu: config.location ?? String(weather?.attributes.friendly_name ?? ''),
       source_prev: config.forecast_source ?? (/france/i.test(String(weather?.attributes.attribution)) ? 'Météo-France' : 'prévisions'),
-      jauge_min: -5, jauge_max: 45, jours_max: 7, pollens: config.pollens ?? [], page_air: config.air_path };
+      jauge_min: -5, jauge_max: 45, jours_max: 7, pollens: usesAtmoPollens(config) || config.pollen_source === 'none' ? [] : config.pollens ?? [], page_air: config.air_path };
     const states = { ...hass.states, __niak_model: model, __niak_forecast: { state: String(forecast.heures.length), attributes: forecast } };
     const rendered = renderLocal(variables, states, hass);
     return html`<ha-card><div id="container" @pointerdown=${this.down} @pointermove=${this.move} @pointercancel=${this.cancel} @pointerup=${this.up}
-      @click=${this.handleClick} @keydown=${this.keydown}>${zones.map(zone => html`<div style=${`grid-area:${zone}`} id=${zone}>${unsafeHTML(rendered[zone])}</div>`)}</div></ha-card>`;
+      @click=${this.handleClick} @keydown=${this.keydown}>${zones.map(zone => html`<div style=${`grid-area:${zone}`} id=${zone}>${unsafeHTML(rendered[zone])}${zone === 'pastilles' ? renderAtmo(hass, config, now) : nothing}</div>`)}</div></ha-card>`;
   }
   private down(event: PointerEvent): void {
     clearTimeout(this.holdTimer); if (event.button !== 0) return;
+    if (event.composedPath().some(e => e instanceof HTMLElement && e.tagName === 'SUMMARY')) return;
     this.gesture = { x:event.clientX, y:event.clientY, at:Date.now(), moved:false };
     if (this.config?.weather_path) this.holdTimer = setTimeout(() => {
       if (this.gesture && !this.gesture.moved) { this.gesture.held = true; this.navigate(this.config!.weather_path!); }
@@ -132,6 +134,7 @@ export class NiakWeatherCard extends LitElement {
   }
   private handleClick(event: MouseEvent): void {
     event.stopPropagation(); const gesture = this.gesture; this.gesture = undefined;
+    if (event.composedPath().some(e => e instanceof HTMLElement && e.tagName === 'SUMMARY')) return;
     if (gesture?.moved || gesture?.held) return;
     const path = this.config?.weather_path;
     if (gesture && Date.now() - gesture.at >= 500) { if (path) this.navigate(path); return; }
@@ -153,7 +156,7 @@ export class NiakWeatherCard extends LitElement {
   }
   static styles = [css`:host { display:block; } ha-card { padding:0; overflow:hidden; container-type:inline-size; }
     #container { display:grid; grid-template-areas:"heros" "essentiels" "sect1" "tuiles" "pastilles" "sect2" "courbe" "jours" "sect3" "bilan"; gap:0; min-width:0; }
-    [data-entity]:focus-visible, [data-nav]:focus-visible { outline:2px solid var(--primary-color); outline-offset:3px; }`, unsafeCSS(localStyles)];
+    [data-entity]:focus-visible, [data-nav]:focus-visible { outline:2px solid var(--primary-color); outline-offset:3px; }`, unsafeCSS(localStyles), atmoStyles];
 }
 window.customCards = window.customCards || [];
 window.customCards.push({ type: 'niak-weather-card', name: 'Niak Weather', description: 'Météo locale Ecowitt et prévisions', preview: true,

@@ -1,4 +1,5 @@
 import type { HassEntity, HomeAssistant, HomeAssistantEntityRegistryEntry as Registry, WeatherCardConfig } from './types';
+import { detectAtmo } from './atmo';
 export interface Device { id: string; name?: string; name_by_user?: string; manufacturer?: string; }
 export interface RegistryContext { entities: Registry[]; devices: Device[]; }
 export type SensorField = keyof Pick<WeatherCardConfig,
@@ -122,7 +123,8 @@ export function detectEcowittStation(hass: Pick<HomeAssistant, 'states'>, contex
     const air = all.filter(e => /indice.*qualite.*air/.test(text(e)) && e.attributes.unit_of_measurement === '%');
     if (air.length === 1) selected.air_quality_entity = air[0].entity_id;
   }
-  if (config.pollens === undefined) {
+  Object.assign(selected, detectAtmo(hass, context, config));
+  if (config.pollens === undefined && config.pollen_source === 'legacy') {
     const species = { grasses: ['Graminées', 'mdi:grass'], ragweed: ['Ambroisie', 'mdi:flower-pollen'], mugwort: ['Armoise', 'mdi:flower-pollen'],
       olive: ['Olivier', 'mdi:fruit-cherries'], birch: ['Bouleau', 'mdi:tree-outline'], alder: ['Aulne', 'mdi:tree-outline'] };
     const groups = new Map<string, Array<{ id: string; nom: string; ico: string }>>();

@@ -75,14 +75,18 @@ type **Module JavaScript** avec cette adresse :
 
 Puis recharge le navigateur.
 
-## Tester v0.2.0-beta.6
+## Tester v0.2.0-beta.7
 
-La version beta.6 porte le rendu complet de la carte locale : bulle météo, jauge expliquée, trois tuiles, pastilles, graphique 18 h, semaine et bilan pluie/vent. La version stable 0.1.0 est plus ancienne ; sélectionne explicitement beta.6 pour tester ce nouveau rendu.
+La version beta.7 conserve le rendu complet de la carte locale et ajoute Atmo France pour l’air extérieur et les pollens. La version stable 0.1.0 est plus ancienne ; sélectionne explicitement beta.7 pour tester ce rendu enrichi.
 
 1. Ouvre **Niak Weather** dans HACS, puis **⋮ → Retélécharger / Redownload**.
-2. Utilise le choix d’une autre version et sélectionne **v0.2.0-beta.6**. Si nécessaire, active l’accès aux préversions pour ce dépôt ([fonctionnement HACS](https://hacs.dev/docs/use/entities/switch/)).
+2. Utilise le choix d’une autre version et sélectionne **v0.2.0-beta.7**. Si nécessaire, active l’accès aux préversions pour ce dépôt ([fonctionnement HACS](https://hacs.dev/docs/use/entities/switch/)).
 3. Télécharge, puis recharge le navigateur avec **Ctrl+F5**. Sur l’application mobile, ferme puis rouvre le tableau de bord et, si nécessaire, vide son cache frontend.
 4. Ouvre l’éditeur de la carte et clique **Préremplir les entités manquantes**. Vérifie le vent moyen, les cumuls pluie et la rafale maximale du jour.
+
+### Atmo France : air extérieur et pollens
+
+Dans **Atmo France — air extérieur et pollens**, sélectionne la commune/zone et la source **Atmo France**, puis préremplis les entités. Les indices et concentrations d’aujourd’hui et de demain ont des choix séparés et filtrés. Si l’intégration n’est pas encore configurée, le [guide Atmo France](atmo-france.md) détaille son installation, l’activation des pollens/prévisions et la migration depuis Polleninformation. L’indicateur d’air intérieur en % reste indépendant.
 
 ### Thermal Comfort
 

@@ -157,7 +157,71 @@ try {
     return {partial,race,filtered,prefilled,removed,renamed,preserved,scrollRejected,hold};
   });
   for (const [test, passed] of Object.entries(behavior)) assert.equal(passed,true, test);
+  // Test the new optional Atmo branch independently: the original weather-only baseline remains unchanged above.
+  const atmoBehavior = await page.evaluate(async () => {
+    const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+    const metrics=[['air','Qualité globale'],['pm25','PM25'],['pm10','PM10'],['no2',"Dioxyde d’azote"],['o3','Ozone'],['so2','Dioxyde de soufre'],
+      ['pollen','Qualité globale Pollen'],['grass','Niveau Graminé'],['ragweed','Niveau Ambroisie'],['mugwort','Niveau Armoise'],['alder','Niveau Aulne'],['birch','Niveau Bouleau'],['olive','Niveau Olivier'],
+      ['grass_concentration','Concentration Graminé'],['ragweed_concentration','Concentration Ambroisie'],['mugwort_concentration','Concentration Armoise'],['alder_concentration','Concentration Aulne'],['birch_concentration','Concentration Bouleau'],['olive_concentration','Concentration Olivier']];
+    const states={...window.fixture.states},registry=[],config={...window.fixture.config,pollens:[{id:'sensor.grasses',nom:'Ancien pollen EU'}]};
+    for(const city of ['Ma commune','Autre commune']) for(const next of [false,true]) for(const [metric,name] of metrics){
+      const id=`sensor.atmo_${city==='Ma commune'?'a':'b'}_${metric}${next?'_j_1':''}`,concentration=metric.endsWith('_concentration');
+      states[id]={entity_id:id,state:concentration?'1.4':metric==='grass'?'6':metric==='air'?'3':'2',attributes:{attribution:'Atmo France-AtmoSud','Nom de la zone':city,'Type de zone':'Commune',
+        'Date de mise à jour':new Date().toISOString(),...(concentration?{unit_of_measurement:'µg/m³'}:{})}};
+      registry.push({entity_id:id,platform:'atmofrance',device_id:metric==='air'?'air':'pollen',config_entry_id:city==='Ma commune'?'a':'b',
+        original_name:`${name}-${city}${next?'-J+1':''}`,unique_id:`${city}-${name}${next?'-J+1':''}`});
+    }
+    const hass={states,language:'fr',config:{time_zone:'Europe/Paris'},callWS:async msg=>msg.type==='config/entity_registry/list'?registry:[]};
+    const root=document.querySelector('main');root.replaceChildren();
+    const editor=document.createElement('niak-weather-card-editor');editor.setConfig(config);editor.hass=hass;root.append(editor);await sleep(50);
+    const form=editor.shadowRoot.querySelector('ha-form');const selected={...form.data};
+    const section=form.schema.find(item=>item.name==='atmo'),today=section.schema.find(item=>item.name==='atmo_today'),next=section.schema.find(item=>item.name==='atmo_tomorrow');
+    const fullPrefill=Object.keys(selected).filter(k=>/^atmo_.*_entity$/.test(k)&&selected[k]).length===38 && selected.pollen_source==='atmo';
+    const filtered=today.schema.find(item=>item.name==='atmo_grass_entity').selector.entity.include_entities.join(',')==='sensor.atmo_a_grass'
+      && next.schema.find(item=>item.name==='atmo_grass_tomorrow_entity').selector.entity.include_entities.join(',')==='sensor.atmo_a_grass_j_1'
+      && today.schema.find(item=>item.name==='atmo_grass_concentration_entity').selector.entity.include_entities.join(',')==='sensor.atmo_a_grass_concentration';
+    form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,atmo_grass_entity:''}},bubbles:true}));await sleep(20);
+    editor.shadowRoot.querySelector('button').click();await sleep(20);const keptEmpty=form.data.atmo_grass_entity==='';
+    form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,atmo_area:'zone:commune:autre commune'}},bubbles:true}));await sleep(40);
+    const changedZone=form.data.atmo_air_entity==='sensor.atmo_b_air'&&form.data.atmo_grass_entity==='sensor.atmo_b_grass'&&form.data.model_entity===config.model_entity;
+    editor.remove();const card=document.createElement('niak-weather-card');card.setConfig(selected);card.hass=hass;root.append(card);window.atmoCard=card;window.atmoHass=hass;window.atmoConfig=selected;window.atmoInfo=[];
+    card.addEventListener('hass-more-info',e=>window.atmoInfo.push(e.detail.entityId));await sleep(30);
+    const text=card.shadowRoot.textContent;
+    const migration=!text.includes('Ancien pollen EU')&&text.includes('air intérieur')&&text.includes('Air extérieur');
+    const levels=text.includes('Extrêmement élevé')&&text.includes('1,4 µg/m³')&&text.includes('Dégradé');
+    const tomorrow=card.shadowRoot.querySelector('.nw-atmo-next');tomorrow.querySelector('summary').click();await sleep(10);
+    const nativeDetails=tomorrow.open&&window.atmoInfo.length===0;
+    states[selected.atmo_pollen_entity].state='0';card.hass={...hass};await sleep(20);
+    const noFalseZero=card.shadowRoot.querySelector('.nw-atmo-day').textContent.includes('Indisponible')&&!card.shadowRoot.querySelector('.nw-atmo-day').textContent.includes('0/6');
+    states[selected.atmo_pollen_entity].state='2';card.hass={...hass};await sleep(20);
+    window.atmoInfo=[];
+    card.shadowRoot.querySelector('[data-entity="'+selected.atmo_air_entity+'"]').click();
+    const correctPopup=window.atmoInfo[0]===selected.atmo_air_entity;
+    return {fullPrefill,filtered,keptEmpty,changedZone,migration,levels,nativeDetails,noFalseZero,correctPopup};
+  });
+  for (const [test,passed] of Object.entries(atmoBehavior)) assert.equal(passed,true,`Atmo: ${test}`);
+  const atmoReports=[];
+  for(const dark of [false,true]) for(const width of [375,768,1440]){
+    await page.setViewportSize({width,height:1300});
+    await page.evaluate(({dark})=>{
+      document.documentElement.style.setProperty('--primary-text-color',dark?'#e4e4e4':'#20203f');
+      document.documentElement.style.setProperty('--secondary-text-color',dark?'#aaa':'#686878');
+      document.documentElement.style.setProperty('--card-background-color',dark?'#242424':'#fff4f4');
+      document.body.style.background=dark?'#171717':'#eee7e7';
+      window.atmoCard.shadowRoot.querySelector('.nw-atmo-next').open=true;
+    },{dark});
+    const overflow=await page.evaluate(()=>{
+      const host=window.atmoCard.getBoundingClientRect();
+      return [...window.atmoCard.shadowRoot.querySelectorAll('.nw-atmo-badge,.nw-atmo-concentration,.nw-atmo-next')].some(e=>{const r=e.getBoundingClientRect();return r.width&& (r.left<host.left-1||r.right>host.right+1)});
+    });
+    assert.equal(overflow,false,`Atmo overflow ${width}/${dark}`);
+    await page.locator('niak-weather-card').screenshot({path:`${out}/atmo-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();assert.deepEqual(axe.violations.map(v=>v.id),[],'Atmo structural accessibility');
+    atmoReports.push({width,dark,overflow,accessibility:'structural scan passed'});
+  }
+  await page.locator('niak-weather-card .nw-atmo-day [data-entity="sensor.atmo_a_grass_concentration"]').focus();await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>window.atmoInfo.at(-1)),'sensor.atmo_a_grass_concentration','Atmo concentration keyboard popup');
   assert.deepEqual(errors,[],'browser console/network');
-  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,errors},null,2));
-  console.log(JSON.stringify({reports,behavior,errors},null,2));
+  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,errors},null,2));
+  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,errors},null,2));
 } finally { await browser.close();server.close(); }

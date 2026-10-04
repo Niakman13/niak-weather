@@ -4,9 +4,19 @@ A Home Assistant weather dashboard combining an **Ecowitt station**, **Météo-F
 
 [![Open Niak Weather in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
-[Installation et mise à jour en français](docs/installation.md) · [Modèle et configuration](docs/data-model.md) · [Contrôles de fidélité](docs/parity.md)
+[Installation et mise à jour en français](docs/installation.md) · [Atmo France : air et pollens](docs/atmo-france.md) · [Modèle et configuration](docs/data-model.md) · [Contrôles de fidélité](docs/parity.md)
 
-## v0.2.0-beta.6 — original dashboard port
+## v0.2.0-beta.7 — Atmo France air quality and pollen
+
+The optional **Atmo France — air extérieur et pollens** editor section recognises the integration's 38 sensors: overall air/pollen indices, five pollutant sub-indices, six pollen levels and six pollen concentrations, for today and tomorrow. Select a commune/zone, then prefill missing entities. Selectors distinguish metric, concentration and forecast day, including renamed entities. Existing manual choices remain untouched; ambiguous cities or sensors are not guessed.
+
+The weather layout remains unchanged. The new air/pollen rows share its visual language, with tomorrow in an expandable section. The indoor air percentage remains separate. Atmo indices are not concentrations: 0 means unavailable, pollen has six levels, and pollution code 7 means an event. Concentration units are displayed as supplied by the integration. [Setup and migration](docs/atmo-france.md).
+
+![Weather dashboard with optional Atmo France rows, demonstration data](docs/images/niak-weather-atmo.png)
+
+Demonstration data and test theme; tomorrow is expanded in this preview.
+
+### Original dashboard port
 
 The renderer is mechanically ported from the original local YAML card, **not a visual approximation**. It keeps its MDI icons, animated halo and gauge, apparent-temperature breakdown, wind compass, daily rainfall, pressure trend, sensor/pollen rows, 18-hour curve, seven-day ranges and rain/wind summary. Compact and detailed views share the same renderer.
 
@@ -25,6 +35,7 @@ Demonstration data and test theme; the card uses your Home Assistant theme. [Dar
 - [Ecowitt](https://www.home-assistant.io/integrations/ecowitt/) measurements. Any supported station/gateway is suitable; no GW2000-specific entity name is required. Missing optional sensors remain absent.
 - [Thermal Comfort](https://github.com/dolezsa/thermal_comfort) configured using the station's **outdoor temperature and humidity** to provide humidex and its perception. Without humidex, the card explicitly labels its reduced thermometer-based estimate.
 - `sun.sun` (normally provided by Home Assistant) for solar elevation and sunrise/sunset. A dedicated elevation sensor can replace the default.
+- Optional [Atmo France](https://github.com/sebcaps/atmofrance) for outdoor air quality and pollens. Enable pollution/pollen indicators and their J+1 forecasts in the integration. Its Atmo Data credentials belong only in Home Assistant, never in the card configuration or repository.
 
 No `button-card`, chart-card, card-mod or additional template package is needed to use the standalone card. Station entities can be prefilled using registry metadata and measurement names. Thermal Comfort selectors are filtered by metric/device; ambiguous setups require a manual choice and existing choices are preserved.
 
@@ -38,7 +49,7 @@ For other users, the same weather rules run in the card. Wind/pressure trends us
 
 ## Install or update with HACS
 
-Open the HACS button above, download **Niak Weather**, and reload the dashboard. If the repository is not found, add `https://github.com/Niakman13/niak-weather` to HACS custom repositories as **Dashboard**. For beta.6, enable pre-release versions or choose it in the repository's download/version dialog. The [French guide](docs/installation.md) includes setup, updating, the manual resource fallback and troubleshooting.
+Open the HACS button above, download **Niak Weather**, and reload the dashboard. If the repository is not found, add `https://github.com/Niakman13/niak-weather` to HACS custom repositories as **Dashboard**. For beta.7, enable pre-release versions or choose it in the repository's download/version dialog. The [French guide](docs/installation.md) includes setup, updating, the manual resource fallback and troubleshooting.
 
 ```yaml
 type: custom:niak-weather-card

@@ -38,7 +38,11 @@ export interface ForecastResponse {
   response?: Record<string, { forecast?: WeatherForecast[] }>;
 }
 
-export interface WeatherCardConfig {
+export type AtmoMetric = 'air' | 'pm25' | 'pm10' | 'no2' | 'o3' | 'so2' | 'pollen' |
+  'grass' | 'ragweed' | 'mugwort' | 'alder' | 'birch' | 'olive' |
+  'grass_concentration' | 'ragweed_concentration' | 'mugwort_concentration' | 'alder_concentration' | 'birch_concentration' | 'olive_concentration';
+export type AtmoField = `atmo_${AtmoMetric}${'' | '_tomorrow'}_entity`;
+export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   type: "custom:niak-weather-card";
   weather_entity: string;
   temperature_entity?: string;
@@ -77,6 +81,10 @@ export interface WeatherCardConfig {
   location?: string;
   station_device_id?: string;
   thermal_device_id?: string;
+  atmo_area?: string;
+  pollen_source?: 'atmo' | 'legacy' | 'none';
+  show_atmo_details?: boolean;
+  show_atmo_tomorrow?: boolean;
   pollens?: Array<{ id: string; nom: string; ico?: string }>;
   name?: string;
   mode?: "compact" | "detailed";

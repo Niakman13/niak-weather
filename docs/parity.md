@@ -1,4 +1,4 @@
-# Fidélité au rendu local — beta.6
+# Fidélité au rendu local — beta.7
 
 La carte locale et son template ont été analysés intégralement avant ce portage. Les références conservées dans `reference/` portent l’empreinte des fichiers d’origine ; les identifiants personnels du bloc de configuration ne sont pas publiés.
 
@@ -9,6 +9,10 @@ Les règles du template sont portées séparément dans `weather-model.ts` et `l
 La vérification navigateur compare, dans le même navigateur, le rendu d’origine et le module compilé avec exactement les mêmes attributs, icônes MDI et thème de test. Résultat local : **0 pixel différent** et géométrie identique à 375, 768 et 1440 px, en clair et en sombre. Les tests vérifient aussi les clics, le clavier, le rejet d’un défilement, l’appui long, les prévisions partiellement disponibles, les réponses retardées d’une ancienne configuration, les filtres Thermal Comfort, les choix automatiques, les champs retirés et la conservation d’un champ volontairement vidé.
 
 Ces contrôles portent sur un environnement de test avec composants hôtes Home Assistant simulés. Ils ne valident pas une installation Home Assistant réelle, tous les thèmes externes, ni les performances du tableau de bord complet. Le scan automatique de structure/accessibilité ne constitue pas un audit WCAG complet ; les contrastes du thème, les performances et la lecture par un lecteur d’écran restent à vérifier dans l’instance. Le fond et la bordure continuent d’être fournis par le thème Home Assistant, comme dans la carte locale.
+
+## Extension Atmo France
+
+L’extension ajoute un bloc facultatif, distinct du rendu de référence : la comparaison originale reste pixel-identique **sans ce bloc**. Les tests Atmo vérifient les 38 mesures, les communes multiples, les entités renommées, les filtres niveaux/concentrations/J+1, la conservation des choix, le changement de zone sans perte du modèle météo, le retrait du double affichage Polleninformation, les états indisponibles, les fiches entités au clic/clavier et le dépliage natif de demain. Six captures supplémentaires contrôlent les débordements et la structure en clair/sombre aux trois largeurs. Elles ne sont pas une comparaison pixel-identique du nouveau contenu avec l’ancien YAML, qui ne contenait pas ces informations.
 
 ## Relancer
 

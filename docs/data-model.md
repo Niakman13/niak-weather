@@ -25,15 +25,26 @@ Sans `model_entity`, les règles du template local sont portées dans la carte. 
 | `temperature_trend_entity` | Dérivée extérieure en °C/h, si elle existe déjà |
 | `sun_entity`, `sun_elevation_entity` | Soleil (`sun.sun` par défaut), ou élévation dédiée |
 | `air_quality_entity` | Indice intérieur existant en %, cité sans nouveau calcul |
+| `atmo_area` | Commune/zone Atmo France pour filtrer le préremplissage |
+| `atmo_air_entity`, `atmo_pollen_entity` | Indices globaux extérieurs Atmo du jour, jamais des pourcentages |
+| `atmo_pm25_entity`, `atmo_pm10_entity`, `atmo_no2_entity`, `atmo_o3_entity`, `atmo_so2_entity` | Sous-indices Atmo de pollution, jamais des µg/m³ |
+| `atmo_grass_entity`, `atmo_ragweed_entity`, `atmo_mugwort_entity`, `atmo_alder_entity`, `atmo_birch_entity`, `atmo_olive_entity` | Six niveaux de pollens, échelle Atmo 1–6 |
+| `atmo_<espèce>_concentration_entity` | Concentration du pollen, unité de l’intégration sans conversion |
+| `atmo_<mesure>_tomorrow_entity` | Même mesure prévue à J+1, filtrée séparément |
+| `pollen_source` | `atmo` (nouveau préremplissage), `legacy` (ancienne liste), ou `none` |
+| `show_atmo_details`, `show_atmo_tomorrow` | Détails et prévisions facultatifs (activés par défaut en complet) |
 | `model_entity`, `forecast_entity` | Compatibilité avec les deux capteurs du template local |
 
 Les autres choix Thermal Comfort (`thermal_dew_point_entity`, `heat_index_entity`, `absolute_humidity_entity`, `thermal_perception_entity`) sont filtrés et préremplis par appareil. Le point de rosée Thermal Comfort sert de repli si celui de la station n’est pas choisi/disponible. **Indice de chaleur et humidité absolue ne sont pas additionnés à l’humidex** : ce serait compter plusieurs fois le même effet. La carte locale ne les affiche pas en pastilles supplémentaires.
 
 `location` personnalise le lieu, sinon le nom de l’entité météo est utilisé. `forecast_source` personnalise le fournisseur. `weather_path` configure la navigation sur appui long (et sur le fond de la carte compacte). `air_path` configure la destination de la pastille d’air intérieur ; sans lui, elle ouvre son entité.
 
-Les pollens utilisent une liste YAML facultative ; les espèces à zéro disparaissent. Un unique groupe `polleninformation` compatible peut être proposé automatiquement. Les concentrations d’une autre intégration ne sont pas mélangées à ces niveaux.
+Atmo France est désormais proposé en priorité. L’air extérieur, les polluants, les niveaux de pollens et leurs concentrations sont traités séparément du modèle météo : aucun indice Atmo n’entre dans le calcul du ressenti. La détection utilise le registre et les attributs géographiques ; un choix ambigu reste vide. Les 38 champs (19 mesures × aujourd’hui/demain) sont disponibles dans l’éditeur. [Contrat des données et guide](atmo-france.md).
+
+La liste YAML de Polleninformation reste compatible, sans effacement lors de la migration. Elle n’est pas affichée en double quand Atmo est sélectionné. Pour la reprendre explicitement, utiliser `pollen_source: legacy` ; ses anciens niveaux 0–4 restent distincts de l’échelle Atmo 1–6. Son préremplissage ne se fait que dans ce mode. L’absence d’Atmo ne retire pas une ancienne configuration utilisant déjà cette liste.
 
 ```yaml
+pollen_source: legacy
 pollens:
   - id: sensor.pollen_grasses
     nom: Graminées
