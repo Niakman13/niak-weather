@@ -33,6 +33,10 @@ jour future apparaîtra dans HACS et se fera avec le même bouton de télécharg
 4. Choisis le type **Tableau de bord** / **Dashboard**, puis valide.
 5. Ouvre Niak Weather dans HACS et clique **Télécharger**.
 
+## Tester le brief intelligent en bêta
+
+La version stable reste **v1.0.0**. Pour essayer volontairement **v1.2.0-beta.1**, consulte le [guide de la bêta](release-1.2.0-beta.1.md) : choix de la version dans HACS, nouveau bandeau, limites et retour à la stable. Une mise à jour de la carte ne nécessite pas de redémarrer Home Assistant.
+
 ## Ajouter la carte
 
 Dans un tableau de bord, clique **Ajouter une carte** puis recherche **Niak

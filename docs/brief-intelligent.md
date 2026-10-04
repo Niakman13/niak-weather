@@ -1,6 +1,6 @@
-# Brief intelligent — préparation de la v1.2
+# Brief intelligent — v1.2.0-beta.1
 
-Cette fonction est en développement et n’est pas incluse dans la release stable v1.0.0. Son objectif est de transformer les mesures et prévisions en un résumé compréhensible : **ce que l’on ressent maintenant, ce qui arrive et ce qui mérite de l’attention**.
+Cette fonction est disponible dans la bêta v1.2.0-beta.1 et n’est pas incluse dans la release stable v1.0.0. Son objectif est de transformer les mesures et prévisions en un résumé compréhensible : **ce que l’on ressent maintenant, ce qui arrive et ce qui mérite de l’attention**. [Installation de la bêta](release-1.2.0-beta.1.md).
 
 ## Un bandeau, trois lectures
 
@@ -58,8 +58,8 @@ smart_brief: true
 vigilance_entity: sensor.mon_departement_weather_alert
 ```
 
-Le nom du capteur est un exemple. Le brief est activé par défaut dans la version de développement ; `smart_brief: false` conserve le bandeau simple. La v1.0.0 installée n’est pas modifiée tant qu’une nouvelle version n’est pas téléchargée.
+Le nom du capteur est un exemple. Le brief est activé par défaut dans cette bêta ; `smart_brief: false` conserve le bandeau simple. La v1.0.0 installée n’est pas modifiée tant qu’une nouvelle version n’est pas téléchargée.
 
-## Vérification du prototype
+## Vérification de la bêta
 
 Des tests dédiés couvrent les cumuls de signaux, les seuils, les horaires, les indices Atmo, les données anciennes/manquantes et la priorité de la vigilance officielle. Les contrôles navigateur vérifient le bandeau à 375/768/1440 px en clair/sombre, l’ouverture des explications et les sources au clavier. Le nouveau bandeau n’a pas encore de référence visuelle approuvée ; le comportement sur une vraie installation et les contrastes de tous les thèmes restent à valider avant publication stable.
