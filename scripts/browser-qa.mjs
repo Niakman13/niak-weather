@@ -176,6 +176,8 @@ try {
     const editor=document.createElement('niak-weather-card-editor');editor.setConfig(config);editor.hass=hass;root.append(editor);await sleep(50);
     const form=editor.shadowRoot.querySelector('ha-form');const selected={...form.data};
     const section=form.schema.find(item=>item.name==='atmo'),today=section.schema.find(item=>item.name==='atmo_today'),next=section.schema.find(item=>item.name==='atmo_tomorrow');
+    const pollenLabels=section.schema.find(item=>item.name==='pollen_source').selector.select.options;
+    const simplifiedLabel=pollenLabels.find(option=>option.value==='legacy')?.label==='Polleninformation' && !JSON.stringify(form.schema).includes('ancienne liste YAML');
     const fullPrefill=Object.keys(selected).filter(k=>/^atmo_.*_entity$/.test(k)&&selected[k]).length===38 && selected.pollen_source==='atmo';
     const filtered=today.schema.find(item=>item.name==='atmo_grass_entity').selector.entity.include_entities.join(',')==='sensor.atmo_a_grass'
       && next.schema.find(item=>item.name==='atmo_grass_tomorrow_entity').selector.entity.include_entities.join(',')==='sensor.atmo_a_grass_j_1'
@@ -197,7 +199,7 @@ try {
     window.atmoInfo=[];
     card.shadowRoot.querySelector('[data-entity="'+selected.atmo_air_entity+'"]').click();
     const correctPopup=window.atmoInfo[0]===selected.atmo_air_entity;
-    return {fullPrefill,filtered,keptEmpty,changedZone,migration,levels,nativeDetails,noFalseZero,correctPopup};
+    return {fullPrefill,filtered,keptEmpty,changedZone,migration,levels,nativeDetails,noFalseZero,correctPopup,simplifiedLabel};
   });
   for (const [test,passed] of Object.entries(atmoBehavior)) assert.equal(passed,true,`Atmo: ${test}`);
   const atmoReports=[];

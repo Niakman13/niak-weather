@@ -1,5 +1,7 @@
 # Modèle et configuration
 
+[Sources et prérequis](sources.md) · [Installation](installation.md)
+
 ## Un rendu, deux chemins de données
 
 Le rendu reprend le JavaScript et les styles de la carte YAML locale. Les entités sont configurables et ne dépendent ni d’un modèle de passerelle, ni d’une ville ou d’un nom de capteur particulier.
@@ -12,7 +14,7 @@ Sans `model_entity`, les règles du template local sont portées dans la carte. 
 
 | Réglage | Mesure / rôle |
 | --- | --- |
-| `weather_entity` | Météo-France : condition de la zone et prévisions |
+| `weather_entity` | Entité météo obligatoire : condition de la zone et prévisions, Météo-France recommandé |
 | `temperature_entity`, `humidity_entity` | Température et humidité **extérieures** |
 | `humidex_entity`, `humidex_perception_entity` | Humidex et qualification Thermal Comfort |
 | `wind_speed_entity`, `wind_bearing_entity` | Moyenne du vent et direction moyenne sur 10 min si disponibles |
@@ -31,7 +33,7 @@ Sans `model_entity`, les règles du template local sont portées dans la carte. 
 | `atmo_grass_entity`, `atmo_ragweed_entity`, `atmo_mugwort_entity`, `atmo_alder_entity`, `atmo_birch_entity`, `atmo_olive_entity` | Six niveaux de pollens, échelle Atmo 1–6 |
 | `atmo_<espèce>_concentration_entity` | Concentration du pollen, unité de l’intégration sans conversion |
 | `atmo_<mesure>_tomorrow_entity` | Même mesure prévue à J+1, filtrée séparément |
-| `pollen_source` | `atmo` (nouveau préremplissage), `legacy` (ancienne liste), ou `none` |
+| `pollen_source` | `atmo` (Atmo France), `legacy` (Polleninformation), ou `none` (masquer les pollens) |
 | `show_atmo_details`, `show_atmo_tomorrow` | Détails et prévisions facultatifs (activés par défaut en complet) |
 | `model_entity`, `forecast_entity` | Compatibilité avec les deux capteurs du template local |
 

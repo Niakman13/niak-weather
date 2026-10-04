@@ -83,7 +83,7 @@ export class NiakWeatherCardEditor extends LitElement {
       expand('thermal', 'Entités Thermal Comfort', [{ name: 'thermal_device_id', selector: { device: { filter: { integration: 'thermal_comfort' } } } }, ...thermalFields.map(sensor)]),
       expand('atmo', 'Atmo France — air extérieur et pollens', [
         { name: 'atmo_area', selector: { select: { options: [{ value: '', label: 'Ne pas préremplir une zone' }, ...areas] } } },
-        { name: 'pollen_source', selector: { select: { options: [{ value: 'atmo', label: 'Atmo France' }, { value: 'legacy', label: 'Polleninformation / ancienne liste YAML' }, { value: 'none', label: 'Ne pas afficher les pollens' }] } } },
+        { name: 'pollen_source', selector: { select: { options: [{ value: 'atmo', label: 'Atmo France' }, { value: 'legacy', label: 'Polleninformation' }, { value: 'none', label: 'Ne pas afficher les pollens' }] } } },
         { name: 'show_atmo_details', selector: { boolean: {} } }, { name: 'show_atmo_tomorrow', selector: { boolean: {} } },
         expand('atmo_today', 'Aujourd’hui (J) — indices et concentrations', atmoSchema(false)),
         expand('atmo_tomorrow', 'Demain (J+1) — prévisions', atmoSchema(true)),

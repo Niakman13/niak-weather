@@ -1,55 +1,62 @@
 # Niak Weather
 
-A Home Assistant weather dashboard combining an **Ecowitt station**, **Météo-France forecasts** and **Thermal Comfort humidex**.
+Une carte météo pour Home Assistant qui réunit les **mesures de votre station Ecowitt**, les **prévisions Météo-France**, le **ressenti enrichi par Thermal Comfort** et, en option, **l’air extérieur et les pollens Atmo France**.
 
-[![Open Niak Weather in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
+**Version stable : v1.0.0.** La documentation principale et les textes de la carte sont en français.
 
-[Installation et mise à jour en français](docs/installation.md) · [Atmo France : air et pollens](docs/atmo-france.md) · [Modèle et configuration](docs/data-model.md) · [Contrôles de fidélité](docs/parity.md)
+[![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
-## v0.2.0-beta.7 — Atmo France air quality and pollen
+[Installation et mise à jour](docs/installation.md) · [Sources et prérequis](docs/sources.md) · [Atmo France : air et pollens](docs/atmo-france.md) · [Tous les réglages](docs/data-model.md)
 
-The optional **Atmo France — air extérieur et pollens** editor section recognises the integration's 38 sensors: overall air/pollen indices, five pollutant sub-indices, six pollen levels and six pollen concentrations, for today and tomorrow. Select a commune/zone, then prefill missing entities. Selectors distinguish metric, concentration and forecast day, including renamed entities. Existing manual choices remain untouched; ambiguous cities or sensors are not guessed.
+![Niak Weather avec les données facultatives Atmo France](docs/images/niak-weather-atmo.png)
 
-The weather layout remains unchanged. The new air/pollen rows share its visual language, with tomorrow in an expandable section. The indoor air percentage remains separate. Atmo indices are not concentrations: 0 means unavailable, pollen has six levels, and pollution code 7 means an event. Concentration units are displayed as supplied by the integration. [Setup and migration](docs/atmo-france.md).
+Aperçu avec des données de démonstration ; le volet de demain est ouvert. La carte suit votre thème Home Assistant. [Aperçu météo en thème clair](docs/images/niak-weather-light.png) · [Aperçu en thème sombre](docs/images/niak-weather-dark.png).
 
-![Weather dashboard with optional Atmo France rows, demonstration data](docs/images/niak-weather-atmo.png)
+## Ce que la carte apporte
 
-Demonstration data and test theme; tomorrow is expanded in this preview.
+Le rendu reprend celui de la carte locale d’origine : icônes MDI, halo animé, jauge de ressenti, détail des contributions météo, boussole, pluie depuis minuit, tendance barométrique, indicateurs de la station, courbe des prochaines heures, plages de températures par jour et bilan pluie/vent. Le mode **Complet** affiche les prévisions et bilans ; le mode **Accueil (compact)** utilise le même rendu pour une vue synthétique.
 
-### Original dashboard port
+Les prévisions affichent jusqu’à **18 heures et 7 jours**, selon les données réellement fournies. La carte distingue les conditions prévues pour la zone des mesures prises chez vous. Elle ne transforme pas une donnée absente en zéro et ne présente pas un orage prévu comme de la foudre détectée par la station.
 
-The renderer is mechanically ported from the original local YAML card, **not a visual approximation**. It keeps its MDI icons, animated halo and gauge, apparent-temperature breakdown, wind compass, daily rainfall, pressure trend, sensor/pollen rows, 18-hour curve, seven-day ranges and rain/wind summary. Compact and detailed views share the same renderer.
+L’éditeur peut préremplir les entités Ecowitt, Thermal Comfort et Atmo France. Il filtre les choix par station/appareil et par mesure ; Atmo est aussi filtré par commune et par jour. Les choix existants sont conservés et les correspondances ambiguës restent à choisir manuellement.
 
-The calculation model is checked against golden results produced by the original Jinja template. Six browser comparisons (375/768/1440 px, light/dark) check both screenshots and component geometry against the original renderer with identical data and theme. These tests do **not** prove the appearance of every third-party Home Assistant theme or the availability of a user's live sensors.
+## Prérequis : obligatoire ou facultatif ?
 
-This is a **pre-release** for testing in HACS; v0.1.0 remains the older stable preview.
+Le minimum est **Home Assistant 2025.1.0 ou plus récent** et une **entité `weather.*`**. Pour l’installation et les mises à jour recommandées, il faut également [HACS](https://www.hacs.xyz/). Le téléchargement manuel reste possible.
 
-![Original dashboard layout, with demonstration data](docs/images/niak-weather-light.png)
+| Source ou composant | Statut | Ce qu’il apporte à la carte |
+| --- | --- | --- |
+| Entité météo, de préférence **Météo-France** | **Obligatoire** | Conditions de la zone, température de repli et prévisions disponibles. Météo-France est le fournisseur de référence. |
+| **Ecowitt** | Facultatif pour démarrer ; nécessaire pour les mesures locales | Température et humidité extérieures, vent, pluie, pression et capteurs complémentaires. Pas de limitation à la GW2000 : station/passerelle prise en charge par l’intégration Home Assistant. |
+| **Thermal Comfort** | Facultatif ; recommandé pour le ressenti complet | Humidex extérieur, perception et point de rosée de repli. Demande une température et une humidité extérieures. |
+| **Soleil / `sun.sun`** | Facultatif ; recommandé, généralement déjà présent | Élévation solaire et lever/coucher pour les corrections de ressenti et les repères jour/nuit. |
+| **Atmo France** | Facultatif | Air extérieur, sous-indices de polluants, niveaux et concentrations de pollens, aujourd’hui et demain. |
+| **Polleninformation EU** | Facultatif ; alternative pour les pollens | Ligne d’espèces de pollens. Non affichée en double lorsque la source Atmo est sélectionnée. |
+| **Indice d’air intérieur existant** | Facultatif | Pastille en %, indépendante d’Atmo. Il doit déjà être calculé par votre installation. |
+| **Historique Recorder** | Facultatif ; nécessaire aux tendances intégrées | Évolution de la pression et du vent, sans créer de nouveaux capteurs. |
+| **Templates météo locaux existants** | Facultatif ; compatibilité | Reprise directe du modèle et des prévisions de la carte locale d’origine. Inutile pour une nouvelle installation. |
 
-Demonstration data and test theme; the card uses your Home Assistant theme. [Dark preview](docs/images/niak-weather-dark.png).
+Le [guide des sources](docs/sources.md) explique pour chacune sa configuration, les entités utiles, ce qui apparaît à l’écran et ce qui manque lorsqu’elle n’est pas présente. Pour retrouver toutes les informations du rendu local, renseignez les mesures Ecowitt disponibles, l’humidex extérieur et le Soleil ; ajoutez Atmo et l’air intérieur seulement si vous les souhaitez.
 
-## Requirements
+**Aucun `button-card`, chart-card, card-mod ou package de templates supplémentaire n’est nécessaire.** Node.js et les outils de développement ne sont pas requis chez les utilisateurs. Niak Weather ne configure pas les intégrations à votre place et ne demande aucun identifiant Atmo dans ses réglages.
 
-- Home Assistant 2025.1 or newer and [HACS](https://www.hacs.xyz/).
-- [Météo-France](https://www.home-assistant.io/integrations/meteo_france/) configured with a `weather.*` entity for hourly/daily forecasts.
-- [Ecowitt](https://www.home-assistant.io/integrations/ecowitt/) measurements. Any supported station/gateway is suitable; no GW2000-specific entity name is required. Missing optional sensors remain absent.
-- [Thermal Comfort](https://github.com/dolezsa/thermal_comfort) configured using the station's **outdoor temperature and humidity** to provide humidex and its perception. Without humidex, the card explicitly labels its reduced thermometer-based estimate.
-- `sun.sun` (normally provided by Home Assistant) for solar elevation and sunrise/sunset. A dedicated elevation sensor can replace the default.
-- Optional [Atmo France](https://github.com/sebcaps/atmofrance) for outdoor air quality and pollens. Enable pollution/pollen indicators and their J+1 forecasts in the integration. Its Atmo Data credentials belong only in Home Assistant, never in the card configuration or repository.
+## Installer avec HACS
 
-No `button-card`, chart-card, card-mod or additional template package is needed to use the standalone card. Station entities can be prefilled using registry metadata and measurement names. Thermal Comfort selectors are filtered by metric/device; ambiguous setups require a manual choice and existing choices are preserved.
+1. Ouvrez le bouton HACS en haut de cette page. Il ouvre le dépôt, sans installer automatiquement la carte.
+2. Si le dépôt n’est pas trouvé, ajoutez `https://github.com/Niakman13/niak-weather` dans **HACS → ⋮ → Dépôts personnalisés**, catégorie **Tableau de bord / Dashboard**. Il s’agit d’un dépôt personnalisé, pas d’un référencement dans le catalogue HACS par défaut.
+3. Téléchargez **Niak Weather v1.0.0**, puis rechargez le navigateur.
+4. Dans votre tableau de bord, choisissez **Ajouter une carte → Niak Weather** et sélectionnez votre entité météo.
+5. Complétez **Entités de la station**, **Entités Thermal Comfort** et, si souhaité, **Atmo France — air extérieur et pollens**. Utilisez **Préremplir les entités manquantes**, puis vérifiez les propositions avant d’enregistrer.
 
-Lightning-distance sensors and Comfort/openings dependencies are removed for now. Forecast thunderstorms still appear; they are not presented as lightning measured at the station. The original green ventilation-benefit state is not invented without its source. Presentation/narratives currently follow the French local dashboard.
+Configuration minimale, sans station :
 
-## Reusing an existing local template
+```yaml
+type: custom:niak-weather-card
+weather_entity: weather.ma_commune
+mode: detailed
+```
 
-Owners of the original local card can choose their existing weather-model and forecast sensors in **Soleil, air et compatibilité locale**. The card then reads their attributes directly, keeping the existing calculations/history instead of creating a competing model. Detection proposes these sensors only when the model's source station and weather entity match.
-
-For other users, the same weather rules run in the card. Wind/pressure trends use Home Assistant Recorder history, not a few seconds of browser history. The actual available time window is displayed; missing history is not fabricated. Frontend calculations do not create Home Assistant sensors or automations.
-
-## Install or update with HACS
-
-Open the HACS button above, download **Niak Weather**, and reload the dashboard. If the repository is not found, add `https://github.com/Niakman13/niak-weather` to HACS custom repositories as **Dashboard**. For beta.7, enable pre-release versions or choose it in the repository's download/version dialog. The [French guide](docs/installation.md) includes setup, updating, the manual resource fallback and troubleshooting.
+Exemple enrichi avec des mesures locales et l’humidex :
 
 ```yaml
 type: custom:niak-weather-card
@@ -63,9 +70,21 @@ daily_rain_entity: sensor.station_daily_rain
 mode: detailed
 ```
 
-Entity IDs above are examples. Prefer choosing actual entities in the visual editor.
+Ces identifiants sont des **exemples**, pas des noms imposés. Privilégiez vos entités réelles dans l’éditeur. Le [tutoriel d’installation](docs/installation.md) détaille les ressources, les réglages et le dépannage.
 
-## Development
+## Mettre à jour vers v1.0.0
+
+Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.0.0**. Il n’est plus nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
+
+Vos entités et réglages sont conservés. Le rendu et les calculs validés de beta.7 restent les mêmes ; le choix alternatif des pollens s’appelle simplement **Polleninformation**. La documentation française précise désormais les sources et leurs prérequis. [Notes de version](docs/release-1.0.0.md).
+
+## Limites et transparence
+
+Le ressenti est une **estimation locale**, pas une mesure physiologique ni une vigilance officielle. Sans humidex, la carte signale que l’humidité n’est pas comptée. Les données Atmo décrivent la zone et ne remplacent ni une mesure d’air intérieur, ni un capteur dans le jardin. Les échelles Atmo, concentrations et pourcentages intérieurs ne sont pas mélangés.
+
+La distance de foudre et Confort/ouvrants ne sont pas utilisés dans cette version ; les alertes d’ouvrants et le créneau d’aération ne sont donc pas affichés. Les orages prévus restent visibles. Les calculs dans le navigateur ne créent pas d’entités Home Assistant pour les automatisations.
+
+## Développement et vérifications
 
 ```sh
 npm ci
@@ -74,8 +93,8 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-`npm run build` produces `dist/niak-weather-card.js`. Reference sources/golden fixtures are committed so CI does not depend on a developer's local dashboard or Python environment. See [parity.md](docs/parity.md) for regenerating references and the bounded validation report.
+`npm run build` produit `dist/niak-weather-card.js`. Les releases GitHub vérifient le code et le rendu, puis joignent le fichier installable et sa carte de sources. Les utilisateurs reçoivent les mises à jour par HACS sans compilation.
 
-Published GitHub releases validate, run browser comparisons, then attach the installable JavaScript and source map. HACS updates the same resource; users do not need to rebuild anything.
+Les règles du modèle sont comparées aux résultats de référence du template Jinja d’origine. Six comparaisons visuelles (375, 768 et 1440 px, clair/sombre) vérifient le rendu météo à données et thème identiques ; six autres contrôlent le bloc Atmo. Ces tests utilisent des composants hôtes Home Assistant simulés : ils ne garantissent pas tous les thèmes tiers ni la disponibilité des capteurs de chaque installation. [Rapport de fidélité et références](docs/parity.md).
 
-MIT. See [LICENSE](LICENSE).
+Licence MIT — [LICENSE](LICENSE).

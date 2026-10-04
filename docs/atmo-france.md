@@ -45,6 +45,6 @@ La date affichée est celle de **publication Atmo**, pas l’heure d’une mesur
 
 ## Migrer depuis Polleninformation
 
-Après la mise à jour beta.7, ouvrir l’éditeur et préremplir les entités Atmo. La source Atmo est proposée si une zone est identifiable. L’ancienne liste `pollens` est conservée mais n’est plus affichée en double. Pour revenir à l’ancien affichage, choisir **Polleninformation / ancienne liste YAML** et conserver sa liste ; pour ne montrer aucun pollen, choisir **Ne pas afficher les pollens**. L’air extérieur reste indépendant de ce choix.
+Après la mise à jour v1.0.0, ouvrir l’éditeur et préremplir les entités Atmo si ce n’est pas déjà fait. La source Atmo est proposée si une zone est identifiable. L’ancienne liste `pollens` est conservée mais n’est plus affichée en double. Pour utiliser cette source, choisir **Polleninformation** et conserver sa liste ; pour ne montrer aucun pollen, choisir **Ne pas afficher les pollens**. L’air extérieur reste indépendant de ce choix.
 
 Il n’est pas nécessaire de désinstaller Polleninformation : d’autres tableaux de bord ou automatisations peuvent encore l’utiliser. Cette évolution ne modifie pas les intégrations, automatisations ou templates locaux existants.

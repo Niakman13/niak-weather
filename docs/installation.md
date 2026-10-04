@@ -2,15 +2,16 @@
 
 ## Avant de commencer
 
-Il faut déjà avoir :
+Le minimum obligatoire est **Home Assistant 2025.1.0 ou plus récent** et une
+entité `weather.*`. [Météo-France](https://www.home-assistant.io/integrations/meteo_france/)
+est le fournisseur recommandé et de référence pour les prévisions. Une autre
+entité météo peut être choisie, mais les horizons disponibles dépendent de son fournisseur.
 
-1. [HACS](https://hacs.xyz/) installé dans Home Assistant ;
-2. l’intégration [Météo-France](https://www.home-assistant.io/integrations/meteo_france/) configurée, avec une entité `weather` ;
-3. une station ou une passerelle Ecowitt qui publie ses mesures dans Home Assistant.
-
-La carte fonctionne même avec peu de mesures Ecowitt. Chaque mesure
-facultative est ajoutée dans l’éditeur de la carte seulement si elle existe
-chez toi.
+Pour suivre le parcours ci-dessous, [HACS](https://hacs.xyz/) doit être installé.
+Ecowitt est facultatif pour démarrer, mais nécessaire pour les mesures locales ;
+Thermal Comfort enrichit le ressenti avec l’humidité. Le Soleil, Atmo France,
+Polleninformation et l’indice d’air intérieur sont des compléments facultatifs.
+Consulte le [guide des sources et prérequis](sources.md) pour choisir ce que tu souhaites afficher.
 
 ## Installation par HACS
 
@@ -35,7 +36,7 @@ jour future apparaîtra dans HACS et se fera avec le même bouton de télécharg
 ## Ajouter la carte
 
 Dans un tableau de bord, clique **Ajouter une carte** puis recherche **Niak
-Weather**. L’éditeur permet de choisir l’entité Météo-France et les capteurs
+Weather**. L’éditeur permet de choisir l’entité météo et les capteurs
 Ecowitt que tu souhaites afficher. Dès qu’une entité météo est choisie,
 Niak Weather tente de préremplir les capteurs extérieurs de la même station.
 Le bloc **Entités de la station** regroupe ces choix. Le bouton **Préremplir les entités manquantes** relance cette recherche sans écraser les choix existants. Vérifie les
@@ -75,14 +76,23 @@ type **Module JavaScript** avec cette adresse :
 
 Puis recharge le navigateur.
 
-## Tester v0.2.0-beta.7
+## Installation manuelle sans HACS
 
-La version beta.7 conserve le rendu complet de la carte locale et ajoute Atmo France pour l’air extérieur et les pollens. La version stable 0.1.0 est plus ancienne ; sélectionne explicitement beta.7 pour tester ce rendu enrichi.
+1. Depuis la [release v1.0.0](https://github.com/Niakman13/niak-weather/releases/tag/v1.0.0), télécharge **niak-weather-card.js** dans les fichiers joints, pas l’archive du code source.
+2. Copie ce fichier dans le dossier `www` de la configuration Home Assistant (le créer s’il n’existe pas).
+3. Ajoute une ressource **Module JavaScript** dans **Paramètres → Tableaux de bord → Ressources**, à l’adresse `/local/niak-weather-card.js`.
+4. Recharge le navigateur, puis ajoute la carte comme décrit plus haut.
 
-1. Ouvre **Niak Weather** dans HACS, puis **⋮ → Retélécharger / Redownload**.
-2. Utilise le choix d’une autre version et sélectionne **v0.2.0-beta.7**. Si nécessaire, active l’accès aux préversions pour ce dépôt ([fonctionnement HACS](https://hacs.dev/docs/use/entities/switch/)).
+Dans ce mode, les mises à jour sont manuelles : remplacer le fichier par celui de la nouvelle release et recharger le navigateur. Ne charge pas en même temps les ressources `/local/` et `/hacsfiles/` de cette carte.
+
+## Installer ou mettre à jour vers v1.0.0 stable
+
+La version v1.0.0 stable conserve le rendu complet de la carte locale et Atmo France pour l’air extérieur et les pollens. Elle reprend les fonctionnalités validées de beta.7 ; seul le libellé de la source alternative est simplifié en **Polleninformation**. Les configurations et entités existantes restent compatibles.
+
+1. Ouvre **Niak Weather** dans HACS et utilise **Mettre à jour** si proposé, sinon **⋮ → Retélécharger / Redownload**.
+2. Sélectionne **v1.0.0** si le choix d’une version est demandé. Il n’est plus nécessaire d’activer les préversions.
 3. Télécharge, puis recharge le navigateur avec **Ctrl+F5**. Sur l’application mobile, ferme puis rouvre le tableau de bord et, si nécessaire, vide son cache frontend.
-4. Ouvre l’éditeur de la carte et clique **Préremplir les entités manquantes**. Vérifie le vent moyen, les cumuls pluie et la rafale maximale du jour.
+4. Les choix enregistrés sont conservés. Pour ajouter des mesures, ouvre l’éditeur et clique **Préremplir les entités manquantes** ; vérifie les nouvelles propositions avant d’enregistrer.
 
 ### Atmo France : air extérieur et pollens
 

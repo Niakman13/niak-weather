@@ -1,4 +1,4 @@
-# Fidélité au rendu local — beta.7
+# Fidélité au rendu local — v1.0.0
 
 La carte locale et son template ont été analysés intégralement avant ce portage. Les références conservées dans `reference/` portent l’empreinte des fichiers d’origine ; les identifiants personnels du bloc de configuration ne sont pas publiés.
 
