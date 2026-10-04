@@ -382,6 +382,15 @@ try {
       return {overflow:current.left<host.left||current.right>host.right,distinct:current.left>=lead.right||current.top>=lead.bottom,rightAligned:getComputedStyle(root.querySelector('.nw-current-content')).textAlign==='right'};
     });
     assert.equal(geometry.overflow,false);assert.equal(geometry.distinct,true);assert.equal(geometry.rightAligned,true);
+    const background=await page.evaluate(()=>{
+      const root=window.skyCard.shadowRoot, header=root.querySelector('#heros'), sky=root.querySelector('niak-weather-sky'), details=root.querySelector('.nw-brief-details');
+      const matches=()=>{const h=header.getBoundingClientRect(),s=sky.getBoundingClientRect();return Math.abs(h.right-s.right)<1&&Math.abs(h.top-s.top)<1&&Math.abs(h.bottom-s.bottom)<1&&Math.abs(h.left+3-s.left)<1;};
+      const closed=matches();details.open=true;const expanded=matches();
+      return {closed,expanded,clean:!root.querySelector('.nw-current-feels,.nw-current-source')};
+    });
+    assert.deepEqual(background,{closed:true,expanded:true,clean:true},'Full banner sky, including expanded details, and no duplicate text');
+    await page.locator('niak-weather-card #heros').screenshot({path:`${out}/current-expanded-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    await page.evaluate(()=>{window.skyCard.shadowRoot.querySelector('.nw-brief-details').open=false;});
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/current-weather-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();assert.deepEqual(axe.violations.map(v=>v.id),[],'Current sky structural accessibility');
     currentReports.push({width,dark,...geometry});
@@ -397,6 +406,20 @@ try {
     return {running:getComputedStyle(cloud).animationPlayState==='running',advancing:cloud.getAnimations()[0]?.currentTime>before};
   });
   assert.equal(skyMotion.running,true);assert.equal(skyMotion.advancing,true);
+  const weatherEffects=await page.evaluate(async()=>{
+    const card=window.skyCard;
+    const change=async condition=>{card.hass={...card.hass,states:{...card.hass.states,'weather.test':{...card.hass.states['weather.test'],state:condition}}};await card.updateComplete;const sky=card.shadowRoot.querySelector('niak-weather-sky');await sky.updateComplete;return sky.shadowRoot;};
+    let scene=await change('rainy');const rainCount=scene.querySelectorAll('.rain').length, rain=scene.querySelector('.rain');
+    const before=getComputedStyle(rain).translate;await new Promise(r=>setTimeout(r,180));const falling=getComputedStyle(rain).translate!==before;
+    const regularDuration=parseFloat(getComputedStyle(rain).animationDuration);
+    scene=await change('pouring');const heavier=scene.querySelectorAll('.rain').length>rainCount&&parseFloat(getComputedStyle(scene.querySelector('.rain')).animationDuration)<regularDuration;
+    scene=await change('lightning-rainy');const bolt=scene.querySelector('.bolt'), animation=bolt.getAnimations()[0];animation.pause();animation.currentTime=80;
+    const bright=parseFloat(getComputedStyle(bolt).opacity);animation.currentTime=1200;const dark=parseFloat(getComputedStyle(bolt).opacity);animation.play();
+    scene=await change('windy');const gust=scene.querySelector('.gust'),start=getComputedStyle(gust).translate;await new Promise(r=>setTimeout(r,180));
+    const windMoves=getComputedStyle(gust).translate!==start&&scene.querySelectorAll('.leaf').length>0;
+    await change('partlycloudy');return {falling,heavier,lightning:bright>.8&&dark===0,windMoves};
+  });
+  for(const [key,value] of Object.entries(weatherEffects))assert.equal(value,true,`Weather animation: ${key}`);
   await page.emulateMedia({reducedMotion:'reduce'});
   skyMotion.reduced=await page.evaluate(()=>getComputedStyle(window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelector('.cloud')).animationName==='none');assert.equal(skyMotion.reduced,true);
   await page.emulateMedia({reducedMotion:'no-preference'});
@@ -416,6 +439,6 @@ try {
   await page.evaluate(async()=>{await new Promise(r=>setTimeout(r,200));});
   skyMotion.offscreen=await page.evaluate(()=>getComputedStyle(window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelector('.cloud')).animationPlayState==='paused');assert.equal(skyMotion.offscreen,true);
   assert.deepEqual(errors,[],'Current sky browser console/network');
-  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,errors},null,2));
-  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,errors},null,2));
+  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,errors},null,2));
+  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,errors},null,2));
 } finally { await browser.close();server.close(); }

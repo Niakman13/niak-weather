@@ -28,6 +28,8 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   ];
   return html`
     <section id="heros" class="nw-section nw-synthesis" aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
+      <div class="nw-sky-backdrop" aria-hidden="true"><niak-weather-sky .condition=${weatherNow.condition} .phase=${weatherNow.phase}
+        .animated=${config.weather_animations!==false} .quality=${config.weather_animation_quality ?? 'standard'} .wind=${weatherNow.wind ?? 0}></niak-weather-sky></div>
       <header class="nw-section-heading"><h2 id="nw-synthesis-title">Synthèse</h2><span>${location}</span>
         ${brief ? html`<span class="nw-attention"><i></i>${brief.label}</span>` : nothing}</header>
       <div class="nw-summary-emblem me-bulle" aria-hidden="true"><div class="me-halo"></div>
@@ -39,15 +41,11 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
         ${brief && !preview?.selected.some(s => s.group === 'future') ? html`<p><span>À venir</span>${brief.signals.find(s => s.group === 'future')?.text ?? (brief.caveats.some(c => c.startsWith('Prévisions des')) ? 'Prévisions indisponibles.' : 'Pas de signal marqué dans les 6 h disponibles.')}</p>` : nothing}
       </div>
       <aside class="nw-current-weather" aria-label="Météo actuelle">
-        <niak-weather-sky aria-hidden="true" .condition=${weatherNow.condition} .phase=${weatherNow.phase}
-          .animated=${config.weather_animations!==false} .quality=${config.weather_animation_quality ?? 'standard'} .wind=${weatherNow.wind ?? 0}></niak-weather-sky>
         <div class="nw-current-content"><span class="nw-current-kicker">En ce moment</span>
-          <button class="nw-current-condition" data-entity=${weatherNow.conditionEntity ?? config.weather_entity}><ha-icon icon=${weatherNow.icon}></ha-icon>${weatherNow.label}</button>
+          <button class="nw-current-condition" data-entity=${weatherNow.conditionEntity ?? config.weather_entity} title=${weatherNow.source}><ha-icon icon=${weatherNow.icon}></ha-icon>${weatherNow.label}</button>
           ${weatherNow.temperature===undefined ? html`<span class="nw-current-missing">Température indisponible</span>` : html`
             <button class="nw-current-temperature" data-entity=${weatherNow.temperatureEntity} aria-label=${`${weatherNow.temperatureSource} : ${degrees(weatherNow.temperature)} degrés Celsius`}>${degrees(weatherNow.temperature)}<small>°C</small></button>`}
           <span class="nw-current-temperature-source">${weatherNow.temperatureSource}</span>
-          ${weatherNow.feels===undefined ? nothing : html`<span class="nw-current-feels">Ressenti ${degrees(weatherNow.feels)} °C</span>`}
-          <span class="nw-current-source">${weatherNow.source}</span>
         </div>
       </aside>
       ${brief ? html`<details class="nw-brief-details"><summary>Les points à retenir${preview?.remaining ? ` · ${preview.remaining} autre${preview.remaining > 1 ? 's' : ''} point${preview.remaining > 1 ? 's' : ''}` : ''}</summary>
@@ -86,7 +84,10 @@ export const dashboardStyles = css`
   .nw-section-heading>span { font-size:11px; color:var(--secondary-text-color); }
   .nw-section-heading .nw-attention { display:flex; align-items:center; gap:6px; margin-left:auto; font-size:10px; }
   .nw-attention i { width:7px; height:7px; border-radius:50%; background:rgb(var(--vc)); }
-  .nw-synthesis { position:relative; display:grid; grid-template-columns:76px minmax(0,1fr) minmax(240px,.65fr); column-gap:20px; border-left:3px solid rgb(var(--vc)); background:linear-gradient(90deg,rgba(var(--vc),.065),transparent 65%); }
+  .nw-synthesis { position:relative; isolation:isolate; overflow:hidden; display:grid; grid-template-columns:76px minmax(0,1fr) minmax(240px,.65fr); column-gap:20px; border-left:3px solid rgb(var(--vc)); }
+  .nw-sky-backdrop { position:absolute; inset:0; z-index:-2; pointer-events:none; }
+  .nw-sky-backdrop::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent 45%,#10243b24 70%,#10243b85); }
+  .nw-synthesis::before { content:''; position:absolute; inset:0; z-index:-1; pointer-events:none; background:linear-gradient(90deg,var(--card-background-color,#fff) 0%,color-mix(in srgb,var(--card-background-color,#fff) 97%,transparent) 32%,color-mix(in srgb,var(--card-background-color,#fff) 90%,transparent) 48%,color-mix(in srgb,var(--card-background-color,#fff) 55%,transparent) 64%,color-mix(in srgb,var(--card-background-color,#fff) 12%,transparent) 83%,transparent 100%); }
   .nw-synthesis>.nw-section-heading { grid-column:1 / 3; grid-row:1; position:relative; z-index:1; }
   .nw-summary-emblem { grid-column:1; grid-row:2 / span 2; align-self:start; margin-top:3px; width:76px; height:76px; pointer-events:none; }
   .nw-synthesis .me-rond { background:radial-gradient(circle at 35% 25%,rgba(var(--vc),.22),rgba(var(--vc),.07)); animation:meRespire 4.2s ease-in-out infinite; }
@@ -97,10 +98,8 @@ export const dashboardStyles = css`
   .nw-summary-lines { grid-column:2; grid-row:3; margin:8px 0 0; font-size:12px; line-height:1.6; position:relative; z-index:1; }
   .nw-summary-lines p { margin:4px 0; }
   .nw-summary-lines p>span { color:var(--secondary-text-color); margin-right:8px; font-size:10px; }
-  .nw-brief-details { grid-column:2 / -1; grid-row:4; margin:10px 0 0; font-size:11px; position:relative; z-index:1; }
-  .nw-current-weather { position:relative; grid-column:3; grid-row:1 / span 3; min-height:190px; display:flex; justify-content:flex-end; align-items:center; isolation:isolate; }
-  .nw-current-weather niak-weather-sky { inset:-24px -22px -14px -38px; z-index:-2; mask-image:linear-gradient(90deg,transparent,black 26%); }
-  .nw-current-weather::before { content:''; position:absolute; inset:-24px -22px -14px -38px; z-index:-1; background:linear-gradient(90deg,transparent,#0e20306b 65%); mask-image:linear-gradient(90deg,transparent,black 26%); }
+  .nw-brief-details { grid-column:2; grid-row:4; margin:10px 0 0; font-size:11px; position:relative; z-index:1; }
+  .nw-current-weather { position:relative; grid-column:3; grid-row:1 / span 3; min-height:190px; display:flex; justify-content:flex-end; align-items:center; }
   .nw-current-content { position:relative; display:flex; flex-direction:column; align-items:flex-end; text-align:right; color:white; text-shadow:0 1px 5px #142c4699; padding:8px 0 8px 26px; gap:4px; }
   .nw-current-kicker { font-size:10px; text-transform:uppercase; letter-spacing:.12em; opacity:.85; }
   .nw-current-weather button { font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; text-align:right; text-shadow:inherit; }
@@ -109,15 +108,12 @@ export const dashboardStyles = css`
   .nw-current-temperature { font-size:46px !important; line-height:1.1; font-weight:700 !important; letter-spacing:-1.5px; margin-top:4px; }
   .nw-current-temperature small { font-size:20px; font-weight:400; margin-left:3px; vertical-align:super; letter-spacing:0; }
   .nw-current-temperature-source { font-size:10px; opacity:.8; }
-  .nw-current-feels { font-size:12px; margin-top:3px; }
-  .nw-current-source { font-size:10px; margin-top:8px; max-width:220px; line-height:1.4; opacity:.85; }
   .nw-current-missing { font-size:13px; margin-top:8px; }
   @container (max-width:650px) {
     .nw-synthesis { grid-template-columns:60px minmax(0,1fr); column-gap:12px; }
     .nw-current-weather { grid-column:1 / -1; grid-row:4; min-height:172px; margin-top:18px; }
-    .nw-current-weather niak-weather-sky { inset:0 -22px 0 -22px; mask-image:linear-gradient(90deg,#000b,black); }
-    .nw-current-weather::before { inset:0 -22px; mask-image:none; }
-    .nw-brief-details { grid-column:1 / -1; grid-row:5; }
+    .nw-synthesis::before { background:linear-gradient(180deg,var(--card-background-color,#fff),color-mix(in srgb,var(--card-background-color,#fff) 95%,transparent) 32%,color-mix(in srgb,var(--card-background-color,#fff) 78%,transparent) 48%,transparent 76%); }
+    .nw-brief-details { grid-column:1 / -1; grid-row:5; background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--card-background-color,#fff) 94%,transparent) 24px); margin:12px -22px -24px; padding:18px 22px 14px; }
   }
   .nw-brief-details summary, .nw-measure-details summary { cursor:pointer; color:var(--secondary-text-color); font-size:11px; padding:6px 0; }
   #comfort { border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:12px; background:rgba(150,150,150,.035); padding:14px 16px; margin-bottom:14px; }
@@ -184,7 +180,8 @@ export const dashboardStyles = css`
     .nw-summary-emblem { width:60px; height:60px; grid-row:2; }
     .nw-summary-lead { min-height:66px; }
     .nw-summary-lead h3 { font-size:17px; }
-    .nw-summary-lines, .nw-brief-details { grid-column:1 / -1; margin-left:0; }
+    .nw-summary-lines { grid-column:1 / -1; margin-left:0; }
+    .nw-brief-details { margin-inline:-14px; margin-bottom:-16px; padding-inline:14px; }
     .nw-brief-groups { grid-template-columns:minmax(0,1fr); }
     #comfort { padding:12px; }
     #tuiles .me-tu { align-items:flex-start; padding:12px 10px; gap:5px; }

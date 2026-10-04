@@ -1,6 +1,10 @@
 # Météo actuelle et ciel animé — v1.3 en préparation
 
-Le bandeau affiche la météo actuelle à droite de la synthèse : condition, température et ressenti. Le décor suit le soleil, les nuages, la pluie, les orages, la neige, la grêle, le brouillard et le vent. Sur mobile, cette partie passe sous le texte de synthèse, dans le même bandeau.
+Le bandeau affiche la météo actuelle à droite de la synthèse : condition et température. Le ressenti reste dans la synthèse et sa jauge, sans répétition dans le bloc de droite. L’origine du ciel est accessible au survol de la condition et par un clic sur sa source.
+
+Le décor couvre toute la largeur et toute la hauteur du bandeau, y compris lorsque « Les points à retenir » est déplié. Un voile aux couleurs du thème, posé au-dessus du ciel, s’efface progressivement de gauche à droite pour préserver la lisibilité de la synthèse. Sur mobile, la météo actuelle passe sous le texte de synthèse et le voile s’adapte verticalement.
+
+Les nuages sont des silhouettes vectorielles simples à deux tons. La pluie a plusieurs profondeurs et vitesses ; les fortes pluies sont plus denses, rapides et inclinées. Les orages produisent des éclairs ramifiés brefs à deux endroits de la scène. Le vent fait traverser le ciel aux filets d’air et aux feuilles, avec des nuages plus mobiles.
 
 ## Origine des données
 
@@ -26,7 +30,7 @@ weather_animations: true
 weather_animation_quality: standard
 ```
 
-Les animations du ciel se mettent en pause hors écran et quand l’onglet est masqué. La préférence système « réduire les mouvements » affiche un décor fixe. Les orages ont un éclair à lueur lente, sans flash plein écran.
+Les animations du ciel se mettent en pause hors écran et quand l’onglet est masqué. La préférence système « réduire les mouvements » affiche un décor fixe. Les éclairs apparaissent alternativement toutes les quatre secondes, avec une lueur localisée ; il n’y a pas de flash plein écran. En mode fixe, leur silhouette reste visible.
 
 ## Aperçu et vérifications
 
