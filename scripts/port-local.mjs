@@ -20,6 +20,12 @@ for (const [name, original] of Object.entries(reference.fields)) {
     const end = code.indexOf("var BLEU");
     code = code.slice(0, start) + `var esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\nwindow.meGeste = id => id ? ' data-entity=\"' + esc(id) + '\" role=\"button\" tabindex=\"0\"' : '';\n` + code.slice(end);
     code = code.replace("ouvrants: 'FERMER', ", '');
+    // Optional smart brief changes only the hero; the reference mode remains intact.
+    code = code.replace('var vc = NIV[niveau] || BLEU;', 'var vc = V.brief ? V.brief.rgb : NIV[niveau] || BLEU;');
+    code = code.replace("var ico = meta ? meta.i : 'mdi:thermometer';", "var ico = V.brief ? V.brief.icon : meta ? meta.i : 'mdi:thermometer';");
+    code = code.replace("var badge = ALERTE[String(A.alerte || '')] || '';", "var badge = V.brief ? V.brief.label : ALERTE[String(A.alerte || '')] || '';");
+    code = code.replace('if (V.lieu) sous =', 'if (V.lieu && !V.brief) sous =');
+    code = code.replace("var mesure = String(A.cond_source || '') === 'station';", "var mesure = !V.brief && String(A.cond_source || '') === 'station';");
   }
   code = code.replace(/var ec = V\.ent_confort[^;]+;/g, '').replace(/var poids = \(ec[^;]+;/g, "var poids = ea.attributes.air_poids || 'neutre';");
   code = code.replace(/var geste = V\.page_air[\s\S]*?: '';/, "var geste = V.page_air ? ' data-nav=\"' + esc(V.page_air) + '\" role=\"link\" tabindex=\"0\"' : window.meGeste(V.ent_air);");

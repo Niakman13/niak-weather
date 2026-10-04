@@ -57,7 +57,7 @@ try {
       const rendered = {}; for (const k of Object.keys(reference.fields)) rendered[k] = fields[k](variables,states,{});
       baseline.innerHTML = `<div id="container">${order.map(k=>`<div style="grid-area:${k}" id="${k}">${rendered[k]}</div>`).join('')}</div>`;
       document.querySelector('main').append(baseline);
-      window.fixture = { states, config:{type:'custom:niak-weather-card',weather_entity:'weather.test',model_entity:'sensor.model',forecast_entity:'sensor.prev',air_quality_entity:'sensor.air',pollens:variables.pollens,location:'Ma commune',forecast_source:'Météo-France',mode:'detailed'} };
+      window.fixture = { states, config:{type:'custom:niak-weather-card',weather_entity:'weather.test',smart_brief:false,model_entity:'sensor.model',forecast_entity:'sensor.prev',air_quality_entity:'sensor.air',pollens:variables.pollens,location:'Ma commune',forecast_source:'Météo-France',mode:'detailed'} };
       await import('/card.js');
     }, { reference, fixture: fixtures[0], icons: mdi, dark });
     const baseline = await page.locator('#baseline').screenshot({ path:`${out}/original-${width}-${dark?'dark':'light'}.png`, animations:'disabled' });
@@ -223,7 +223,50 @@ try {
   }
   await page.locator('niak-weather-card .nw-atmo-day [data-entity="sensor.atmo_a_grass_concentration"]').focus();await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(()=>window.atmoInfo.at(-1)),'sensor.atmo_a_grass_concentration','Atmo concentration keyboard popup');
+  // Smart brief is a deliberate new hero, not an update of the v1 visual baseline.
+  const briefBehavior = await page.evaluate(async () => {
+    const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+    const root=document.querySelector('main');root.replaceChildren();
+    const states={...window.atmoCard.hass.states};
+    const localHour=+new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',hour:'numeric',hourCycle:'h23'}).format(new Date());
+    states['sensor.model']={...states['sensor.model'],attributes:{...states['sensor.model'].attributes,vent:45,rafales:75,rafale_max_jour:90,pluie_dans:1,pluie_mm:7,sources:{...states['sensor.model'].attributes.sources,vent:'sensor.wind',rafales:'sensor.wind'}}};
+    states['sensor.wind']={entity_id:'sensor.wind',state:'75',attributes:{unit_of_measurement:'km/h'}};
+    states['sensor.prev']={...states['sensor.prev'],attributes:{...states['sensor.prev'].attributes,heures:Array.from({length:18},(_,i)=>({h:(localHour+i+1)%24,j:Math.floor((localHour+i+1)/24),t:21+i/2,p:i<3?7:0,c:i===2?'lightning-rainy':'rainy'}))}};
+    states['sensor.atmo_a_air']={...states['sensor.atmo_a_air'],state:'5'};
+    states['sensor.vigilance']={entity_id:'sensor.vigilance',state:'Orange',attributes:{attribution:'Météo-France',Orages:'Orange'},last_updated:new Date().toISOString()};
+    const card=document.createElement('niak-weather-card');
+    card.setConfig({...window.atmoCard.config,smart_brief:true,vigilance_entity:'sensor.vigilance'});
+    card.hass={...window.atmoCard.hass,states};root.append(card);window.briefCard=card;window.briefInfo=[];
+    card.addEventListener('hass-more-info',e=>window.briefInfo.push(e.detail.entityId));await sleep(50);
+    const text=card.shadowRoot.querySelector('.me-p').textContent;
+    const combined=['Maintenant','À venir','Air et pollens','75 km/h','Fortes pluies','Vigilance Météo-France orange'].every(s=>text.includes(s));
+    card.shadowRoot.querySelector('.nw-brief-details summary').click();await sleep(20);
+    const nativeDetails=card.shadowRoot.querySelector('.nw-brief-details').open && window.briefInfo.length===0;
+    const hasSource=!!card.shadowRoot.querySelector('.nw-brief-details button[data-entity="sensor.wind"]');
+    const orange=card.shadowRoot.querySelector('.me-hero').style.getPropertyValue('--vc').trim()==='230,125,45';
+    return {combined,nativeDetails,hasSource,orange};
+  });
+  for(const [test,passed] of Object.entries(briefBehavior))assert.equal(passed,true,`Brief: ${test}`);
+  await page.locator('niak-weather-card .nw-brief-details button[data-entity="sensor.wind"]').first().focus();await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>window.briefInfo.at(-1)),'sensor.wind','Brief source keyboard popup');
+  await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-details').open=false;});
+  const briefReports=[];
+  for(const dark of [false,true]) for(const width of [375,768,1440]){
+    await page.setViewportSize({width,height:1500});
+    await page.evaluate(({dark})=>{
+      document.documentElement.style.setProperty('--primary-text-color',dark?'#e4e4e4':'#20203f');
+      document.documentElement.style.setProperty('--secondary-text-color',dark?'#aaa':'#686878');
+      document.documentElement.style.setProperty('--card-background-color',dark?'#242424':'#fff4f4');
+      document.body.style.background=dark?'#171717':'#eee7e7';
+    },{dark});
+    const overflow=await page.evaluate(()=>{const host=window.briefCard.getBoundingClientRect();return [...window.briefCard.shadowRoot.querySelectorAll('.me-htop,.me-t,.me-p,.nw-brief-details')].some(e=>{const r=e.getBoundingClientRect();return r.width&&(r.left<host.left-1||r.right>host.right+1)});});
+    assert.equal(overflow,false,`Brief overflow ${width}/${dark}`);
+    await page.locator('niak-weather-card').screenshot({path:`${out}/brief-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    await page.locator('niak-weather-card #heros').screenshot({path:`${out}/brief-header-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();assert.deepEqual(axe.violations.map(v=>v.id),[],'Brief structural accessibility');
+    briefReports.push({width,dark,overflow,accessibility:'structural scan passed; new hero has no committed visual baseline yet'});
+  }
   assert.deepEqual(errors,[],'browser console/network');
-  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,errors},null,2));
-  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,errors},null,2));
+  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,errors},null,2));
+  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,errors},null,2));
 } finally { await browser.close();server.close(); }

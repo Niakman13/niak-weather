@@ -11,6 +11,7 @@ export function cleanConfig(config: WeatherCardConfig): WeatherCardConfig {
 }
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   weather_entity: 'Entité météo', mode: 'Affichage', location: 'Lieu', forecast_source: 'Fournisseur des prévisions',
+  smart_brief: 'Activer le brief intelligent', vigilance_entity: 'Vigilance officielle Météo-France (département)',
   temperature_entity: 'Température extérieure', humidity_entity: 'Humidité extérieure',
   wind_speed_entity: 'Vent moyen (10 min)', wind_gust_entity: 'Rafales', wind_bearing_entity: 'Direction du vent (10 min)',
   rain_rate_entity: 'Intensité de pluie', daily_rain_entity: 'Pluie depuis minuit', rain_24h_entity: 'Pluie sur 24 h',
@@ -76,10 +77,17 @@ export class NiakWeatherCardEditor extends LitElement {
     };
     const atmoSchema = (next: boolean) => (Object.keys(atmoMetrics) as AtmoMetric[]).map(metric => atmoSensor(atmoField(metric, next)));
     const areas = atmoAreas(this.hass, this.registry);
+    const vigilanceIds = Object.values(this.hass.states).filter(e => {
+      const r = this.registry?.entities.find(item => item.entity_id === e.entity_id);
+      return e.entity_id.startsWith('sensor.') && (r?.platform === 'meteo_france' || /météo.france|meteo.france/i.test(String(e.attributes.attribution)))
+        && /weather_alert|vigilance|alerte/i.test(`${e.entity_id} ${r?.unique_id ?? ''} ${r?.translation_key ?? ''} ${r?.original_name ?? ''}`);
+    }).map(e => e.entity_id);
+    if (this.config.vigilance_entity && !vigilanceIds.includes(this.config.vigilance_entity)) vigilanceIds.push(this.config.vigilance_entity);
     if (this.config.atmo_area && !areas.some(a => a.value === this.config!.atmo_area)) areas.push({ value: this.config.atmo_area, label: 'Zone configurée (indisponible)' });
     const schema = [entity('weather_entity', 'weather', true), { name: 'location', selector: { text: {} } },
       { name: 'mode', selector: { select: { options: [{ value: 'compact', label: 'Accueil (compact)' }, { value: 'detailed', label: 'Complet' }] } } },
       expand('station', 'Entités de la station', [{ name: 'station_device_id', selector: { device: { filter: { integration: 'ecowitt' } } } }, ...Object.keys(stationRules).map(n => sensor(n as SensorField))]),
+      expand('brief', 'Brief intelligent et vigilance', [{ name: 'smart_brief', selector: { boolean: {} } }, { name: 'vigilance_entity', selector: { entity: { filter: { domain: 'sensor' }, include_entities: vigilanceIds } } }]),
       expand('thermal', 'Entités Thermal Comfort', [{ name: 'thermal_device_id', selector: { device: { filter: { integration: 'thermal_comfort' } } } }, ...thermalFields.map(sensor)]),
       expand('atmo', 'Atmo France — air extérieur et pollens', [
         { name: 'atmo_area', selector: { select: { options: [{ value: '', label: 'Ne pas préremplir une zone' }, ...areas] } } },
@@ -94,7 +102,7 @@ export class NiakWeatherCardEditor extends LitElement {
     ];
     return html`<button type="button" ?disabled=${this.detecting} @click=${this.detect}>${this.detecting ? 'Recherche des entités…' : 'Préremplir les entités manquantes'}</button>
       <p>Les choix existants sont conservés. Thermal Comfort est filtré par mesure et appareil ; Atmo France par commune, mesure et jour. Un choix ambigu reste vide. L’air intérieur (%) et l’air extérieur (indice Atmo) restent distincts. Avec un capteur de template local, ses calculs sont repris tels quels. Modifier une mesure météo repasse aux calculs intégrés.</p>
-      <ha-form .hass=${this.hass} .data=${{ show_atmo_details: true, show_atmo_tomorrow: true, ...this.config }} .schema=${schema} .computeLabel=${(item: { name: keyof WeatherCardConfig }) => labels[item.name] ?? item.name} @value-changed=${this.valueChanged}></ha-form>`;
+      <ha-form .hass=${this.hass} .data=${{ smart_brief: true, show_atmo_details: true, show_atmo_tomorrow: true, ...this.config }} .schema=${schema} .computeLabel=${(item: { name: keyof WeatherCardConfig }) => labels[item.name] ?? item.name} @value-changed=${this.valueChanged}></ha-form>`;
   }
   static styles = css`button { margin:0 0 8px; padding:9px 14px; border:0; border-radius:8px; background:var(--primary-color); color:var(--text-primary-color); font:inherit; cursor:pointer; } p { color:var(--secondary-text-color); font-size:12px; line-height:1.5; }`;
 }

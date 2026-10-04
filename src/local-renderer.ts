@@ -49,7 +49,7 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   var SRC = (A.sources && typeof A.sources === 'object') ? A.sources : {};
   window.meSrc = SRC;
   var niveau = String(A.niveau || 'optimise');
-  var vc = NIV[niveau] || BLEU;
+  var vc = V.brief ? V.brief.rgb : NIV[niveau] || BLEU;
   var res = nb(A.ressenti);
   var tex = nb(A.t_ext);
   var hum = nb(A.humidex);
@@ -59,7 +59,7 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   var en = nb(A.effet_nuit);
   var meta = window.meCond[String(A.condition || '')] || null;
   var titre = String(A.titre || (meta ? meta.n : 'Dehors'));
-  var ico = meta ? meta.i : 'mdi:thermometer';
+  var ico = V.brief ? V.brief.icon : meta ? meta.i : 'mdi:thermometer';
   var jmin = nb(V.jauge_min); if (jmin === null) jmin = -5;
   var jmax = nb(V.jauge_max); if (jmax === null) jmax = 45;
   var pos = function (t) {
@@ -110,13 +110,13 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   var ALERTE = {orage: 'ORAGE', averse: 'AVERSE',
                 rafales: 'RAFALES', canicule: 'CANICULE', gel: 'GEL',
                 chaleur: 'CHALEUR', froid: 'FROID', uv: 'UV'};
-  var badge = ALERTE[String(A.alerte || '')] || '';
-  var mesure = String(A.cond_source || '') === 'station';
+  var badge = V.brief ? V.brief.label : ALERTE[String(A.alerte || '')] || '';
+  var mesure = !V.brief && String(A.cond_source || '') === 'station';
   var mprev = window.meCond[String(A.condition_prev || '')] || null;
   var tipSrc = 'constaté par la station, au-dessus de la maison'
              + (mprev ? ' — Météo-France annonce « ' + mprev.n + ' »' : '');
   var sous = String(A.sous_titre || '');
-  if (V.lieu) sous = sous ? (sous + ' · ' + V.lieu) : String(V.lieu);
+  if (V.lieu && !V.brief) sous = sous ? (sous + ' · ' + V.lieu) : String(V.lieu);
   if (!dispo) {
     return '<div class="me-hero" style="--vc: ' + GRIS + ';">'
          +   '<div class="me-bulle"><div class="me-rond">'

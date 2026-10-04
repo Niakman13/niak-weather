@@ -2,6 +2,7 @@ export interface HassEntity {
   entity_id: string;
   state: string;
   attributes: Record<string, unknown>;
+  last_updated?: string;
 }
 
 export interface HomeAssistant {
@@ -45,6 +46,8 @@ export type AtmoField = `atmo_${AtmoMetric}${'' | '_tomorrow'}_entity`;
 export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   type: "custom:niak-weather-card";
   weather_entity: string;
+  smart_brief?: boolean;
+  vigilance_entity?: string;
   temperature_entity?: string;
   humidity_entity?: string;
   humidex_entity?: string;
