@@ -42,6 +42,18 @@ describe("Ecowitt station detection", () => {
       humidex_entity: "sensor.thermal_comfort_humidex",
     });
   });
+  it("recognizes the long Ecowitt WS90 entity names", () => {
+    const prefix = "sensor.station_meteo_ecowitt_ws90_powered_by_shelly_";
+    const names = ["temperature", "humidity", "wind_speed", "gust_speed", "wind_direction", "rain_rate", "precipitations_24h", "pressure", "illuminance", "uv_index", "humidex"];
+    const states = Object.fromEntries(names.map(name => [`${prefix}${name}`, { entity_id: `${prefix}${name}`, state: "1", attributes: {} }]));
+    const entities = names.map(name => ({ entity_id: `${prefix}${name}`, platform: "zigbee2mqtt", device_id: "ws90" }));
+    expect(detectEcowittStation({ states }, { entities, devices: [] })).toMatchObject({
+      temperature_entity: `${prefix}temperature`, humidity_entity: `${prefix}humidity`, wind_speed_entity: `${prefix}wind_speed`,
+      wind_gust_entity: `${prefix}gust_speed`, wind_bearing_entity: `${prefix}wind_direction`, rain_rate_entity: `${prefix}rain_rate`,
+      rain_24h_entity: `${prefix}precipitations_24h`, pressure_entity: `${prefix}pressure`, illuminance_entity: `${prefix}illuminance`,
+      uv_index_entity: `${prefix}uv_index`,
+    });
+  });
 });
 
 describe("forecast data", () => {

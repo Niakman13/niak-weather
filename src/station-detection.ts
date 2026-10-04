@@ -9,14 +9,14 @@ export type SensorField = keyof Pick<WeatherCardConfig,
   'temperature_trend_entity' | 'humidex_entity' | 'humidex_perception_entity' | 'thermal_dew_point_entity' | 'heat_index_entity' |
   'absolute_humidity_entity' | 'thermal_perception_entity'>;
 export const stationRules: Partial<Record<SensorField, RegExp>> = {
-  temperature_entity: /(?:outdoor|outside|exterieur|external).*temp|temp.*(?:outdoor|outside|exterieur|external)/,
-  humidity_entity: /(?:outdoor|outside|exterieur|external).*humid|humid.*(?:outdoor|outside|exterieur|external)/,
+  temperature_entity: /(?:outdoor|outside|exterieur|external).*temp|temp.*(?:outdoor|outside|exterieur|external)|(?:ecowitt|ws\d{2}|station.*meteo).*temp/,
+  humidity_entity: /(?:outdoor|outside|exterieur|external).*humid|humid.*(?:outdoor|outside|exterieur|external)|humidity|humidite/,
   wind_speed_entity: /(?:wind.*(?:speed|average|avg)|(?:average|avg).*wind|moyenne.*vent|vent.*moyenne|vitesse.*vent)/,
   wind_gust_entity: /gust|rafale/,
   wind_bearing_entity: /(?:wind.*(?:bearing|direction)|direction.*vent)/,
   rain_rate_entity: /(?:rain.*(?:rate|intensity)|pluie.*(?:taux|intensite))/,
   daily_rain_entity: /(?:daily|today|jour|quotidien).*rain|rain.*(?:daily|today|jour|quotidien)|pluie.*(?:jour|quotidien)/,
-  rain_24h_entity: /(?:24h|24_h).*rain|rain.*(?:24h|24_h)|pluie.*24/,
+  rain_24h_entity: /(?:24h|24_h).*(?:rain|precip)|(?:rain|precip).*(?:24h|24_h)|pluie.*24|precipitation.*24/,
   weekly_rain_entity: /(?:weekly|week|semaine).*rain|rain.*(?:weekly|week|semaine)|pluie.*semaine/,
   monthly_rain_entity: /(?:monthly|month|mois).*rain|rain.*(?:monthly|month|mois)|pluie.*mois/,
   yearly_rain_entity: /(?:yearly|year|annual).*rain|rain.*(?:yearly|year|annual)|pluie.*(?:annuel|annee)/,

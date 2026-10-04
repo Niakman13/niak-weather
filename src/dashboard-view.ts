@@ -97,7 +97,7 @@ export const dashboardStyles = css`
   @keyframes nwHalo { 0%,100% { opacity:.52; transform:scale(.94); } 50% { opacity:.78; transform:scale(1.08); } }
   @keyframes nwEmblemGlow { 0%,100% { box-shadow:0 0 8px rgba(var(--vc),.18),inset 0 0 8px rgba(var(--vc),.06); } 50% { box-shadow:0 0 14px rgba(var(--vc),.3),inset 0 0 10px rgba(var(--vc),.1); } }
   .nw-summary-lead { grid-column:2; grid-row:2; display:flex; flex-direction:column; align-items:flex-start; flex-wrap:wrap; gap:8px; min-height:30px; position:relative; z-index:1; }
-  .nw-summary-lead h3 { flex:1 1 200px; }
+  .nw-summary-lead h3 { flex:0 0 auto; }
   .nw-summary-lead h3 { font-size:22px; font-weight:700; letter-spacing:-.45px; line-height:1.3; margin:0; overflow-wrap:anywhere; }
   .nw-summary-lines { grid-column:2; grid-row:3; margin:8px 0 0; font-size:12px; line-height:1.6; position:relative; z-index:1; }
   .nw-summary-lines p { margin:7px 0; }
