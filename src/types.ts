@@ -47,6 +47,8 @@ export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   type: "custom:niak-weather-card";
   weather_entity: string;
   smart_brief?: boolean;
+  weather_animations?: boolean;
+  weather_animation_quality?: 'low' | 'standard';
   vigilance_entity?: string;
   temperature_entity?: string;
   humidity_entity?: string;

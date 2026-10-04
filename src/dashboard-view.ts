@@ -4,6 +4,8 @@ import { briefPreview } from './brief-preview';
 import { renderAtmo } from './atmo-view';
 import { finite } from './local-model';
 import { comfortColor } from './comfort-color';
+import { buildCurrentWeather } from './current-weather';
+import './weather-sky';
 import type { WeatherBrief } from './weather-brief';
 import type { HassEntity, HomeAssistant, WeatherCardConfig } from './types';
 
@@ -16,6 +18,8 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   const headline = preview?.selected[0]?.group === 'official' ? brief!.title : preview?.selected[0]?.text ?? (brief && !brief.available ? 'Données insuffisantes' : condition);
   const current = unavailable ? 'Mesures indisponibles.' : brief?.summary.split('\n')[0].replace(/^Maintenant : /, '').split('. ')[0];
   const feels = finite(model.attributes.ressenti);
+  const weatherNow=buildCurrentWeather(hass,config,model);
+  const degrees=(value:number)=>new Intl.NumberFormat(hass.language || 'fr',{maximumFractionDigits:1}).format(value);
   const groups = [
     { key:'official', title:'Vigilance officielle', description:'Bulletin du département choisi dans les réglages.' },
     { key:'now', title:'Maintenant', description:'Mesures et estimations actuelles à la maison.' },
@@ -34,6 +38,18 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
           : html`<p>${current || String(model.attributes.sous_titre || 'Choisissez vos sources météo.')}</p>`}
         ${brief && !preview?.selected.some(s => s.group === 'future') ? html`<p><span>À venir</span>${brief.signals.find(s => s.group === 'future')?.text ?? (brief.caveats.some(c => c.startsWith('Prévisions des')) ? 'Prévisions indisponibles.' : 'Pas de signal marqué dans les 6 h disponibles.')}</p>` : nothing}
       </div>
+      <aside class="nw-current-weather" aria-label="Météo actuelle">
+        <niak-weather-sky aria-hidden="true" .condition=${weatherNow.condition} .phase=${weatherNow.phase}
+          .animated=${config.weather_animations!==false} .quality=${config.weather_animation_quality ?? 'standard'} .wind=${weatherNow.wind ?? 0}></niak-weather-sky>
+        <div class="nw-current-content"><span class="nw-current-kicker">En ce moment</span>
+          <button class="nw-current-condition" data-entity=${weatherNow.conditionEntity ?? config.weather_entity}><ha-icon icon=${weatherNow.icon}></ha-icon>${weatherNow.label}</button>
+          ${weatherNow.temperature===undefined ? html`<span class="nw-current-missing">Température indisponible</span>` : html`
+            <button class="nw-current-temperature" data-entity=${weatherNow.temperatureEntity} aria-label=${`${weatherNow.temperatureSource} : ${degrees(weatherNow.temperature)} degrés Celsius`}>${degrees(weatherNow.temperature)}<small>°C</small></button>`}
+          <span class="nw-current-temperature-source">${weatherNow.temperatureSource}</span>
+          ${weatherNow.feels===undefined ? nothing : html`<span class="nw-current-feels">Ressenti ${degrees(weatherNow.feels)} °C</span>`}
+          <span class="nw-current-source">${weatherNow.source}</span>
+        </div>
+      </aside>
       ${brief ? html`<details class="nw-brief-details"><summary>Les points à retenir${preview?.remaining ? ` · ${preview.remaining} autre${preview.remaining > 1 ? 's' : ''} point${preview.remaining > 1 ? 's' : ''}` : ''}</summary>
         <div class="nw-brief-groups">${groups.map(group => {
           const signals = brief.signals.filter(s=>s.group===group.key && s.severity>0);
@@ -70,18 +86,39 @@ export const dashboardStyles = css`
   .nw-section-heading>span { font-size:11px; color:var(--secondary-text-color); }
   .nw-section-heading .nw-attention { display:flex; align-items:center; gap:6px; margin-left:auto; font-size:10px; }
   .nw-attention i { width:7px; height:7px; border-radius:50%; background:rgb(var(--vc)); }
-  .nw-synthesis { display:grid; grid-template-columns:76px minmax(0,1fr); column-gap:20px; border-left:3px solid rgb(var(--vc)); background:linear-gradient(90deg,rgba(var(--vc),.065),transparent 65%); }
-  .nw-synthesis>.nw-section-heading { grid-column:1 / -1; }
-  .nw-summary-emblem { grid-column:1; grid-row:2 / span 3; align-self:start; margin-top:3px; width:76px; height:76px; pointer-events:none; }
+  .nw-synthesis { position:relative; display:grid; grid-template-columns:76px minmax(0,1fr) minmax(240px,.65fr); column-gap:20px; border-left:3px solid rgb(var(--vc)); background:linear-gradient(90deg,rgba(var(--vc),.065),transparent 65%); }
+  .nw-synthesis>.nw-section-heading { grid-column:1 / 3; grid-row:1; position:relative; z-index:1; }
+  .nw-summary-emblem { grid-column:1; grid-row:2 / span 2; align-self:start; margin-top:3px; width:76px; height:76px; pointer-events:none; }
   .nw-synthesis .me-rond { background:radial-gradient(circle at 35% 25%,rgba(var(--vc),.22),rgba(var(--vc),.07)); animation:meRespire 4.2s ease-in-out infinite; }
   .nw-synthesis .me-halo { inset:-16px; opacity:.5; animation:nwHalo 5.2s ease-in-out infinite; }
   @keyframes nwHalo { 0%,100% { opacity:.35; transform:scale(.94); } 50% { opacity:.65; transform:scale(1.1); } }
-  .nw-summary-lead { grid-column:2; display:flex; align-items:center; min-height:30px; position:relative; z-index:1; }
+  .nw-summary-lead { grid-column:2; grid-row:2; display:flex; align-items:center; min-height:30px; position:relative; z-index:1; }
   .nw-summary-lead h3 { font-size:22px; font-weight:700; letter-spacing:-.45px; line-height:1.3; margin:0; overflow-wrap:anywhere; }
-  .nw-summary-lines { grid-column:2; margin:8px 0 0; font-size:12px; line-height:1.6; position:relative; z-index:1; }
+  .nw-summary-lines { grid-column:2; grid-row:3; margin:8px 0 0; font-size:12px; line-height:1.6; position:relative; z-index:1; }
   .nw-summary-lines p { margin:4px 0; }
   .nw-summary-lines p>span { color:var(--secondary-text-color); margin-right:8px; font-size:10px; }
-  .nw-brief-details { grid-column:2; margin:10px 0 0; font-size:11px; position:relative; z-index:1; }
+  .nw-brief-details { grid-column:2 / -1; grid-row:4; margin:10px 0 0; font-size:11px; position:relative; z-index:1; }
+  .nw-current-weather { position:relative; grid-column:3; grid-row:1 / span 3; min-height:190px; display:flex; justify-content:flex-end; align-items:center; isolation:isolate; }
+  .nw-current-weather niak-weather-sky { inset:-24px -22px -14px -38px; z-index:-2; mask-image:linear-gradient(90deg,transparent,black 26%); }
+  .nw-current-weather::before { content:''; position:absolute; inset:-24px -22px -14px -38px; z-index:-1; background:linear-gradient(90deg,transparent,#0e20306b 65%); mask-image:linear-gradient(90deg,transparent,black 26%); }
+  .nw-current-content { position:relative; display:flex; flex-direction:column; align-items:flex-end; text-align:right; color:white; text-shadow:0 1px 5px #142c4699; padding:8px 0 8px 26px; gap:4px; }
+  .nw-current-kicker { font-size:10px; text-transform:uppercase; letter-spacing:.12em; opacity:.85; }
+  .nw-current-weather button { font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; text-align:right; text-shadow:inherit; }
+  .nw-current-condition { display:flex; align-items:center; justify-content:flex-end; gap:7px; font-size:16px !important; font-weight:650 !important; }
+  .nw-current-condition ha-icon { --mdc-icon-size:22px; }
+  .nw-current-temperature { font-size:46px !important; line-height:1.1; font-weight:700 !important; letter-spacing:-1.5px; margin-top:4px; }
+  .nw-current-temperature small { font-size:20px; font-weight:400; margin-left:3px; vertical-align:super; letter-spacing:0; }
+  .nw-current-temperature-source { font-size:10px; opacity:.8; }
+  .nw-current-feels { font-size:12px; margin-top:3px; }
+  .nw-current-source { font-size:10px; margin-top:8px; max-width:220px; line-height:1.4; opacity:.85; }
+  .nw-current-missing { font-size:13px; margin-top:8px; }
+  @container (max-width:650px) {
+    .nw-synthesis { grid-template-columns:60px minmax(0,1fr); column-gap:12px; }
+    .nw-current-weather { grid-column:1 / -1; grid-row:4; min-height:172px; margin-top:18px; }
+    .nw-current-weather niak-weather-sky { inset:0 -22px 0 -22px; mask-image:linear-gradient(90deg,#000b,black); }
+    .nw-current-weather::before { inset:0 -22px; mask-image:none; }
+    .nw-brief-details { grid-column:1 / -1; grid-row:5; }
+  }
   .nw-brief-details summary, .nw-measure-details summary { cursor:pointer; color:var(--secondary-text-color); font-size:11px; padding:6px 0; }
   #comfort { border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:12px; background:rgba(150,150,150,.035); padding:14px 16px; margin-bottom:14px; }
   .nw-panel-title { margin:0; font-size:12px; font-weight:650; color:var(--secondary-text-color); }

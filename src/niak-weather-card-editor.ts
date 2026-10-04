@@ -12,6 +12,7 @@ export function cleanConfig(config: WeatherCardConfig): WeatherCardConfig {
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   weather_entity: 'Entité météo', mode: 'Affichage', location: 'Lieu', forecast_source: 'Fournisseur des prévisions',
   smart_brief: 'Activer le brief intelligent', vigilance_entity: 'Vigilance officielle Météo-France (département)',
+  weather_animations: 'Animer le ciel de la météo actuelle', weather_animation_quality: 'Qualité des animations météo',
   temperature_entity: 'Température extérieure', humidity_entity: 'Humidité extérieure',
   wind_speed_entity: 'Vent moyen (10 min)', wind_gust_entity: 'Rafales', wind_bearing_entity: 'Direction du vent (10 min)',
   rain_rate_entity: 'Intensité de pluie', daily_rain_entity: 'Pluie depuis minuit', rain_24h_entity: 'Pluie sur 24 h',
@@ -88,6 +89,8 @@ export class NiakWeatherCardEditor extends LitElement {
       { name: 'mode', selector: { select: { options: [{ value: 'compact', label: 'Accueil (compact)' }, { value: 'detailed', label: 'Complet' }] } } },
       expand('station', 'Entités de la station', [{ name: 'station_device_id', selector: { device: { filter: { integration: 'ecowitt' } } } }, ...Object.keys(stationRules).map(n => sensor(n as SensorField))]),
       expand('brief', 'Brief intelligent et vigilance', [{ name: 'smart_brief', selector: { boolean: {} } }, { name: 'vigilance_entity', selector: { entity: { filter: { domain: 'sensor' }, include_entities: vigilanceIds } } }]),
+      expand('sky', 'Météo actuelle et ciel animé', [{name:'weather_animations',selector:{boolean:{}}},
+        {name:'weather_animation_quality',selector:{select:{options:[{value:'standard',label:'Standard'},{value:'low',label:'Allégée (tablette)'}]}}}]),
       expand('thermal', 'Entités Thermal Comfort', [{ name: 'thermal_device_id', selector: { device: { filter: { integration: 'thermal_comfort' } } } }, ...thermalFields.map(sensor)]),
       expand('atmo', 'Atmo France — air extérieur et pollens', [
         { name: 'atmo_area', selector: { select: { options: [{ value: '', label: 'Ne pas préremplir une zone' }, ...areas] } } },
@@ -102,7 +105,7 @@ export class NiakWeatherCardEditor extends LitElement {
     ];
     return html`<button type="button" ?disabled=${this.detecting} @click=${this.detect}>${this.detecting ? 'Recherche des entités…' : 'Préremplir les entités manquantes'}</button>
       <p>Les choix existants sont conservés. Thermal Comfort est filtré par mesure et appareil ; Atmo France par commune, mesure et jour. Un choix ambigu reste vide. L’air intérieur (%) et l’air extérieur (indice Atmo) restent distincts. Avec un capteur de template local, ses calculs sont repris tels quels. Modifier une mesure météo repasse aux calculs intégrés.</p>
-      <ha-form .hass=${this.hass} .data=${{ smart_brief: true, show_atmo_details: true, show_atmo_tomorrow: true, ...this.config }} .schema=${schema} .computeLabel=${(item: { name: keyof WeatherCardConfig }) => labels[item.name] ?? item.name} @value-changed=${this.valueChanged}></ha-form>`;
+      <ha-form .hass=${this.hass} .data=${{ smart_brief: true, weather_animations:true, weather_animation_quality:'standard', show_atmo_details: true, show_atmo_tomorrow: true, ...this.config }} .schema=${schema} .computeLabel=${(item: { name: keyof WeatherCardConfig }) => labels[item.name] ?? item.name} @value-changed=${this.valueChanged}></ha-form>`;
   }
   static styles = css`button { margin:0 0 8px; padding:9px 14px; border:0; border-radius:8px; background:var(--primary-color); color:var(--text-primary-color); font:inherit; cursor:pointer; } p { color:var(--secondary-text-color); font-size:12px; line-height:1.5; }`;
 }

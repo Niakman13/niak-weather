@@ -335,6 +335,87 @@ try {
     return true;
   });
   assert.equal(gaugeEdges,true,'Extreme feel values stay within frame on mobile');
-  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,gaugeEdges,haloMotion,errors},null,2));
-  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,gaugeEdges,haloMotion,errors},null,2));
+  // Current-weather scenes are independent of the future brief. Real bundled element, nested shadow DOM.
+  const skyBehavior=await page.evaluate(async()=>{
+    const root=document.querySelector('main');root.replaceChildren();
+    const card=document.createElement('niak-weather-card');window.skyCard=card;
+    card.setConfig({...window.fixture.config,smart_brief:true});
+    const states={...window.fixture.states,'sun.sun':{entity_id:'sun.sun',state:'above_horizon',attributes:{elevation:40}}};
+    card.hass={states,language:'fr',callWS:async()=>({})};root.append(card);await card.updateComplete;
+    const sky=card.shadowRoot.querySelector('niak-weather-sky');await sky.updateComplete;
+    const form=document.createElement('niak-weather-card-editor');form.setConfig(window.fixture.config);form.hass=card.hass;root.append(form);await form.updateComplete;
+    const schema=form.shadowRoot.querySelector('ha-form').schema.find(s=>s.name==='sky');
+    const settings=schema.schema.some(s=>s.name==='weather_animations')&&schema.schema.some(s=>s.name==='weather_animation_quality');form.remove();
+    return {condition:sky.condition,temperature:card.shadowRoot.querySelector('.nw-current-temperature').textContent.trim(),settings};
+  });
+  assert.equal(skyBehavior.condition,'partlycloudy');assert.ok(skyBehavior.temperature.includes('20,8'));assert.equal(skyBehavior.settings,true);
+  const skyScenes=[];
+  for(const condition of ['sunny','clear-night','partlycloudy','cloudy','rainy','pouring','lightning','lightning-rainy','snowy','snowy-rainy','hail','fog','windy','windy-variant','exceptional','unavailable']) {
+    const scene=await page.evaluate(async condition=>{
+      const card=window.skyCard;
+      const states={...card.hass.states,'weather.test':{...card.hass.states['weather.test'],state:condition},'sun.sun':{entity_id:'sun.sun',state:condition==='clear-night'?'below_horizon':'above_horizon',attributes:{elevation:condition==='clear-night'?-20:40}}};
+      card.hass={...card.hass,states};await card.updateComplete;const sky=card.shadowRoot.querySelector('niak-weather-sky');await sky.updateComplete;
+      return {condition:sky.condition,label:card.shadowRoot.querySelector('.nw-current-condition').textContent.trim(),particles:sky.shadowRoot.querySelectorAll('.particle').length,
+        neutral:sky.shadowRoot.querySelectorAll('.cloud,.orb,.particle,.bolt').length===0};
+    },condition);
+    assert.equal(scene.condition,condition==='unavailable'?'unknown':condition);
+    if(condition==='unavailable')assert.equal(scene.neutral,true);skyScenes.push(scene);
+    if(['sunny','clear-night','rainy','snowy','fog','lightning-rainy'].includes(condition)) {
+      await page.setViewportSize({width:1440,height:1500});
+      await page.locator('niak-weather-card #heros').screenshot({path:`${out}/sky-scene-${condition}.png`,animations:'disabled'});
+    }
+  }
+  // Restore clear skies; forward storm in the forecast must not turn the current sky into an orage.
+  await page.evaluate(async()=>{
+    const card=window.skyCard;card.hass={...card.hass,states:{...card.hass.states,'weather.test':{...card.hass.states['weather.test'],state:'partlycloudy'}}};await card.updateComplete;
+  });
+  const currentReports=[];
+  for(const dark of [false,true])for(const width of [375,768,1440]){
+    await page.setViewportSize({width,height:1500});
+    await page.evaluate(dark=>{
+      document.documentElement.style.setProperty('--primary-text-color',dark?'#e4e4e4':'#20203f');
+      document.documentElement.style.setProperty('--secondary-text-color',dark?'#aaa':'#686878');
+      document.documentElement.style.setProperty('--card-background-color',dark?'#242424':'#fff4f4');
+    },dark);
+    const geometry=await page.evaluate(()=>{
+      const root=window.skyCard.shadowRoot, host=window.skyCard.getBoundingClientRect(), current=root.querySelector('.nw-current-content').getBoundingClientRect(), lead=root.querySelector('.nw-summary-lead').getBoundingClientRect();
+      return {overflow:current.left<host.left||current.right>host.right,distinct:current.left>=lead.right||current.top>=lead.bottom,rightAligned:getComputedStyle(root.querySelector('.nw-current-content')).textAlign==='right'};
+    });
+    assert.equal(geometry.overflow,false);assert.equal(geometry.distinct,true);assert.equal(geometry.rightAligned,true);
+    await page.locator('niak-weather-card #heros').screenshot({path:`${out}/current-weather-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();assert.deepEqual(axe.violations.map(v=>v.id),[],'Current sky structural accessibility');
+    currentReports.push({width,dark,...geometry});
+  }
+  await page.evaluate(()=>{window.skyInfo=[];window.skyCard.addEventListener('hass-more-info',e=>window.skyInfo.push(e.detail.entityId));});
+  await page.locator('niak-weather-card .nw-current-temperature').focus();await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>window.skyInfo.at(-1)),'sensor.model','Current temperature opens its source');
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.locator('niak-weather-card #heros').scrollIntoViewIfNeeded();
+  const skyMotion=await page.evaluate(async()=>{
+    const sky=window.skyCard.shadowRoot.querySelector('niak-weather-sky');await new Promise(r=>setTimeout(r,100));await sky.updateComplete;
+    const cloud=sky.shadowRoot.querySelector('.cloud'), before=cloud.getAnimations()[0]?.currentTime;await new Promise(r=>setTimeout(r,150));
+    return {running:getComputedStyle(cloud).animationPlayState==='running',advancing:cloud.getAnimations()[0]?.currentTime>before};
+  });
+  assert.equal(skyMotion.running,true);assert.equal(skyMotion.advancing,true);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  skyMotion.reduced=await page.evaluate(()=>getComputedStyle(window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelector('.cloud')).animationName==='none');assert.equal(skyMotion.reduced,true);
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.evaluate(async()=>{const card=window.skyCard;card.setConfig({...window.fixture.config,weather_animations:false});await card.updateComplete;});
+  skyMotion.disabled=await page.evaluate(()=>getComputedStyle(window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelector('.cloud')).animationName==='none');assert.equal(skyMotion.disabled,true);
+  await page.evaluate(async()=>{const card=window.skyCard;card.setConfig({...window.fixture.config,weather_animations:true,weather_animation_quality:'low'});card.hass={...card.hass,states:{...card.hass.states,'weather.test':{...card.hass.states['weather.test'],state:'rainy'}}};await card.updateComplete;});
+  assert.equal(await page.evaluate(()=>window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelectorAll('.particle').length),8,'Low-quality particle count');
+  skyMotion.hidden=await page.evaluate(async()=>{
+    const descriptor=Object.getOwnPropertyDescriptor(document,'hidden');
+    try {
+      Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));
+      const sky=window.skyCard.shadowRoot.querySelector('niak-weather-sky');await sky.updateComplete;
+      return getComputedStyle(sky.shadowRoot.querySelector('.cloud')).animationPlayState==='paused';
+    } finally {if(descriptor)Object.defineProperty(document,'hidden',descriptor);else delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));}
+  });assert.equal(skyMotion.hidden,true,'Hidden page pauses sky animations');
+  await page.evaluate(()=>{window.skyCard.style.marginTop='2200px';});
+  await page.evaluate(async()=>{await new Promise(r=>setTimeout(r,200));});
+  skyMotion.offscreen=await page.evaluate(()=>getComputedStyle(window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelector('.cloud')).animationPlayState==='paused');assert.equal(skyMotion.offscreen,true);
+  assert.deepEqual(errors,[],'Current sky browser console/network');
+  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,errors},null,2));
+  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,errors},null,2));
 } finally { await browser.close();server.close(); }

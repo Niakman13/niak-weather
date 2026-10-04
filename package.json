@@ -1,6 +1,6 @@
 {
   "name": "niak-weather",
-  "version": "1.2.0",
+  "version": "1.3.0-beta.1",
   "private": true,
   "description": "A configurable weather dashboard card for Home Assistant",
   "type": "module",
@@ -9,6 +9,7 @@
     "check": "tsc --noEmit",
     "test": "vitest run",
     "test:browser": "npm run build && node scripts/browser-qa.mjs",
+    "preview:weather": "npm run build && node scripts/preview-current-weather.mjs",
     "port:local": "node scripts/port-local.mjs",
     "validate": "npm run check && npm run test && npm run build"
   },
