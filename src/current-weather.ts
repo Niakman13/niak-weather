@@ -32,7 +32,7 @@ export function buildCurrentWeather(hass:HomeAssistant, config:WeatherCardConfig
   // A rain gauge measures liquid water, not snow, hail, fog or lightning.
   if(rate!==undefined && rate>=.3 && !['snowy','snowy-rainy','hail'].includes(condition)) {
     condition=condition==='lightning' || condition==='lightning-rainy' ? 'lightning-rainy' : rate>=4 ? 'pouring' : 'rainy';
-    conditionEntity=config.rain_rate_entity ?? config.model_entity;
+    conditionEntity=config.rain_rate_entity ?? config.weather_entity;
     source=condition==='lightning-rainy' ? 'Pluie mesurée · orage du bulletin' : 'Pluie mesurée ici';
   }
   // A functioning, explicitly selected gauge can contradict the bulletin's rain,
@@ -51,15 +51,14 @@ export function buildCurrentWeather(hass:HomeAssistant, config:WeatherCardConfig
   if(condition==='sunny' && phase==='night') condition='clear-night';
   const sensor=config.temperature_entity ? hass.states[config.temperature_entity] : undefined;
   const temperature=config.temperature_entity ? (available(sensor) ? measurement(sensor!.state,sensor!.attributes.unit_of_measurement,'temperature') : undefined)
-    : config.model_entity ? modelAvailable ? finite(model.attributes.t_ext) : undefined
     : available(weather) ? measurement(weather!.attributes.temperature,weather!.attributes.temperature_unit,'temperature') : undefined;
-  const temperatureEntity=config.temperature_entity ?? config.model_entity ?? config.weather_entity;
+  const temperatureEntity=config.temperature_entity ?? config.weather_entity;
   const windSensor=config.wind_speed_entity ? hass.states[config.wind_speed_entity] : undefined;
   const wind=config.wind_speed_entity ? (available(windSensor) ? measurement(windSensor!.state,windSensor!.attributes.unit_of_measurement,'wind') : undefined)
     : modelAvailable ? finite(model.attributes.vent) : undefined;
   const [conditionLabel,icon]=conditions[condition] ?? ['Météo indisponible','mdi:weather-cloudy-alert'];
   const label=source==='Pas de pluie mesurée · ciel du bulletin' && condition==='cloudy' ? 'Nuageux, sans pluie mesurée' : conditionLabel;
   return {condition,label,icon,phase,temperature,temperatureEntity,conditionEntity,source,
-    temperatureSource:config.temperature_entity ? 'Thermomètre' : config.model_entity ? 'Modèle configuré' : 'Température du bulletin',
+    temperatureSource:config.temperature_entity ? 'Thermomètre' : 'Température du bulletin',
     feels:modelAvailable ? finite(model.attributes.ressenti) : undefined,wind};
 }

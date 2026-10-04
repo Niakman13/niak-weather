@@ -77,12 +77,8 @@ export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   heat_index_entity?: string;
   absolute_humidity_entity?: string;
   thermal_perception_entity?: string;
-  air_quality_entity?: string;
-  model_entity?: string;
-  forecast_entity?: string;
   forecast_source?: string;
   weather_path?: string;
-  air_path?: string;
   location?: string;
   station_device_id?: string;
   thermal_device_id?: string;

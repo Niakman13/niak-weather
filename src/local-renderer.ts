@@ -219,15 +219,6 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
                 uv >= 8 ? ROUGE : uv >= 6 ? ORANGE
                         : 'var(--mush-rgb-amber, 255,193,7)');
   }
-  var ea = V.ent_air ? S[V.ent_air] : null;
-  if (ea && ea.state !== 'unavailable' && ea.state !== 'unknown') {
-    var av = nb(ea.state);
-    
-    var poids = ea.attributes.air_poids || 'neutre';
-    out += puce('mdi:air-filter',
-                av !== null ? esc(fr(av, 0)) + '<small>%</small>' : '—',
-                'air intérieur', NIV[poids] || GRIS);
-  }
   var fin = '';
   var pd = nb(A.pluie_dans), pmm = nb(A.pluie_mm);
   if (pd !== null && pd >= 0) {
@@ -783,16 +774,6 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
                ro >= 20 ? 'rosée · très lourd'
              : ro >= 18 ? 'rosée · lourd' : 'rosée', CYAN,
                window.meGeste(SRC.rosee));
-  }
-  var ea = V.ent_air ? S[V.ent_air] : null;
-  if (ea && ea.state !== 'unavailable' && ea.state !== 'unknown') {
-    var av = nb(ea.state);
-    
-    var poids = ea.attributes.air_poids || 'neutre';
-    var geste = V.page_air ? ' data-nav="' + esc(V.page_air) + '" role="link" tabindex="0"' : window.meGeste(V.ent_air);
-    out += pas('mdi:air-filter',
-               av !== null ? esc(fr(av, 0)) + '<small>%</small>' : '—',
-               'air intérieur', NIV[poids] || GRIS, geste);
   }
   var MOTS = {none: 0, aucun: 0, nul: 0, low: 1, faible: 1, bas: 1,
               moderate: 2, modere: 2, 'modéré': 2, moyen: 2,

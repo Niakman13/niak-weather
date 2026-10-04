@@ -109,20 +109,6 @@ export function detectEcowittStation(hass: Pick<HomeAssistant, 'states'>, contex
     if (best && (thermalDevice || candidates(hass, 'humidex_entity', context).length <= 1)) selected[field] = best;
   }
   const all = Object.values(hass.states);
-  const models = all.filter(e => e.attributes.ressenti !== undefined && e.attributes.effet_vent !== undefined && e.attributes.sources);
-  const matching = models.filter(e => {
-    const sources = e.attributes.sources as Record<string, string>;
-    return sources.t_ext === chosen.temperature_entity && (!config.weather_entity || sources.meteo === config.weather_entity);
-  });
-  if (config.model_entity === undefined && matching.length === 1) selected.model_entity = matching[0].entity_id;
-  const selectedModel = hass.states[config.model_entity ?? selected.model_entity ?? ''];
-  const previous = (selectedModel?.attributes.sources as Record<string, string> | undefined)?.prev;
-  const forecast = previous ? hass.states[previous] : undefined;
-  if (config.forecast_entity === undefined && forecast && Array.isArray(forecast.attributes.heures) && Array.isArray(forecast.attributes.jours)) selected.forecast_entity = previous;
-  if (config.air_quality_entity === undefined) {
-    const air = all.filter(e => /indice.*qualite.*air/.test(text(e)) && e.attributes.unit_of_measurement === '%');
-    if (air.length === 1) selected.air_quality_entity = air[0].entity_id;
-  }
   Object.assign(selected, detectAtmo(hass, context, config));
   if (config.pollens === undefined && config.pollen_source === 'legacy') {
     const species = { grasses: ['Graminées', 'mdi:grass'], ragweed: ['Ambroisie', 'mdi:flower-pollen'], mugwort: ['Armoise', 'mdi:flower-pollen'],

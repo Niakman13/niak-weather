@@ -8,7 +8,7 @@ Cette fonction est incluse dans la version stable v1.2.0. Son objectif est de tr
 
 **À venir** lit les six prochaines heures : première pluie annoncée, cumul des quantités disponibles, orage/grêle, température prévue négative ou changement de température marqué. Les délais utilisent les dates des prévisions, pas la position d’un point dans une liste. Pour une source structurée personnalisée, ils utilisent ses repères jour/heure dans le fuseau Home Assistant. Les valeurs restent celles du fournisseur : le brief n’invente pas un modèle de prévision.
 
-**Air et pollens** retient le plus défavorable des indices Atmo disponibles, sans moyenner un polluant préoccupant avec des indices favorables. Aujourd’hui et demain sont distingués. Les concentrations ne sont pas converties en risques et le code 7 reste un évènement. L’indice d’air intérieur personnalisé peut être cité en %, sans lui attribuer un seuil sanitaire universel. Polleninformation reste une alternative, sans double affichage.
+**Air et pollens** retient le plus défavorable des indices Atmo disponibles, sans moyenner un polluant préoccupant avec des indices favorables. Aujourd’hui et demain sont distingués. Les concentrations ne sont pas converties en risques et le code 7 reste un évènement. Polleninformation reste une alternative, sans double affichage.
 
 Le bandeau limite les signaux visibles. S’il reste d’autres points importants, il le signale et les conserve dans **Comprendre la synthèse**, avec le raisonnement, les limites et un bouton pour ouvrir l’entité source. Un phénomène important ne disparaît pas dans une moyenne.
 

@@ -34,7 +34,6 @@ Niak Weather **ne génère pas son propre bulletin météo**, ne corrige pas les
 | `dew_point_entity` | Point de rosée Ecowitt |
 | `temperature_trend_entity` | Dérivée extérieure en °C/h, si elle existe déjà |
 | `sun_entity`, `sun_elevation_entity` | Soleil (`sun.sun` par défaut), ou élévation dédiée |
-| `air_quality_entity` | Indice intérieur existant en %, cité sans nouveau calcul |
 | `atmo_area` | Commune/zone Atmo France pour filtrer le préremplissage |
 | `atmo_air_entity`, `atmo_pollen_entity` | Indices globaux extérieurs Atmo du jour, jamais des pourcentages |
 | `atmo_pm25_entity`, `atmo_pm10_entity`, `atmo_no2_entity`, `atmo_o3_entity`, `atmo_so2_entity` | Sous-indices Atmo de pollution, jamais des µg/m³ |
@@ -43,11 +42,10 @@ Niak Weather **ne génère pas son propre bulletin météo**, ne corrige pas les
 | `atmo_<mesure>_tomorrow_entity` | Même mesure prévue à J+1, filtrée séparément |
 | `pollen_source` | `atmo` (Atmo France), `legacy` (Polleninformation), ou `none` (masquer les pollens) |
 | `show_atmo_details`, `show_atmo_tomorrow` | Détails et prévisions facultatifs (activés par défaut en complet) |
-| `model_entity`, `forecast_entity` | Sources avancées de modèle pré-calculé et de prévisions structurées, non nécessaires à l’installation |
 
 Les autres choix Thermal Comfort (`thermal_dew_point_entity`, `heat_index_entity`, `absolute_humidity_entity`, `thermal_perception_entity`) sont filtrés et préremplis par appareil. Le point de rosée Thermal Comfort sert de repli si celui de la station n’est pas choisi/disponible. **Indice de chaleur et humidité absolue ne sont pas additionnés à l’humidex** : ce serait compter plusieurs fois le même effet. Ces mesures ne sont pas affichées en pastilles supplémentaires.
 
-`location` personnalise le lieu, sinon le nom de l’entité météo est utilisé. `forecast_source` personnalise le fournisseur. `weather_path` configure la navigation sur appui long (et sur le fond de la carte compacte). `air_path` configure la destination de la pastille d’air intérieur ; sans lui, elle ouvre son entité.
+`location` personnalise le lieu, sinon le nom de l’entité météo est utilisé. `forecast_source` personnalise le fournisseur. `weather_path` configure la navigation sur appui long (et sur le fond de la carte compacte).
 
 Atmo France est désormais proposé en priorité. L’air extérieur, les polluants, les niveaux de pollens et leurs concentrations sont traités séparément du modèle météo : aucun indice Atmo n’entre dans le calcul du ressenti. La détection utilise le registre et les attributs géographiques ; un choix ambigu reste vide. Les 38 champs (19 mesures × aujourd’hui/demain) sont disponibles dans l’éditeur. [Contrat des données et guide](atmo-france.md).
 
@@ -70,11 +68,5 @@ La station passe devant la condition de la zone lorsqu’elle constate de la plu
 Les unités de calcul et d’affichage sont °C, km/h, mm, hPa, W/m² et lx. Les capteurs exposés en °F, m/s, mph, pouces ou Pa sont convertis avant calcul. Une valeur `unknown`, `unavailable`, vide ou sentinelle ne devient jamais un zéro plausible.
 
 Les tendances intégrées utilisent l’historique Recorder : pression sur 3 h avec au moins 20 min de données, vent sur 1 h avec au moins 15 min. Sans historique accessible, le texte reste « tendance en cours de mesure ». Les périodes pluie citent les compteurs **semaine et mois de la station**, pas des sommes glissantes recomposées. Depuis la v1.2.0-beta.3, les libellés « 7 jours » et « 30 jours » sont remplacés par « Cette semaine » et « Ce mois » ; les remises à zéro restent celles de la station.
-
-## Sources personnalisées : réglages avancés
-
-Par défaut, laissez `model_entity` et `forecast_entity` vides. `model_entity` permet d’utiliser un capteur dont les attributs contiennent un modèle pré-calculé compatible avec le schéma d’affichage ; il ne s’agit pas d’un capteur de température ordinaire. Ses calculs et tendances sont alors repris sans recalcul. Modifier une mesure dans l’éditeur désactive ce modèle pour prendre en compte le nouveau choix.
-
-`forecast_entity` remplace les demandes de prévisions par la lecture d’un capteur structuré : `heures` est une liste de points `{ h, j, c, t, p }` et `jours` une liste `{ n, e, c, t, m, p }`. `h` est l’heure, `j`/`e` le décalage du jour, `c` la condition météo, `t` la température/maximale, `m` la minimale, `p` la pluie en mm et `n` le libellé du jour. Ces options s’adressent aux utilisateurs préparant leurs données en amont ; elles ne sont pas des prérequis de Niak Weather.
 
 Le modèle décrit un ressenti local estimé. Ses badges ne remplacent pas la vigilance officielle Météo-France ni les alertes de sécurité.

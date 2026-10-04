@@ -49,10 +49,6 @@ describe('Current weather, never the future brief',()=>{
   it('does not fall back silently when configured temperature is missing',()=>{
     expect(buildCurrentWeather(hass(),{...config,temperature_entity:'sensor.missing'},model).temperature).toBeUndefined();
   });
-  it('preserves an available custom model and rejects its stale attributes when unavailable',()=>{
-    expect(buildCurrentWeather(hass(),{...config,model_entity:'sensor.model'},model).temperature).toBe(20);
-    expect(buildCurrentWeather(hass(),{...config,model_entity:'sensor.model'},{...model,state:'unavailable'}).temperature).toBeUndefined();
-  });
   it('keeps actual zero and negative temperature values',()=>{
     for(const t of [0,-15]) expect(buildCurrentWeather(hass('cloudy',{'weather.home':entity('weather.home','cloudy',{temperature:t})}),config,model).temperature).toBe(t);
   });

@@ -2,12 +2,13 @@ import { css, html, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { candidates, detectEcowittStation, getRegistry, stationRules, thermalFields, type RegistryContext, type SensorField } from './station-detection';
 import type { HomeAssistant, WeatherCardConfig } from './types';
-import { sourceFields } from './local-model';
 import { atmoAreas, atmoCandidates, atmoFields, atmoField, atmoMetrics } from './atmo';
 import type { AtmoField, AtmoMetric } from './types';
 export function cleanConfig(config: WeatherCardConfig): WeatherCardConfig {
-  const copy = { ...config } as WeatherCardConfig & { lightning_distance_entity?: string; comfort_entity?: string };
-  delete copy.lightning_distance_entity; delete copy.comfort_entity; return copy;
+  const copy = { ...config } as WeatherCardConfig & { lightning_distance_entity?: string; comfort_entity?: string; air_quality_entity?: string; model_entity?: string; forecast_entity?: string; air_path?: string };
+  delete copy.lightning_distance_entity; delete copy.comfort_entity;
+  delete copy.air_quality_entity; delete copy.model_entity; delete copy.forecast_entity; delete copy.air_path;
+  return copy;
 }
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   weather_entity: 'Entité météo', mode: 'Affichage', location: 'Lieu', forecast_source: 'Fournisseur des prévisions',
@@ -22,8 +23,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   sun_entity: 'Soleil (lever, coucher, élévation)', sun_elevation_entity: 'Élévation solaire (capteur facultatif)',
   humidex_entity: 'Humidex', humidex_perception_entity: 'Perception de l’humidex', thermal_dew_point_entity: 'Point de rosée Thermal Comfort',
   heat_index_entity: 'Indice de chaleur', absolute_humidity_entity: 'Humidité absolue', thermal_perception_entity: 'Perception thermique / rosée',
-  model_entity: 'Capteur météo du template local (facultatif)', forecast_entity: 'Capteur de prévisions du template local (facultatif)',
-  air_quality_entity: 'Indice de qualité de l’air intérieur (%)', station_device_id: 'Station Ecowitt', thermal_device_id: 'Appareil Thermal Comfort', weather_path: 'Page météo (appui long)', air_path: 'Page qualité de l’air intérieur (facultative)',
+  station_device_id: 'Station Ecowitt', thermal_device_id: 'Appareil Thermal Comfort', weather_path: 'Page météo (appui long)',
   atmo_area: 'Commune / zone Atmo France', pollen_source: 'Source des pollens', show_atmo_details: 'Afficher les polluants, espèces et concentrations', show_atmo_tomorrow: 'Afficher les prévisions Atmo de demain',
 };
 for (const metric of Object.keys(atmoMetrics) as AtmoMetric[]) for (const next of [false, true])
@@ -54,10 +54,7 @@ export class NiakWeatherCardEditor extends LitElement {
     const stationChanged = next.station_device_id !== this.config.station_device_id;
     const thermalChanged = next.thermal_device_id !== this.config.thermal_device_id;
     const atmoChanged = next.atmo_area !== this.config.atmo_area;
-    const measurementChanged = Object.values(sourceFields).some(key => next[key] !== this.config![key]);
-    if (measurementChanged && next.model_entity === this.config.model_entity) delete next.model_entity;
-    if (next.weather_entity !== this.config.weather_entity) delete next.forecast_entity;
-    if (stationChanged) { for (const key of Object.keys(stationRules) as SensorField[]) delete next[key]; delete next.model_entity; }
+    if (stationChanged) for (const key of Object.keys(stationRules) as SensorField[]) delete next[key];
     if (thermalChanged || stationChanged) { for (const key of thermalFields) delete next[key]; if (stationChanged) delete next.thermal_device_id; }
     if (atmoChanged) for (const key of atmoFields) delete next[key];
     this.apply(next); if (stationChanged || thermalChanged || atmoChanged) void this.detect();
@@ -99,12 +96,11 @@ export class NiakWeatherCardEditor extends LitElement {
         expand('atmo_today', 'Aujourd’hui (J) — indices et concentrations', atmoSchema(false)),
         expand('atmo_tomorrow', 'Demain (J+1) — prévisions', atmoSchema(true)),
       ]),
-      expand('options', 'Soleil, air et compatibilité locale', [entity('sun_entity', 'sun'), entity('sun_elevation_entity', 'sensor'),
-        entity('air_quality_entity', 'sensor'), entity('model_entity', 'sensor'), entity('forecast_entity', 'sensor'),
-        { name: 'forecast_source', selector: { text: {} } }, { name: 'weather_path', selector: { text: {} } }, { name: 'air_path', selector: { text: {} } }]),
+      expand('options', 'Soleil et navigation', [entity('sun_entity', 'sun'), entity('sun_elevation_entity', 'sensor'),
+        { name: 'forecast_source', selector: { text: {} } }, { name: 'weather_path', selector: { text: {} } }]),
     ];
     return html`<button type="button" ?disabled=${this.detecting} @click=${this.detect}>${this.detecting ? 'Recherche des entités…' : 'Préremplir les entités manquantes'}</button>
-      <p>Les choix existants sont conservés. Thermal Comfort est filtré par mesure et appareil ; Atmo France par commune, mesure et jour. Un choix ambigu reste vide. L’air intérieur (%) et l’air extérieur (indice Atmo) restent distincts. Avec un capteur de template local, ses calculs sont repris tels quels. Modifier une mesure météo repasse aux calculs intégrés.</p>
+      <p>Les choix existants sont conservés. Thermal Comfort est filtré par mesure et appareil ; Atmo France par commune, mesure et jour. Un choix ambigu reste vide. Les calculs météo et les prévisions sont intégrés à la carte.</p>
       <ha-form .hass=${this.hass} .data=${{ smart_brief: true, weather_animations:true, weather_animation_quality:'standard', show_atmo_details: true, show_atmo_tomorrow: true, ...this.config }} .schema=${schema} .computeLabel=${(item: { name: keyof WeatherCardConfig }) => labels[item.name] ?? item.name} @value-changed=${this.valueChanged}></ha-form>`;
   }
   static styles = css`button { margin:0 0 8px; padding:9px 14px; border:0; border-radius:8px; background:var(--primary-color); color:var(--text-primary-color); font:inherit; cursor:pointer; } p { color:var(--secondary-text-color); font-size:12px; line-height:1.5; }`;

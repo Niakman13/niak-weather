@@ -10,6 +10,8 @@ La carte s’organise en **Synthèse, Aujourd’hui et Prévisions**. La synthè
 
 [![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
+![Niak Weather — aperçu de la synthèse intelligente](docs/images/niak-weather-github.png)
+
 [Installation et mise à jour](docs/installation.md) · [Sources et prérequis](docs/sources.md) · [Atmo France : air et pollens](docs/atmo-france.md) · [Tous les réglages](docs/data-model.md)
 
 ![Niak Weather avec les données facultatives Atmo France](docs/images/niak-weather-atmo.png)
@@ -20,7 +22,7 @@ Aperçu avec des données de démonstration ; le volet de demain est ouvert. La 
 
 Niak Weather organise la météo en trois lectures : **maintenant**, avec le ressenti et les mesures de la station ; **ce qui arrive**, avec l’évolution horaire et les prochains jours ; **ce qui s’est passé**, avec les cumuls de pluie et le bilan du vent. Vous pouvez ainsi repérer une hausse de température, l’arrivée d’une pluie ou une rafale marquante sans ouvrir plusieurs cartes.
 
-La jauge compare le ressenti au thermomètre et en explique les principales contributions. La boussole situe le vent, le baromètre donne son évolution et les courbes permettent de lire les variations plutôt que des valeurs isolées. Les indices Atmo ajoutent une lecture de l’environnement extérieur, séparée de l’air intérieur.
+La jauge compare le ressenti au thermomètre et en explique les principales contributions. La boussole situe le vent, le baromètre donne son évolution et les courbes permettent de lire les variations plutôt que des valeurs isolées. Les indices Atmo ajoutent une lecture de l’environnement extérieur et des pollens.
 
 Le mode **Complet** convient à une page météo détaillée ; **Accueil (compact)** garde une synthèse pour votre tableau de bord principal. Le rendu s’adapte à la largeur disponible et au thème Home Assistant.
 
@@ -60,10 +62,9 @@ Le minimum est **Home Assistant 2025.1.0 ou plus récent** et une **entité `wea
 | **Soleil / `sun.sun`** | Facultatif ; recommandé, généralement déjà présent | Élévation solaire et lever/coucher pour les corrections de ressenti et les repères jour/nuit. |
 | **Atmo France** | Facultatif | Air extérieur, sous-indices de polluants, niveaux et concentrations de pollens, aujourd’hui et demain. |
 | **Polleninformation EU** | Facultatif ; alternative pour les pollens | Ligne d’espèces de pollens. Non affichée en double lorsque la source Atmo est sélectionnée. |
-| **Indice d’air intérieur existant** | Facultatif | Pastille en %, indépendante d’Atmo. Il doit déjà être calculé par votre installation. |
 | **Historique Recorder** | Facultatif ; nécessaire aux tendances intégrées | Évolution de la pression et du vent, sans créer de nouveaux capteurs. |
 
-Le [guide des sources](docs/sources.md) explique pour chacune sa configuration, les entités utiles, ce qui apparaît à l’écran et ce qui manque lorsqu’elle n’est pas présente. Pour profiter des mesures et du ressenti enrichi, renseignez les capteurs Ecowitt disponibles, l’humidex extérieur et le Soleil ; ajoutez Atmo et l’air intérieur seulement si vous les souhaitez.
+Le [guide des sources](docs/sources.md) explique pour chacune sa configuration, les entités utiles, ce qui apparaît à l’écran et ce qui manque lorsqu’elle n’est pas présente. Pour profiter des mesures et du ressenti enrichi, renseignez les capteurs Ecowitt disponibles, l’humidex extérieur et le Soleil ; ajoutez Atmo si vous souhaitez l’air extérieur et les pollens.
 
 **Aucun `button-card`, chart-card, card-mod ou package de templates supplémentaire n’est nécessaire.** Node.js et les outils de développement ne sont pas requis chez les utilisateurs. Niak Weather ne configure pas les intégrations à votre place et ne demande aucun identifiant Atmo dans ses réglages.
 
@@ -107,7 +108,7 @@ Les mises à jour utilisent la même ressource et conservent vos entités et ré
 
 ## Limites et transparence
 
-Le ressenti est une **estimation locale**, pas une mesure physiologique ni une vigilance officielle. Sans humidex, la carte signale que l’humidité n’est pas comptée. Les données Atmo décrivent la zone et ne remplacent ni une mesure d’air intérieur, ni un capteur dans le jardin. Les échelles Atmo, concentrations et pourcentages intérieurs ne sont pas mélangés.
+Le ressenti est une **estimation locale**, pas une mesure physiologique ni une vigilance officielle. Sans humidex, la carte signale que l’humidité n’est pas comptée. Les données Atmo décrivent la zone et ne remplacent pas un capteur dans le jardin. Les indices et concentrations Atmo ne sont pas mélangés.
 
 La carte n’effectue pas de détection de foudre et ne pilote pas vos ouvrants. Les orages du ciel animé viennent de l’état actuel du fournisseur météo ; ceux du brief peuvent être annoncés par les prévisions. Ce ne sont pas des éclairs détectés sur place. Ses indicateurs ne remplacent ni la vigilance officielle ni les alertes de sécurité. Les calculs dans le navigateur ne créent pas d’entités Home Assistant pour les automatisations.
 

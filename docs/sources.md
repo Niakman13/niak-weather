@@ -8,7 +8,7 @@ Niak Weather assemble des données déjà présentes dans Home Assistant. La car
 
 Pour démarrer, il suffit de Home Assistant **2025.1.0 ou plus récent**, d’une entité `weather.*` et de la carte installée. HACS est nécessaire pour le parcours recommandé et ses mises à jour, pas pour un téléchargement manuel. Météo-France est la source de référence ; une autre entité météo peut être sélectionnée, mais ses prévisions horaires/quotidiennes doivent être prises en charge par son fournisseur. Tous les fournisseurs ne sont pas validés.
 
-Pour la météo **mesurée chez vous**, ajoutez Ecowitt. Pour le **ressenti tenant compte de l’humidité**, ajoutez Thermal Comfort avec les mesures extérieures. Pour **l’air extérieur et les allergies**, ajoutez Atmo France. L’indice d’air **intérieur** reste un capteur distinct et facultatif. Aucun de ces ajouts n’est nécessaire pour installer la carte de base.
+Pour la météo **mesurée chez vous**, ajoutez Ecowitt. Pour le **ressenti tenant compte de l’humidité**, ajoutez Thermal Comfort avec les mesures extérieures. Pour **l’air extérieur et les allergies**, ajoutez Atmo France. Aucun de ces ajouts n’est nécessaire pour installer la carte de base.
 
 ## Météo-France — conditions et prévisions
 
@@ -84,14 +84,6 @@ Ce sont des données de **zone**, pas des mesures du jardin. Les indices, concen
 
 Pour une nouvelle installation souhaitant les données extérieures détaillées, le parcours Atmo est documenté dans le guide dédié. Il n’est pas nécessaire de désinstaller Polleninformation si d’autres cartes l’utilisent.
 
-## Air intérieur — indice existant en pourcentage
-
-**Statut :** facultatif et indépendant d’Atmo France.
-
-**Prérequis :** un capteur de votre installation qui fournit déjà un **indice global d’air intérieur en %**. Sélectionnez-le dans le champ **Indice de qualité de l’air intérieur (%)** des options Soleil et air. Ne choisissez pas un capteur brut de CO₂ en ppm, ni un capteur PM2.5 en µg/m³, ni l’indice Atmo extérieur.
-
-**Apport à la carte :** pastille « air intérieur » reprenant cet indice, sans nouveau calcul. Un clic ouvre l’entité ; une page dédiée peut être définie dans **Page qualité de l’air intérieur**. Niak Weather ne crée pas l’indice à partir des capteurs de CO₂, particules ou composés organiques : cette agrégation reste à réaliser en amont si vous la souhaitez. Sans indice compatible, laissez le champ vide.
-
 ## Recorder et capteurs de tendance — évolution des mesures
 
 **Statut :** facultatif pour afficher les valeurs ; nécessaire aux tendances calculées par le modèle intégré.
@@ -100,14 +92,6 @@ Pour une nouvelle installation souhaitant les données extérieures détaillées
 
 **Apport à la carte :** tendance de pression sur 3 h (au moins 20 min de données) et de vent sur 1 h (au moins 15 min). La carte affiche la fenêtre réellement disponible, pas une évolution déduite de quelques secondes d’ouverture du navigateur. Sans historique suffisant, elle indique que la tendance est en cours de mesure. Les tendances de température demandent leur propre entité.
 
-## Sources personnalisées — usage avancé
-
-**Statut :** facultatif ; aucune source personnalisée n’est nécessaire pour installer Niak Weather.
-
-**Prérequis :** des capteurs respectant le contrat de données de la carte : `model_entity` pour un modèle pré-calculé et `forecast_entity` pour des prévisions structurées en `heures` et `jours`. Un capteur quelconque appelé « météo » ne suffit pas.
-
-**Apport à la carte :** possibilité d’utiliser des calculs ou prévisions préparés en amont. Par défaut, Niak Weather utilise son modèle intégré et votre entité météo. Modifier une mesure dans l’éditeur désactive le modèle pré-calculé pour que ce choix soit utilisé. [Contrat et réglages](data-model.md).
-
 ## Ce qui n’est pas nécessaire
 
-La carte autonome inclut son rendu : pas besoin de `button-card`, de chart-card, de card-mod, d’un package météo supplémentaire ou d’outils de développement. La distance de foudre et Confort/ouvrants sont exclus de cette version. Les estimations météo et indices environnementaux ne remplacent ni les alertes officielles ni un avis médical.
+La carte autonome inclut son rendu, son modèle météo et ses prévisions : pas besoin de `button-card`, de chart-card, de card-mod, de templates locaux, d’un package météo supplémentaire ou d’outils de développement. La distance de foudre et Confort/ouvrants sont exclus de cette version. Les estimations météo et indices environnementaux ne remplacent ni les alertes officielles ni un avis médical.

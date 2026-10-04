@@ -48,21 +48,25 @@ try {
       const jours = [27,26,26,20,21,17,20].map((t,i)=>({n:['DIM','LUN','MAR','MER','JEU','VEN','SAM'][i],e:i,t,m:[17,16,16,16,13,7,6][i],p:[0,.4,0,43.8,1.6,0,0][i],c:i===3?'lightning-rainy':i>4?'sunny':'partlycloudy'}));
       const variables = { ent:'sensor.model',ent_prev:'sensor.prev',ent_air:'sensor.air',lieu:'Ma commune',source_prev:'Météo-France',pollens:[{id:'sensor.grasses',nom:'Graminées',ico:'mdi:grass'}] };
       const states = { 'sensor.model':{entity_id:'sensor.model',state:'21.2',attributes:A}, 'sensor.prev':{entity_id:'sensor.prev',state:'18',attributes:{heures,jours}},
-        'weather.test':{entity_id:'weather.test',state:'partlycloudy',attributes:{friendly_name:'Ma commune',attribution:'Météo-France'}},
-        'sensor.air':{entity_id:'sensor.air',state:'94',attributes:{}}, 'sensor.grasses':{entity_id:'sensor.grasses',state:'low',attributes:{}} };
+        'weather.test':{entity_id:'weather.test',state:'partlycloudy',attributes:{friendly_name:'Ma commune',attribution:'Météo-France',temperature:A.t_ext,temperature_unit:'°C'}},
+        'sensor.t_ext':{entity_id:'sensor.t_ext',state:String(A.t_ext),attributes:{unit_of_measurement:'°C'}}, 'sensor.hr_ext':{entity_id:'sensor.hr_ext',state:String(A.hr_ext),attributes:{unit_of_measurement:'%'}},
+        'sensor.vent':{entity_id:'sensor.vent',state:String(A.vent),attributes:{unit_of_measurement:'km/h'}}, 'sensor.rafales':{entity_id:'sensor.rafales',state:String(A.rafales),attributes:{unit_of_measurement:'km/h'}},
+        'sensor.pluie_taux':{entity_id:'sensor.pluie_taux',state:String(A.pluie_taux),attributes:{unit_of_measurement:'mm/h'}}, 'sensor.pluie_jour':{entity_id:'sensor.pluie_jour',state:String(A.pluie_jour),attributes:{unit_of_measurement:'mm'}},
+        'sensor.pluie_semaine':{entity_id:'sensor.pluie_semaine',state:'2',attributes:{unit_of_measurement:'mm'}}, 'sensor.pluie_mois':{entity_id:'sensor.pluie_mois',state:'12',attributes:{unit_of_measurement:'mm'}},
+        'sensor.pression':{entity_id:'sensor.pression',state:'1001',attributes:{unit_of_measurement:'hPa'}}, 'sensor.grasses':{entity_id:'sensor.grasses',state:'low',attributes:{}} };
       const order = ['heros','essentiels','sect1','tuiles','pastilles','sect2','courbe','jours','sect3','bilan'];
       const baseline = document.createElement('div'); baseline.id='baseline';
       const fields = Object.fromEntries(Object.entries(reference.fields).map(([k,code]) => [k,new Function('variables','states','hass',code)]));
       const rendered = {}; for (const k of Object.keys(reference.fields)) rendered[k] = fields[k](variables,states,{});
       baseline.innerHTML = `<div id="container">${order.map(k=>`<div style="grid-area:${k}" id="${k}">${rendered[k]}</div>`).join('')}</div>`;
       document.querySelector('main').append(baseline);
-      window.fixture = { states, config:{type:'custom:niak-weather-card',weather_entity:'weather.test',smart_brief:false,model_entity:'sensor.model',forecast_entity:'sensor.prev',air_quality_entity:'sensor.air',pollens:variables.pollens,location:'Ma commune',forecast_source:'Météo-France',mode:'detailed'} };
+      window.fixture = { states, forecasts:{ hourly:heures.map((p,i)=>({datetime:new Date(Date.now()+i*3600_000).toISOString(),temperature:p.t,precipitation:p.p,condition:p.c})), daily:jours.map((p,i)=>({datetime:new Date(Date.now()+i*86400_000).toISOString(),temperature:p.t,templow:p.m,precipitation:p.p,condition:p.c})) }, config:{type:'custom:niak-weather-card',weather_entity:'weather.test',smart_brief:false,temperature_entity:'sensor.t_ext',humidity_entity:'sensor.hr_ext',wind_speed_entity:'sensor.vent',wind_gust_entity:'sensor.rafales',rain_rate_entity:'sensor.pluie_taux',daily_rain_entity:'sensor.pluie_jour',weekly_rain_entity:'sensor.pluie_semaine',monthly_rain_entity:'sensor.pluie_mois',pressure_entity:'sensor.pression',pollens:variables.pollens,location:'Ma commune',forecast_source:'Météo-France',mode:'detailed'} };
       await import('/card.js');
     }, { reference, fixture: fixtures[0], icons: mdi, dark });
     const baseline = await page.locator('#baseline').screenshot({ path:`${out}/original-${width}-${dark?'dark':'light'}.png`, animations:'disabled' });
     await page.evaluate(() => {
       document.querySelector('#baseline').remove(); const card = document.createElement('niak-weather-card');
-      card.setConfig(window.fixture.config); card.hass = { states:window.fixture.states,language:'fr',config:{time_zone:'Europe/Paris'},callWS:async()=>({}) };
+      card.setConfig(window.fixture.config); card.hass = { states:window.fixture.states,language:'fr',config:{time_zone:'Europe/Paris'},callWS:async msg=>({response:{'weather.test':{forecast:window.fixture.forecasts[msg.service_data.type]}}}) };
       document.querySelector('main').append(card); window.card=card;
     });
     await page.locator('niak-weather-card .me-bl').first().waitFor();
@@ -199,11 +203,11 @@ try {
     form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,atmo_grass_entity:''}},bubbles:true}));await sleep(20);
     editor.shadowRoot.querySelector('button').click();await sleep(20);const keptEmpty=form.data.atmo_grass_entity==='';
     form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,atmo_area:'zone:commune:autre commune'}},bubbles:true}));await sleep(40);
-    const changedZone=form.data.atmo_air_entity==='sensor.atmo_b_air'&&form.data.atmo_grass_entity==='sensor.atmo_b_grass'&&form.data.model_entity===config.model_entity;
+    const changedZone=form.data.atmo_air_entity==='sensor.atmo_b_air'&&form.data.atmo_grass_entity==='sensor.atmo_b_grass';
     editor.remove();const card=document.createElement('niak-weather-card');card.setConfig(selected);card.hass=hass;root.append(card);window.atmoCard=card;window.atmoHass=hass;window.atmoConfig=selected;window.atmoInfo=[];
     card.addEventListener('hass-more-info',e=>window.atmoInfo.push(e.detail.entityId));await sleep(30);
     const text=card.shadowRoot.textContent;
-    const migration=!text.includes('Ancien pollen EU')&&text.includes('air intérieur')&&text.includes('Air extérieur');
+    const migration=!text.includes('Ancien pollen EU')&&!text.includes('air intérieur')&&text.includes('Air extérieur');
     const levels=text.includes('Extrêmement élevé')&&text.includes('1,4 µg/m³')&&text.includes('Dégradé');
     const tomorrow=card.shadowRoot.querySelector('.nw-atmo-next');tomorrow.querySelector('summary').click();await sleep(10);
     const nativeDetails=!tomorrow.open&&window.atmoInfo.length===0;
@@ -250,29 +254,28 @@ try {
     const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     const root=document.querySelector('main');root.replaceChildren();
     const states={...window.atmoCard.hass.states};
-    const localHour=+new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',hour:'numeric',hourCycle:'h23'}).format(new Date());
-    states['sensor.model']={...states['sensor.model'],attributes:{...states['sensor.model'].attributes,vent:45,rafales:75,rafale_max_jour:90,pluie_dans:1,pluie_mm:7,sources:{...states['sensor.model'].attributes.sources,vent:'sensor.wind',rafales:'sensor.wind'}}};
-    states['sensor.wind']={entity_id:'sensor.wind',state:'75',attributes:{unit_of_measurement:'km/h'}};
-    states['sensor.prev']={...states['sensor.prev'],attributes:{...states['sensor.prev'].attributes,heures:Array.from({length:18},(_,i)=>({h:(localHour+i+1)%24,j:Math.floor((localHour+i+1)/24),t:21+i/2,p:i<3?7:0,c:i===2?'lightning-rainy':'rainy'}))}};
+    states['sensor.vent']={entity_id:'sensor.vent',state:'45',attributes:{unit_of_measurement:'km/h'}};
+    states['sensor.rafales']={entity_id:'sensor.rafales',state:'75',attributes:{unit_of_measurement:'km/h'}};
     states['sensor.atmo_a_air']={...states['sensor.atmo_a_air'],state:'5'};
     states['sensor.vigilance']={entity_id:'sensor.vigilance',state:'Orange',attributes:{attribution:'Météo-France',Orages:'Orange'},last_updated:new Date().toISOString()};
     const card=document.createElement('niak-weather-card');
     card.setConfig({...window.atmoCard.config,smart_brief:true,vigilance_entity:'sensor.vigilance'});
-    card.hass={...window.atmoCard.hass,states};root.append(card);window.briefCard=card;window.briefInfo=[];
+    const hourly=Array.from({length:18},(_,i)=>({datetime:new Date(Date.now()+(i+1)*3600000).toISOString(),temperature:21+i/2,precipitation:i<3?7:0,condition:i===2?'lightning-rainy':'rainy'}));
+    card.hass={...window.atmoCard.hass,states,callWS:async message=>message.type==='call_service'?{response:{'weather.test':{forecast:hourly}}}:[]};root.append(card);window.briefCard=card;window.briefInfo=[];
     card.addEventListener('hass-more-info',e=>window.briefInfo.push(e.detail.entityId));await sleep(50);
     const text=card.shadowRoot.querySelector('#heros').textContent;
     const combined=['75 km/h','Fortes pluies','Vigilance Météo-France orange'].every(s=>text.includes(s));
     const concise=card.shadowRoot.querySelectorAll('.nw-summary-lines p').length<=3;
     card.shadowRoot.querySelector('.nw-brief-details summary').click();await sleep(20);
     const nativeDetails=card.shadowRoot.querySelector('.nw-brief-details').open && window.briefInfo.length===0;
-    const hasSource=!!card.shadowRoot.querySelector('.nw-brief-details button[data-entity="sensor.wind"]');
+    const hasSource=!!card.shadowRoot.querySelector('.nw-brief-details button[data-entity="sensor.rafales"]');
     const readableGroups=card.shadowRoot.querySelectorAll('.nw-brief-group').length===4&&!card.shadowRoot.querySelector('.nw-brief-details').textContent.includes('≥');
     const orange=card.shadowRoot.querySelector('#heros').style.getPropertyValue('--vc').trim()==='230,125,45';
     return {combined,nativeDetails,hasSource,orange,concise,readableGroups};
   });
   for(const [test,passed] of Object.entries(briefBehavior))assert.equal(passed,true,`Brief: ${test}`);
-  await page.locator('niak-weather-card .nw-brief-details button[data-entity="sensor.wind"]').first().focus();await page.keyboard.press('Enter');
-  assert.equal(await page.evaluate(()=>window.briefInfo.at(-1)),'sensor.wind','Brief source keyboard popup');
+  await page.locator('niak-weather-card .nw-brief-details button[data-entity="sensor.rafales"]').first().focus();await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>window.briefInfo.at(-1)),'sensor.rafales','Brief source keyboard popup');
   await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-details').open=false;});
   await page.emulateMedia({reducedMotion:'no-preference'});
   const haloMotion=await page.evaluate(async()=>{
@@ -312,7 +315,7 @@ try {
     const root=document.querySelector('main');root.replaceChildren();
     const card=document.createElement('niak-weather-card');
     const states={'weather.test':{entity_id:'weather.test',state:'unavailable',attributes:{}},'sensor.old':{entity_id:'sensor.old',state:'unavailable',attributes:{t_ext:40,ressenti:48,vent:90,pluie_taux:12}}};
-    card.setConfig({type:'custom:niak-weather-card',weather_entity:'weather.test',model_entity:'sensor.old',mode:'compact'});
+    card.setConfig({type:'custom:niak-weather-card',weather_entity:'weather.test',mode:'compact'});
     card.hass={states,callWS:async()=>({})};root.append(card);await new Promise(r=>setTimeout(r,30));
     const shadow=card.shadowRoot;
     const twoSections=shadow.querySelectorAll('#container>.nw-section').length===2&&!shadow.querySelector('#predictions');
@@ -353,7 +356,8 @@ try {
   for(const condition of ['sunny','clear-night','partlycloudy','cloudy','rainy','pouring','lightning','lightning-rainy','snowy','snowy-rainy','hail','fog','windy','windy-variant','exceptional','unavailable']) {
     const scene=await page.evaluate(async condition=>{
       const card=window.skyCard;
-      const states={...card.hass.states,'weather.test':{...card.hass.states['weather.test'],state:condition},'sun.sun':{entity_id:'sun.sun',state:condition==='clear-night'?'below_horizon':'above_horizon',attributes:{elevation:condition==='clear-night'?-20:40}}};
+      const rain=['rainy','lightning-rainy'].includes(condition)?1.4:condition==='pouring'?7:0;
+      const states={...card.hass.states,'weather.test':{...card.hass.states['weather.test'],state:condition},'sensor.pluie_taux':{entity_id:'sensor.pluie_taux',state:String(rain),attributes:{unit_of_measurement:'mm/h'}},'sun.sun':{entity_id:'sun.sun',state:condition==='clear-night'?'below_horizon':'above_horizon',attributes:{elevation:condition==='clear-night'?-20:40}}};
       card.hass={...card.hass,states};await card.updateComplete;const sky=card.shadowRoot.querySelector('niak-weather-sky');await sky.updateComplete;
       return {condition:sky.condition,label:card.shadowRoot.querySelector('.nw-current-condition').textContent.trim(),particles:sky.shadowRoot.querySelectorAll('.particle').length,
         neutral:sky.shadowRoot.querySelectorAll('.cloud,.orb,.particle,.bolt').length===0};
@@ -397,7 +401,7 @@ try {
   }
   await page.evaluate(()=>{window.skyInfo=[];window.skyCard.addEventListener('hass-more-info',e=>window.skyInfo.push(e.detail.entityId));});
   await page.locator('niak-weather-card .nw-current-temperature').focus();await page.keyboard.press('Enter');
-  assert.equal(await page.evaluate(()=>window.skyInfo.at(-1)),'sensor.model','Current temperature opens its source');
+  assert.equal(await page.evaluate(()=>window.skyInfo.at(-1)),'sensor.t_ext','Current temperature opens its source');
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.locator('niak-weather-card #heros').scrollIntoViewIfNeeded();
   const skyMotion=await page.evaluate(async()=>{
@@ -408,7 +412,7 @@ try {
   assert.equal(skyMotion.running,true);assert.equal(skyMotion.advancing,true);
   const weatherEffects=await page.evaluate(async()=>{
     const card=window.skyCard;
-    const change=async condition=>{card.hass={...card.hass,states:{...card.hass.states,'weather.test':{...card.hass.states['weather.test'],state:condition}}};await card.updateComplete;const sky=card.shadowRoot.querySelector('niak-weather-sky');await sky.updateComplete;return sky.shadowRoot;};
+    const change=async condition=>{const rain=['rainy','lightning-rainy'].includes(condition)?1.4:condition==='pouring'?7:0;card.hass={...card.hass,states:{...card.hass.states,'weather.test':{...card.hass.states['weather.test'],state:condition},'sensor.pluie_taux':{entity_id:'sensor.pluie_taux',state:String(rain),attributes:{unit_of_measurement:'mm/h'}}}};await card.updateComplete;const sky=card.shadowRoot.querySelector('niak-weather-sky');await sky.updateComplete;return sky.shadowRoot;};
     let scene=await change('rainy');const rainCount=scene.querySelectorAll('.rain').length, rain=scene.querySelector('.rain');
     const before=getComputedStyle(rain).translate;await new Promise(r=>setTimeout(r,180));const falling=getComputedStyle(rain).translate!==before;
     const regularDuration=parseFloat(getComputedStyle(rain).animationDuration);
@@ -425,7 +429,7 @@ try {
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.evaluate(async()=>{const card=window.skyCard;card.setConfig({...window.fixture.config,weather_animations:false});await card.updateComplete;});
   skyMotion.disabled=await page.evaluate(()=>getComputedStyle(window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelector('.cloud')).animationName==='none');assert.equal(skyMotion.disabled,true);
-  await page.evaluate(async()=>{const card=window.skyCard;card.setConfig({...window.fixture.config,weather_animations:true,weather_animation_quality:'low'});card.hass={...card.hass,states:{...card.hass.states,'weather.test':{...card.hass.states['weather.test'],state:'rainy'}}};await card.updateComplete;});
+  await page.evaluate(async()=>{const card=window.skyCard;card.setConfig({...window.fixture.config,weather_animations:true,weather_animation_quality:'low'});card.hass={...card.hass,states:{...card.hass.states,'weather.test':{...card.hass.states['weather.test'],state:'rainy'},'sensor.pluie_taux':{entity_id:'sensor.pluie_taux',state:'1.4',attributes:{unit_of_measurement:'mm/h'}}}};await card.updateComplete;});
   assert.equal(await page.evaluate(()=>window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelectorAll('.particle').length),8,'Low-quality particle count');
   skyMotion.hidden=await page.evaluate(async()=>{
     const descriptor=Object.getOwnPropertyDescriptor(document,'hidden');

@@ -9,8 +9,8 @@ entité météo peut être choisie, mais les horizons disponibles dépendent de 
 
 Pour suivre le parcours ci-dessous, [HACS](https://hacs.xyz/) doit être installé.
 Ecowitt est facultatif pour démarrer, mais nécessaire pour les mesures locales ;
-Thermal Comfort enrichit le ressenti avec l’humidité. Le Soleil, Atmo France,
-Polleninformation et l’indice d’air intérieur sont des compléments facultatifs.
+Thermal Comfort enrichit le ressenti avec l’humidité. Le Soleil, Atmo France
+et Polleninformation sont des compléments facultatifs.
 Consulte le [guide des sources et prérequis](sources.md) pour choisir ce que tu souhaites afficher.
 
 ## Installation par HACS
@@ -100,7 +100,7 @@ La version stable réunit les mesures de la station, le ressenti expliqué, les 
 
 ### Atmo France : air extérieur et pollens
 
-Dans **Atmo France — air extérieur et pollens**, sélectionne la commune/zone et la source **Atmo France**, puis préremplis les entités. Les indices et concentrations d’aujourd’hui et de demain ont des choix séparés et filtrés. Si l’intégration n’est pas encore configurée, le [guide Atmo France](atmo-france.md) détaille son installation, l’activation des pollens/prévisions et la migration depuis Polleninformation. L’indicateur d’air intérieur en % reste indépendant.
+Dans **Atmo France — air extérieur et pollens**, sélectionne la commune/zone et la source **Atmo France**, puis préremplis les entités. Les indices et concentrations d’aujourd’hui et de demain ont des choix séparés et filtrés. Si l’intégration n’est pas encore configurée, le [guide Atmo France](atmo-france.md) détaille son installation, l’activation des pollens/prévisions et la migration depuis Polleninformation.
 
 ### Thermal Comfort
 
@@ -112,10 +112,10 @@ Dans **Entités Thermal Comfort**, sélectionne cet appareil. Les listes sont fi
 
 La partie actuelle combine les observations de la station avec le bulletin de la zone. Le ressenti est une estimation expliquée ; la courbe horaire et les plages quotidiennes affichent les températures **prévues par le fournisseur**, pas ce ressenti. Les phrases sur la pluie et les orages interprètent les prévisions reçues. Pour les détails, consulte la [mécanique météo et prévisions](data-model.md).
 
-Aucun capteur de modèle ni template supplémentaire n’est nécessaire. Les champs avancés `model_entity` et `forecast_entity` servent uniquement aux sources personnalisées respectant le contrat de la carte.
+La carte calcule son modèle météo et demande les prévisions directement au fournisseur météo choisi : aucun capteur de modèle ni template supplémentaire n’est nécessaire.
 
 ### Si un bloc manque
 
-Un bloc ne s’affiche que si ses données existent. Le bilan demande notamment les compteurs semaine/mois et la rafale maximale du jour. Le point de rosée, l’UV, l’air intérieur et les pollens sont facultatifs. Dans le modèle intégré, les tendances vent/pression demandent que Recorder enregistre ces entités et que l’utilisateur ait accès à leur historique. Sans historique, le texte indique que la tendance est en cours de mesure.
+Un bloc ne s’affiche que si ses données existent. Le bilan demande notamment les compteurs semaine/mois et la rafale maximale du jour. Le point de rosée, l’UV et les pollens sont facultatifs. Les tendances vent/pression demandent que Recorder enregistre ces entités et que l’utilisateur ait accès à leur historique. Sans historique, le texte indique que la tendance est en cours de mesure.
 
 La carte ne fournit pas de nouvelles entités pour des automatisations. Son rendu est autonome : elle n’a pas besoin de `button-card` ni d’une carte graphique supplémentaire.

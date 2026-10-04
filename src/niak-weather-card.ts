@@ -53,7 +53,7 @@ export class NiakWeatherCard extends LitElement {
   protected updated(): void { if (this.isConnected) { void this.loadForecasts(); void this.loadHistory(); } }
 
   private async loadForecasts(): Promise<void> {
-    if (!this.hass || !this.config || this.config.forecast_entity || this.forecastPending || Date.now() - this.forecastAt < 900_000) return;
+    if (!this.hass || !this.config || this.forecastPending || Date.now() - this.forecastAt < 900_000) return;
     this.forecastPending = true; this.forecastAt = Date.now();
     const generation = this.generation, id = this.config.weather_entity, hass = this.hass;
     const request = (type: 'hourly' | 'daily') => hass.callWS<ForecastResponse>({ type: 'call_service', domain: 'weather', service: 'get_forecasts',
@@ -71,7 +71,7 @@ export class NiakWeatherCard extends LitElement {
     if (results.some(r => r.status === 'rejected')) this.forecastAt = Date.now() - 840_000; // Retry failures in 1 minute.
   }
   private async loadHistory(): Promise<void> {
-    if (!this.hass || !this.config || this.config.model_entity || this.historyPending || Date.now() - this.historyAt < 300_000) return;
+    if (!this.hass || !this.config || this.historyPending || Date.now() - this.historyAt < 300_000) return;
     const ids = [this.config.pressure_entity, this.config.wind_speed_entity].filter((id): id is string => !!id);
     if (!ids.length) return;
     this.historyPending = true; this.historyAt = Date.now();
@@ -83,37 +83,21 @@ export class NiakWeatherCard extends LitElement {
     } catch { /* Recorder may exclude the entities. No invented trend: the local renderer says it's being measured. */ }
     finally { if (generation === this.generation) this.historyPending = false; }
   }
-  private localForecasts() {
-    const e = this.hass?.states[this.config?.forecast_entity ?? ''];
-    if (!e || ['unknown', 'unavailable'].includes(e.state)) return { heures: [], jours: [] };
-    return { heures: Array.isArray(e.attributes.heures) ? e.attributes.heures.slice(0, 18) : [],
-      jours: Array.isArray(e.attributes.jours) ? e.attributes.jours.slice(0, 7) : [] };
-  }
   protected render() {
     if (!this.hass || !this.config) return nothing;
     const config = this.config, hass = this.hass, now = new Date();
-    const forecast = config.forecast_entity ? this.localForecasts() : normaliseForecasts(this.hourly, this.daily, now, hass.config?.time_zone);
+    const forecast = normaliseForecasts(this.hourly, this.daily, now, hass.config?.time_zone);
     const hourly = forecast.heures.map((p: any) => ({ datetime: '', temperature: finite(p.t), precipitation: finite(p.p), condition: p.c }));
     const calculated = buildLocalModel(hass, config, hourly, this.history, now);
-    let model = config.model_entity ? hass.states[config.model_entity] : calculated;
-    if (!model) model = { entity_id: '__niak_model', state: 'unavailable', attributes: {} };
-    // A legacy model may still publish ventilation advice: don't display the explicitly removed feature.
-    if (model.attributes.alerte === 'ouvrants') {
-      const withoutOpenings = buildLocalModel(hass, config, hourly, {}, now, model.attributes);
-      model = { ...model, attributes: { ...model.attributes,
-        ...Object.fromEntries(['alerte', 'niveau', 'sous_titre'].map(key => [key, withoutOpenings.attributes[key]])) } };
-    }
+    let model = calculated;
     const weather = hass.states[config.weather_entity];
-    const localHour = +new Intl.DateTimeFormat('en-GB', { timeZone: hass.config?.time_zone, hour: 'numeric', hourCycle: 'h23' }).format(now);
-    const briefPoints: BriefPoint[] = config.forecast_entity
-      ? forecast.heures.map((p: any) => ({ hours: Number(p.j) * 24 + Number(p.h) - localHour, temperature: finite(p.t), precipitation: finite(p.p), condition: p.c }))
-      : this.hourly.map(p => ({ hours: (Date.parse(p.datetime) - now.getTime()) / 3600_000, temperature: p.temperature, precipitation: p.precipitation, condition: p.condition }));
+    const briefPoints: BriefPoint[] = this.hourly.map(p => ({ hours: (Date.parse(p.datetime) - now.getTime()) / 3600_000, temperature: p.temperature, precipitation: p.precipitation, condition: p.condition }));
     const brief = config.smart_brief === false ? undefined : buildWeatherBrief(hass, config, model, briefPoints, now);
     if (['unknown', 'unavailable'].includes(model.state)) model = { ...model, attributes:{} };
     const variables = { mode: 'complet', dashboard:true, ent: '__niak_model', ent_prev: '__niak_forecast',
-      ent_air: config.air_quality_entity, lieu: config.location ?? String(weather?.attributes.friendly_name ?? ''),
+      lieu: config.location ?? String(weather?.attributes.friendly_name ?? ''),
       source_prev: config.forecast_source ?? (/france/i.test(String(weather?.attributes.attribution)) ? 'Météo-France' : 'prévisions'),
-      jauge_min: -5, jauge_max: 45, jours_max: 7, brief, pollens: usesAtmoPollens(config) || config.pollen_source === 'none' ? [] : config.pollens ?? [], page_air: config.air_path };
+      jauge_min: -5, jauge_max: 45, jours_max: 7, brief, pollens: usesAtmoPollens(config) || config.pollen_source === 'none' ? [] : config.pollens ?? [] };
     const states = { ...hass.states, __niak_model: model, __niak_forecast: { state: String(forecast.heures.length), attributes: forecast } };
     const rendered = renderLocal(variables, states, hass);
     return html`<ha-card><div id="container" ?data-smart-brief=${!!brief} @pointerdown=${this.down} @pointermove=${this.move} @pointercancel=${this.cancel} @pointerup=${this.up}
@@ -145,7 +129,7 @@ export class NiakWeatherCard extends LitElement {
     if (gesture && Date.now() - gesture.at >= 500) { if (path) this.navigate(path); return; }
     const target = event.composedPath().find(e => e instanceof HTMLElement && (e.hasAttribute('data-entity') || e.hasAttribute('data-nav'))) as HTMLElement | undefined;
     if (target?.hasAttribute('data-nav')) { this.navigate(target.getAttribute('data-nav')!); return; }
-    const id = target?.getAttribute('data-entity') ?? this.config?.model_entity ?? this.config?.weather_entity;
+    const id = target?.getAttribute('data-entity') ?? this.config?.weather_entity;
     if (!target && this.config?.mode === 'compact' && path) this.navigate(path); else if (id) this.open(id);
   }
   private keydown(event: KeyboardEvent): void {

@@ -18,9 +18,7 @@ const knownColor = (v: unknown): number | undefined => ({ vert: 0, green: 0, jau
 
 /** An attention hierarchy, never a weather model or a health recommendation. */
 export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig, model: HassEntity, points: BriefPoint[], now = new Date()): WeatherBrief {
-  const modelMissing = config.model_entity && ['unknown', 'unavailable'].includes(model.state);
-  const a = modelMissing ? {} : model.attributes, signals: BriefSignal[] = [], caveats: string[] = [];
-  if (modelMissing) caveats.push('Modèle pré-calculé indisponible : ses anciens attributs ne sont pas utilisés.');
+  const a = model.attributes, signals: BriefSignal[] = [], caveats: string[] = [];
   const add = (s: BriefSignal) => signals.push(s);
   const source = (key: string) => (a.sources as Record<string, string> | undefined)?.[key];
   const temp = finite(a.t_ext), feels = finite(a.ressenti), wind = finite(a.vent), gust = finite(a.rafales), rain = finite(a.pluie_taux);
@@ -53,11 +51,6 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   if (pressureTrend && ['hausse', 'baisse'].includes(pressureTrend.s ?? '') && finite(pressureTrend.d) !== undefined) add({ key: 'pressure', group: 'now', severity: 0,
     text: `Pression en ${pressureTrend.s} (${format(Math.abs(pressureTrend.d!))} hPa sur ${format((pressureTrend.f ?? 180) / 60)} h)`,
     explanation: 'Tendance issue de l’historique de la station ; elle ne suffit pas à annoncer une pluie ou une amélioration certaine.', entity: source('pression'), icon: 'mdi:gauge' });
-  const indoor = config.air_quality_entity ? hass.states[config.air_quality_entity] : undefined;
-  const indoorValue = finite(indoor?.state);
-  if (indoor && indoorValue !== undefined && indoorValue >= 0 && indoorValue <= 100 && indoor.attributes.unit_of_measurement === '%') add({ key: 'indoor-air', group: 'environment', severity: 0,
-    text: `Indice d’air intérieur : ${format(indoorValue)} %`, explanation: 'Indice personnalisé calculé en amont ; son échelle ne permet pas à la carte d’en déduire un risque sanitaire universel. Il reste distinct d’Atmo.', entity: config.air_quality_entity, icon: 'mdi:home-outline' });
-
   // Use timestamps/explicit offsets, not array positions; ignore past and invalid points.
   const upcoming = points.filter(p => Number.isFinite(p.hours) && p.hours >= 0 && p.hours <= 6).sort((x, y) => x.hours - y.hours);
   const rains = upcoming.filter(p => finite(p.precipitation) !== undefined && p.precipitation! >= .3);
@@ -65,12 +58,12 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
     const total = upcoming.reduce((sum, p) => sum + Math.max(0, finite(p.precipitation) ?? 0), 0), peak = Math.max(...rains.map(p => p.precipitation!));
     add({ key: 'rain-future', group: 'future', severity: peak >= 5 || total >= 20 ? 2 : total >= 5 ? 1 : 0,
       text: `${peak >= 5 || total >= 20 ? 'Fortes pluies annoncées' : 'Pluie annoncée'} ${timing(rains[0].hours)} (${upcoming.some(p => finite(p.precipitation) === undefined) ? 'cumul partiel : ' : ''}${format(total)} mm prévus)`,
-      explanation: 'Somme des quantités prévues sur les points disponibles des 6 prochaines heures. Attention renforcée dès 5 mm sur un point horaire ou 20 mm cumulés ; ne signifie ni inondation ni vigilance officielle.', entity: config.forecast_entity ?? config.weather_entity, icon: 'mdi:weather-pouring' });
+      explanation: 'Somme des quantités prévues sur les points disponibles des 6 prochaines heures. Attention renforcée dès 5 mm sur un point horaire ou 20 mm cumulés ; ne signifie ni inondation ni vigilance officielle.', entity: config.weather_entity, icon: 'mdi:weather-pouring' });
   }
   const storm = upcoming.find(p => ['lightning', 'lightning-rainy', 'hail'].includes((p.condition ?? '').replaceAll('_', '-')));
-  if (storm) add({ key: 'storm', group: 'future', severity: 2, text: `Orage ou grêle annoncé ${timing(storm.hours)}`, explanation: 'Condition annoncée par le fournisseur sur les 6 prochaines heures, pas une détection de foudre.', entity: config.forecast_entity ?? config.weather_entity, icon: 'mdi:weather-lightning' });
+  if (storm) add({ key: 'storm', group: 'future', severity: 2, text: `Orage ou grêle annoncé ${timing(storm.hours)}`, explanation: 'Condition annoncée par le fournisseur sur les 6 prochaines heures, pas une détection de foudre.', entity: config.weather_entity, icon: 'mdi:weather-lightning' });
   const cold = upcoming.find(p => finite(p.temperature) !== undefined && p.temperature! <= 0);
-  if (cold) add({ key: 'freeze-future', group: 'future', severity: 1, text: `Température prévue à ${format(cold.temperature!)} °C ${timing(cold.hours)}`, explanation: 'Température prévue par le fournisseur ; le gel du sol n’est pas mesuré.', entity: config.forecast_entity ?? config.weather_entity, icon: 'mdi:snowflake' });
+  if (cold) add({ key: 'freeze-future', group: 'future', severity: 1, text: `Température prévue à ${format(cold.temperature!)} °C ${timing(cold.hours)}`, explanation: 'Température prévue par le fournisseur ; le gel du sol n’est pas mesuré.', entity: config.weather_entity, icon: 'mdi:snowflake' });
   const validTemps = upcoming.filter(p => finite(p.temperature) !== undefined);
   if (temp !== undefined && validTemps.length && !cold) {
     const last = validTemps.at(-1)!; if (Math.abs(last.temperature! - temp) >= 3) add({ key: 'temperature-future', group: 'future', severity: 0,

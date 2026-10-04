@@ -95,16 +95,6 @@ describe('Brief intelligent', () => {
   it('raises attention for simultaneous wind and rain without pretending they will persist', () => {
     expect(brief({ vent: 35, pluie_taux: 1 }).signals.find(s => s.key === 'wind-rain')).toMatchObject({ severity: 2, group: 'now' });
   });
-  it('does not consume stale attributes of an unavailable custom model', () => {
-    const b = buildWeatherBrief(hass(), { ...config, model_entity: 'sensor.model' }, { ...model({ ressenti: 45, rafales: 90 }), state: 'unavailable' }, [], now);
-    expect(b.signals).toHaveLength(0); expect(b.available).toBe(false);
-  });
-  it('does not apply a universal health risk threshold to a personalized indoor percentage', () => {
-    const b = brief({}, [], { ...config, air_quality_entity: 'sensor.indoor' }, { 'sensor.indoor': entity('40', { unit_of_measurement: '%' }) });
-    expect(b.signals.find(s => s.key === 'indoor-air')).toMatchObject({ severity: 0 });
-    expect(b.summary).toContain('Indice d’air intérieur : 40 %');
-    expect(brief({}, [], { ...config, air_quality_entity: 'sensor.indoor' }, { 'sensor.indoor': entity('80', { unit_of_measurement: 'ppm' }) }).signals).toHaveLength(0);
-  });
   it('does not headline yellow vigilance when pollution sets the orange attention level', () => {
     const b = brief({}, [], { ...config, vigilance_entity: 'sensor.vig', atmo_air_entity: 'sensor.air' }, { 'sensor.vig': entity('Jaune', { attribution: 'Météo-France' }), 'sensor.air': entity('5') });
     expect(b.title).toContain('Air extérieur'); expect(b.summary).toContain('Vigilance Météo-France jaune');

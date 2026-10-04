@@ -52,13 +52,11 @@
       'sensor.wind':sensor('sensor.wind',wind,'km/h'),'sensor.gust':sensor('sensor.gust',wind*1.6,'km/h'),
       'sensor.rain':sensor('sensor.rain',rain,'mm/h'),'sensor.rain_day':sensor('sensor.rain_day',rain*2,'mm'),
       'sensor.pressure':sensor('sensor.pressure',1014,'hPa'),'sensor.solar':sensor('sensor.solar',night?0:350,'W/m²'),
-      'sun.sun':{entity_id:'sun.sun',state:night?'below_horizon':'above_horizon',attributes:{elevation:night?-20:$('phase').value==='twilight'?1:35}},
-      'sensor.forecast':{entity_id:'sensor.forecast',state:'18',attributes:{
-        heures:Array.from({length:18},(_,i)=>({h:(hour+i+1)%24,j:Math.floor((hour+i+1)/24),t:temp+4*Math.sin(i/5),p:rain&&i<3?rain:0,c:condition})),
-        jours:Array.from({length:7},(_,i)=>({n:new Intl.DateTimeFormat('fr',{weekday:'short'}).format(new Date(now.getTime()+i*86400000)),e:i,t:25-i,m:17-i,p:i===2?4:0,c:i===2?'rainy':'partlycloudy'}))}}
+      'sun.sun':{entity_id:'sun.sun',state:night?'below_horizon':'above_horizon',attributes:{elevation:night?-20:$('phase').value==='twilight'?1:35}}
     };
-    card.setConfig({type:'custom:niak-weather-card',weather_entity:'weather.demo',temperature_entity:'sensor.temperature',humidity_entity:'sensor.humidity',humidex_entity:'sensor.humidex',wind_speed_entity:'sensor.wind',wind_gust_entity:'sensor.gust',rain_rate_entity:'sensor.rain',daily_rain_entity:'sensor.rain_day',pressure_entity:'sensor.pressure',solar_radiation_entity:'sensor.solar',forecast_entity:'sensor.forecast',forecast_source:'Démonstration',weather_animations:$('motion').checked,weather_animation_quality:$('quality').value});
-    card.hass={states,language:'fr',config:{time_zone:Intl.DateTimeFormat().resolvedOptions().timeZone},callWS:async()=>({})};
+    const forecasts={hourly:Array.from({length:18},(_,i)=>({datetime:new Date(now.getTime()+(i+1)*3600000).toISOString(),temperature:temp+4*Math.sin(i/5),precipitation:rain&&i<3?rain:0,condition})),daily:Array.from({length:7},(_,i)=>({datetime:new Date(now.getTime()+i*86400000).toISOString(),temperature:25-i,templow:17-i,precipitation:i===2?4:0,condition:i===2?'rainy':'partlycloudy'}))};
+    card.setConfig({type:'custom:niak-weather-card',weather_entity:'weather.demo',temperature_entity:'sensor.temperature',humidity_entity:'sensor.humidity',humidex_entity:'sensor.humidex',wind_speed_entity:'sensor.wind',wind_gust_entity:'sensor.gust',rain_rate_entity:'sensor.rain',daily_rain_entity:'sensor.rain_day',pressure_entity:'sensor.pressure',solar_radiation_entity:'sensor.solar',forecast_source:'Démonstration',weather_animations:$('motion').checked,weather_animation_quality:$('quality').value});
+    card.hass={states,language:'fr',config:{time_zone:Intl.DateTimeFormat().resolvedOptions().timeZone},callWS:async message=>({response:{'weather.demo':{forecast:forecasts[message.service_data.type]}}})};
   }
   $('condition').addEventListener('change',()=>{if($('condition').value==='clear-night')$('phase').value='night';refresh();});
   $('phase').addEventListener('change',()=>{if($('phase').value!=='night'&&$('condition').value==='clear-night')$('condition').value='sunny';refresh();});
