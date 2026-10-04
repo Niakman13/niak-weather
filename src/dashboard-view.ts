@@ -82,7 +82,7 @@ export const dashboardStyles = css`
   .nw-section-heading { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; margin-bottom:18px; }
   .nw-section-heading h2 { font-size:19px; font-weight:750; margin:0; letter-spacing:-.25px; }
   .nw-section-heading>span { font-size:11px; color:var(--secondary-text-color); }
-  .nw-attention { display:inline-flex; align-items:center; gap:6px; flex-shrink:0; margin-left:auto; padding:6px 11px; border:1px solid rgba(var(--vc),.28); border-radius:999px; background:color-mix(in srgb,var(--card-background-color,#fff) 88%,rgb(var(--vc)) 12%); color:var(--primary-text-color); font-size:11px; font-weight:600; line-height:1.3; white-space:nowrap; }
+  .nw-attention { display:inline-flex; align-items:center; gap:6px; flex-shrink:0; margin-left:0; padding:6px 11px; border:1px solid rgba(var(--vc),.28); border-radius:999px; background:color-mix(in srgb,var(--card-background-color,#fff) 88%,rgb(var(--vc)) 12%); color:var(--primary-text-color); font-size:11px; font-weight:600; line-height:1.3; white-space:nowrap; }
   .nw-attention i { width:7px; height:7px; flex-shrink:0; border-radius:50%; background:rgb(var(--vc)); }
   .nw-synthesis { position:relative; isolation:isolate; overflow:hidden; display:grid; grid-template-columns:76px minmax(0,1fr) minmax(240px,.65fr); column-gap:20px; }
   .nw-sky-backdrop { position:absolute; inset:0; z-index:-2; pointer-events:none; }
@@ -93,10 +93,10 @@ export const dashboardStyles = css`
   .nw-synthesis>.nw-section-heading { grid-column:1 / 3; grid-row:1; position:relative; z-index:1; }
   .nw-summary-emblem { grid-column:1; grid-row:2 / span 2; align-self:start; margin-top:3px; width:76px; height:76px; pointer-events:none; }
   .nw-synthesis .me-rond { background:radial-gradient(circle at 35% 25%,rgba(var(--vc),.22),rgba(var(--vc),.06)); border:1.5px solid rgba(var(--vc),.62); animation:nwEmblemGlow 5.2s ease-in-out infinite; }
-  .nw-synthesis .me-halo { inset:-42px; background:radial-gradient(circle,rgba(var(--vc),.24) 0%,rgba(var(--vc),.16) 34%,rgba(var(--vc),.07) 58%,rgba(var(--vc),0) 82%); filter:blur(18px); opacity:.7; animation:nwHalo 5.2s ease-in-out infinite; }
+  .nw-synthesis .me-halo { inset:-55px; background:radial-gradient(circle,rgba(var(--vc),.28) 0%,rgba(var(--vc),.19) 30%,rgba(var(--vc),.09) 56%,rgba(var(--vc),0) 84%); filter:blur(20px); opacity:.78; animation:nwHalo 5.2s ease-in-out infinite; }
   @keyframes nwHalo { 0%,100% { opacity:.52; transform:scale(.94); } 50% { opacity:.78; transform:scale(1.08); } }
   @keyframes nwEmblemGlow { 0%,100% { box-shadow:0 0 8px rgba(var(--vc),.18),inset 0 0 8px rgba(var(--vc),.06); } 50% { box-shadow:0 0 14px rgba(var(--vc),.3),inset 0 0 10px rgba(var(--vc),.1); } }
-  .nw-summary-lead { grid-column:2; grid-row:2; display:flex; align-items:center; flex-wrap:wrap; gap:10px 16px; min-height:30px; position:relative; z-index:1; }
+  .nw-summary-lead { grid-column:2; grid-row:2; display:flex; flex-direction:column; align-items:flex-start; flex-wrap:wrap; gap:8px; min-height:30px; position:relative; z-index:1; }
   .nw-summary-lead h3 { flex:1 1 200px; }
   .nw-summary-lead h3 { font-size:22px; font-weight:700; letter-spacing:-.45px; line-height:1.3; margin:0; overflow-wrap:anywhere; }
   .nw-summary-lines { grid-column:2; grid-row:3; margin:8px 0 0; font-size:12px; line-height:1.6; position:relative; z-index:1; }
@@ -126,7 +126,7 @@ export const dashboardStyles = css`
   #comfort .nw-feels-value { position:absolute; top:-37px; transform:translateX(-50%); font-size:27px; font-weight:750; line-height:1; white-space:nowrap; color:rgb(var(--vc)); color:color-mix(in srgb,rgb(var(--vc)) 65%,var(--primary-text-color) 35%); }
   #comfort .nw-feels-value small { font-size:12px; font-weight:500; margin-left:3px; }
   #comfort .me-rail { height:6px; }
-  #comfort .me-tick { top:-13px; height:32px; width:2px; background:rgba(var(--primary-text-color),.42); opacity:.8; box-shadow:0 0 4px rgba(0,0,0,.12); z-index:0; }
+  #comfort .me-tick { top:-13px; height:32px; width:2px; background:var(--primary-text-color); opacity:.55; box-shadow:0 0 4px rgba(0,0,0,.12); z-index:0; }
   #comfort .me-cur i { width:16px; height:16px; top:-8px; left:-8px; border:2px solid var(--card-background-color,#fff); background:color-mix(in srgb,rgb(var(--vc)) 65%,var(--primary-text-color) 35%); box-shadow:0 0 0 1px rgba(var(--vc),.42),0 0 9px rgba(var(--vc),.4); animation:nwComfortPulse 4.8s ease-in-out infinite; }
   @keyframes nwComfortPulse { 0%,100% { box-shadow:0 0 0 1px rgba(var(--vc),.35),0 0 6px rgba(var(--vc),.28); } 50% { box-shadow:0 0 0 2px rgba(var(--vc),.45),0 0 13px rgba(var(--vc),.52); } }
   #comfort .me-decos { border:0; padding:0; margin:0; gap:6px 14px; }
