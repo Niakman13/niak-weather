@@ -1,6 +1,6 @@
-# Brief intelligent — v1.2.0-beta.2
+# Brief intelligent — v1.2.0-beta.3
 
-Cette fonction est disponible dans la bêta v1.2.0-beta.2 et n’est pas incluse dans la release stable v1.0.0. Son objectif est de transformer les mesures et prévisions en un résumé compréhensible : **ce que l’on ressent maintenant, ce qui arrive et ce qui mérite de l’attention**. [Installation de la bêta](release-1.2.0-beta.2.md).
+Cette fonction est disponible dans la bêta v1.2.0-beta.3 et n’est pas incluse dans la release stable v1.0.0. Son objectif est de transformer les mesures et prévisions en un résumé compréhensible : **ce que l’on ressent maintenant, ce qui arrive et ce qui mérite de l’attention**. [Installation de la bêta](release-1.2.0-beta.3.md).
 
 ## Un bandeau, trois lectures
 
@@ -76,7 +76,7 @@ Le nom du capteur est un exemple. Le brief est activé par défaut dans cette b�
 
 ## Vérification de la bêta
 
-### Ajustements préparés après beta.2 (non encore publiés)
+### Ajustements de beta.3
 
 La jauge de ressenti est encadrée sur toute la largeur. La valeur est affichée en grand au-dessus du curseur, dans la teinte du dégradé à sa position, ajustée pour rester lisible selon le thème. Le cadre conserve la base humidex et les contributions du vent, soleil, pluie ou ciel nocturne lorsqu’elles sont disponibles et significatives. Un humidex est une base de calcul, pas une correction à additionner une deuxième fois. Une contribution absente n’est pas remplacée par zéro.
 
