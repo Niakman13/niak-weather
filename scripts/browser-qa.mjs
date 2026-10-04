@@ -193,6 +193,7 @@ try {
     const nativeDetails=!tomorrow.open&&window.atmoInfo.length===0;
     const movedDays=!!card.shadowRoot.querySelector('#today .nw-atmo-day')&&!card.shadowRoot.querySelector('#today .nw-atmo-next')&&!!card.shadowRoot.querySelector('#predictions .nw-atmo-next');
     const rings=card.shadowRoot.querySelectorAll('.nw-atmo-ring').length>2;
+    const sectors=[...card.shadowRoot.querySelectorAll('.nw-atmo-disc svg')].every(e=>e.querySelectorAll('path').length===6);
     const visibleWorst=!!card.shadowRoot.querySelector('#today .nw-atmo-day>.nw-atmo-row [data-entity="sensor.atmo_a_grass"]');
     states[selected.atmo_pollen_entity].state='0';card.hass={...hass};await sleep(20);
     const noFalseZero=card.shadowRoot.querySelector('.nw-atmo-day').textContent.includes('Indisponible')&&!card.shadowRoot.querySelector('.nw-atmo-day').textContent.includes('0/6');
@@ -201,7 +202,7 @@ try {
     window.atmoInfo=[];
     card.shadowRoot.querySelector('[data-entity="'+selected.atmo_air_entity+'"]').click();
     const correctPopup=window.atmoInfo[0]===selected.atmo_air_entity;
-    return {fullPrefill,filtered,keptEmpty,changedZone,migration,levels,nativeDetails,noFalseZero,correctPopup,simplifiedLabel,movedDays,rings,visibleWorst,missingRing};
+    return {fullPrefill,filtered,keptEmpty,changedZone,migration,levels,nativeDetails,noFalseZero,correctPopup,simplifiedLabel,movedDays,rings,sectors,visibleWorst,missingRing};
   });
   for (const [test,passed] of Object.entries(atmoBehavior)) assert.equal(passed,true,`Atmo: ${test}`);
   const atmoReports=[];
@@ -254,6 +255,19 @@ try {
   await page.locator('niak-weather-card .nw-brief-details button[data-entity="sensor.wind"]').first().focus();await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(()=>window.briefInfo.at(-1)),'sensor.wind','Brief source keyboard popup');
   await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-details').open=false;});
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  const haloMotion=await page.evaluate(async()=>{
+    const root=window.briefCard.shadowRoot, circle=root.querySelector('.nw-summary-emblem .me-rond'), halo=root.querySelector('.nw-summary-emblem .me-halo');
+    const animated=getComputedStyle(circle).animationName==='meRespire'&&getComputedStyle(halo).animationName==='nwHalo';
+    const before=halo.getAnimations()[0]?.currentTime;
+    await new Promise(r=>setTimeout(r,150));
+    const advancing=halo.getAnimations()[0]?.currentTime>before;
+    return {animated,advancing};
+  });
+  assert.equal(haloMotion.animated,true,'Circle and halo animation enabled');assert.equal(haloMotion.advancing,true,'Halo animation actually advances');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  haloMotion.reduced=await page.evaluate(()=>[...window.briefCard.shadowRoot.querySelectorAll('.nw-summary-emblem .me-rond,.nw-summary-emblem .me-halo')].every(e=>getComputedStyle(e).animationName==='none'));
+  assert.equal(haloMotion.reduced,true,'Reduced motion disables both animations');
   const briefReports=[];
   for(const dark of [false,true]) for(const width of [375,768,1440]){
     await page.setViewportSize({width,height:1500});
@@ -267,6 +281,7 @@ try {
     assert.equal(overflow,false,`Brief overflow ${width}/${dark}`);
     await page.locator('niak-weather-card').screenshot({path:`${out}/brief-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/brief-header-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    await page.locator('niak-weather-card #today .nw-atmo-day').screenshot({path:`${out}/atmo-discs-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();assert.deepEqual(axe.violations.map(v=>v.id),[],'Brief structural accessibility');
     briefReports.push({width,dark,overflow,accessibility:'structural scan passed; new hero has no committed visual baseline yet'});
   }
@@ -285,6 +300,6 @@ try {
     return {twoSections,fourTiles,noStale,missing};
   });
   for(const [test,passed] of Object.entries(compactAndMissing))assert.equal(passed,true,`Compact/missing: ${test}`);
-  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,errors},null,2));
-  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,errors},null,2));
+  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,haloMotion,errors},null,2));
+  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,haloMotion,errors},null,2));
 } finally { await browser.close();server.close(); }

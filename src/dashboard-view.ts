@@ -17,7 +17,9 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
     <section id="heros" class="nw-section nw-synthesis" aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
       <header class="nw-section-heading"><h2 id="nw-synthesis-title">Synthèse</h2><span>${location}</span>
         ${brief ? html`<span class="nw-attention"><i></i>${brief.label}</span>` : nothing}</header>
-      <div class="nw-summary-lead"><ha-icon icon=${brief?.icon ?? 'mdi:weather-partly-cloudy'}></ha-icon><h3>${headline}</h3></div>
+      <div class="nw-summary-emblem me-bulle" aria-hidden="true"><div class="me-halo"></div>
+        <div class="me-rond"><ha-icon icon=${brief?.icon ?? 'mdi:weather-partly-cloudy'}></ha-icon></div></div>
+      <div class="nw-summary-lead"><h3>${headline}</h3></div>
       <div class="nw-summary-lines">
         ${preview?.selected.length ? preview.selected.slice(1).map(s => html`<p><span>${s.group === 'future' ? 'À venir' : s.group === 'environment' ? 'Environnement' : s.group === 'official' ? 'Vigilance' : 'Maintenant'}</span>${s.text}</p>`)
           : html`<p>${current || String(model.attributes.sous_titre || 'Choisissez vos sources météo.')}</p>`}
@@ -53,14 +55,18 @@ export const dashboardStyles = css`
   .nw-section-heading>span { font-size:11px; color:var(--secondary-text-color); }
   .nw-section-heading .nw-attention { display:flex; align-items:center; gap:6px; margin-left:auto; font-size:10px; }
   .nw-attention i { width:7px; height:7px; border-radius:50%; background:rgb(var(--vc)); }
-  .nw-synthesis { border-left:3px solid rgb(var(--vc)); background:linear-gradient(90deg,rgba(var(--vc),.045),transparent 65%); }
-  .nw-summary-lead { display:flex; align-items:center; gap:12px; }
-  .nw-summary-lead ha-icon { --mdc-icon-size:27px; color:rgb(var(--vc)); }
-  .nw-summary-lead h3 { font-size:20px; font-weight:650; letter-spacing:-.45px; line-height:1.3; margin:0; overflow-wrap:anywhere; }
-  .nw-summary-lines { margin:10px 0 0 39px; font-size:12px; line-height:1.6; }
+  .nw-synthesis { display:grid; grid-template-columns:76px minmax(0,1fr); column-gap:20px; border-left:3px solid rgb(var(--vc)); background:linear-gradient(90deg,rgba(var(--vc),.065),transparent 65%); }
+  .nw-synthesis>.nw-section-heading { grid-column:1 / -1; }
+  .nw-summary-emblem { grid-column:1; grid-row:2 / span 3; align-self:start; margin-top:3px; width:76px; height:76px; pointer-events:none; }
+  .nw-synthesis .me-rond { background:radial-gradient(circle at 35% 25%,rgba(var(--vc),.22),rgba(var(--vc),.07)); animation:meRespire 4.2s ease-in-out infinite; }
+  .nw-synthesis .me-halo { inset:-16px; opacity:.5; animation:nwHalo 5.2s ease-in-out infinite; }
+  @keyframes nwHalo { 0%,100% { opacity:.35; transform:scale(.94); } 50% { opacity:.65; transform:scale(1.1); } }
+  .nw-summary-lead { grid-column:2; display:flex; align-items:center; min-height:30px; position:relative; z-index:1; }
+  .nw-summary-lead h3 { font-size:22px; font-weight:700; letter-spacing:-.45px; line-height:1.3; margin:0; overflow-wrap:anywhere; }
+  .nw-summary-lines { grid-column:2; margin:8px 0 0; font-size:12px; line-height:1.6; position:relative; z-index:1; }
   .nw-summary-lines p { margin:4px 0; }
   .nw-summary-lines p>span { color:var(--secondary-text-color); margin-right:8px; font-size:10px; }
-  .nw-brief-details { margin:10px 0 0 39px; font-size:11px; }
+  .nw-brief-details { grid-column:2; margin:10px 0 0; font-size:11px; position:relative; z-index:1; }
   .nw-brief-details summary, .nw-measure-details summary { cursor:pointer; color:var(--secondary-text-color); font-size:11px; padding:6px 0; }
   #comfort .me-jauge { margin:0 0 16px; }
   #comfort .me-rail { height:6px; }
@@ -95,12 +101,18 @@ export const dashboardStyles = css`
     .nw-section { padding:16px 14px; }
     .nw-section-heading { margin-bottom:14px; }
     .nw-section-heading .nw-attention { margin-left:0; }
+    .nw-synthesis { grid-template-columns:60px minmax(0,1fr); column-gap:12px; }
+    .nw-summary-emblem { width:60px; height:60px; grid-row:2; }
+    .nw-summary-lead { min-height:66px; }
     .nw-summary-lead h3 { font-size:17px; }
-    .nw-summary-lines, .nw-brief-details { margin-left:0; }
+    .nw-summary-lines, .nw-brief-details { grid-column:1 / -1; margin-left:0; }
     #tuiles .me-tu { align-items:flex-start; padding:12px 10px; gap:5px; }
     #tuiles .me-tuic, #tuiles .me-rose { width:22px; height:22px; flex-basis:22px; }
     #tuiles .me-tuic ha-icon { --mdc-icon-size:19px; }
     #tuiles .me-tuv { font-size:20px; }
     #container #tuiles .me-tus { white-space:normal; overflow-wrap:anywhere; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .nw-synthesis .me-rond, .nw-synthesis .me-halo { animation:none; }
   }
 `;

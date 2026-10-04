@@ -1,17 +1,31 @@
-import { css, html, nothing } from 'lit';
+import { css, html, nothing, svg } from 'lit';
 import { atmoField, atmoFields, atmoMetrics, atmoReading, pollenMetrics, pollutantMetrics, type AtmoReading } from './atmo';
 import type { AtmoMetric, HomeAssistant, WeatherCardConfig } from './types';
 
 export function usesAtmoPollens(config: WeatherCardConfig): boolean {
   return config.pollen_source === 'atmo' || (config.pollen_source === undefined && atmoFields.some(f => !!config[f]));
 }
+const sectorColors = ['#50f0e6', '#50ccaa', '#f0e641', '#ff5050', '#960032', '#872181'];
+function levelDisc(r: AtmoReading) {
+  const active = r.value !== undefined && r.value <= 6 && !r.stale ? r.value : 0;
+  const face = r.stale ? 'mdi:clock-outline' : r.value === 7 ? 'mdi:information-outline' : !active ? 'mdi:help-outline'
+    : active <= 2 ? 'mdi:emoticon-happy-outline' : active === 3 ? 'mdi:emoticon-neutral-outline'
+      : active <= 5 ? 'mdi:emoticon-sad-outline' : 'mdi:emoticon-dead-outline';
+  return html`<span class="nw-atmo-disc nw-atmo-ring" aria-hidden="true"><svg viewBox="0 0 48 48">
+    ${sectorColors.map((color, i) => {
+      const angle = (i * 60 - 90) * Math.PI / 180, end = angle + Math.PI / 3;
+      const point = (a: number) => `${(24 + 23 * Math.cos(a)).toFixed(3)} ${(24 + 23 * Math.sin(a)).toFixed(3)}`;
+      return svg`<path d=${`M24 24 L${point(angle)} A23 23 0 0 1 ${point(end)} Z`} fill=${i < active ? i === active - 1 ? r.color : color : 'var(--nw-atmo-empty,rgba(150,150,150,.08))'} />`;
+    })}<circle cx="24" cy="24" r="23.5" fill="none" stroke="var(--divider-color,rgba(150,150,150,.25))" stroke-width="1" /></svg>
+    <span><ha-icon icon=${face}></ha-icon></span></span>`;
+}
 export function renderAtmo(hass: HomeAssistant, config: WeatherCardConfig, now = new Date(), scope: 'today' | 'tomorrow' | 'both' = 'both') {
   const includePollen = config.pollen_source !== 'none' && config.pollen_source !== 'legacy';
   const read = (metric: AtmoMetric, next: boolean) => atmoReading(hass, config[atmoField(metric, next)], !['air', ...pollutantMetrics].includes(metric), metric.endsWith('_concentration'), now);
   const badge = (r: AtmoReading, label: string, icon: string, pollen: boolean) => html`
     <span class="nw-atmo-badge" data-entity=${r.id} role="button" tabindex="0" aria-label=${`${label} : ${r.label}${r.stale ? ', données anciennes' : ''}`} style=${`--atmo-color:${r.color};--atmo-angle:${r.value !== undefined && r.value <= 6 && !r.stale ? r.value * 60 : 0}deg`} title=${`${label} · ${r.label}${r.updated ? ' · publication ' + r.updated : ''}`}>
-      <span class="nw-atmo-ring" aria-hidden="true"><span><ha-icon icon=${icon}></ha-icon></span></span>
-      <span class="nw-atmo-caption"><b>${label}</b><span>${r.label}</span>${r.value === undefined ? nothing : html`<small>${r.value === 7 && !pollen ? 'code 7 · hors échelle' : `${r.value}/6`}</small>`}
+      <b class="nw-atmo-name">${label}</b>${levelDisc(r)}
+      <span class="nw-atmo-caption"><span>${r.label}</span>${r.value === undefined ? nothing : html`<small>${r.value === 7 && !pollen ? 'code 7 · hors échelle' : `${r.value}/6`}</small>`}
       ${r.stale ? html`<small class="nw-atmo-stale">données anciennes</small>` : nothing}
       </span>
     </span>`;
@@ -55,19 +69,22 @@ export const atmoStyles = css`
   .nw-atmo-heading span, .nw-atmo-next>summary span { color:var(--secondary-text-color); font-weight:400; margin-left:8px; }
   .nw-atmo-next>summary { cursor:pointer; padding:2px 0; }
   .nw-atmo-row { display:flex; flex-wrap:wrap; gap:16px 28px; margin-top:14px; min-width:0; }
-  .nw-atmo-badge { display:inline-flex; align-items:center; gap:10px; cursor:pointer; padding:2px 0; min-width:0; max-width:100%; }
-  .nw-atmo-ring { display:grid; place-items:center; width:48px; height:48px; flex:0 0 48px; border-radius:50%; background:conic-gradient(var(--atmo-color) 0deg var(--atmo-angle),rgba(150,150,150,.16) var(--atmo-angle) 360deg); }
-  .nw-atmo-ring>span { display:grid; place-items:center; width:38px; height:38px; border-radius:50%; background:var(--card-background-color,#fff); }
-  .nw-atmo-badge ha-icon { --mdc-icon-size:20px; color:var(--primary-text-color); }
-  .nw-atmo-caption { display:flex; flex-direction:column; gap:2px; min-width:0; }
-  .nw-atmo-caption b { font-size:11px; font-weight:500; color:var(--secondary-text-color); }
-  .nw-atmo-caption>span { font-size:12px; font-weight:650; }
+  .nw-atmo-badge { display:inline-flex; flex-direction:column; align-items:center; gap:7px; cursor:pointer; padding:2px 0; min-width:80px; max-width:130px; text-align:center; }
+  .nw-atmo-name { font-size:11px; font-weight:500; color:var(--primary-text-color); }
+  .nw-atmo-disc { display:grid; place-items:center; width:48px; height:48px; border-radius:50%; }
+  .nw-atmo-disc svg, .nw-atmo-disc>span { grid-area:1 / 1; }
+  .nw-atmo-disc svg { width:100%; height:100%; }
+  .nw-atmo-disc path { stroke:var(--card-background-color,#fff); stroke-width:1; }
+  .nw-atmo-disc>span { display:grid; place-items:center; width:22px; height:22px; border-radius:50%; background:var(--card-background-color,#fff); border:1px solid var(--divider-color,rgba(150,150,150,.2)); z-index:1; }
+  .nw-atmo-badge ha-icon { --mdc-icon-size:16px; color:var(--secondary-text-color); }
+  .nw-atmo-caption { display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; }
+  .nw-atmo-caption>span { font-size:11px; font-weight:600; }
   .nw-atmo-badge small { font-size:10px; color:var(--secondary-text-color); }
   .nw-atmo-breakdown { margin-top:12px; }
   .nw-atmo-breakdown>summary { cursor:pointer; color:var(--secondary-text-color); font-size:10px; padding:4px 0; }
-  .nw-atmo-breakdown .nw-atmo-ring { width:36px; height:36px; flex-basis:36px; }
-  .nw-atmo-breakdown .nw-atmo-ring>span { width:28px; height:28px; }
-  .nw-atmo-breakdown ha-icon { --mdc-icon-size:15px; }
+  .nw-atmo-breakdown .nw-atmo-disc { width:42px; height:42px; }
+  .nw-atmo-breakdown .nw-atmo-disc>span { width:20px; height:20px; }
+  .nw-atmo-breakdown ha-icon { --mdc-icon-size:14px; }
   .nw-atmo-kind, .nw-atmo-date { color:var(--secondary-text-color); font-size:10px; margin-top:10px; }
   .nw-atmo-species-item { display:flex; flex-direction:column; gap:3px; max-width:100%; }
   .nw-atmo-concentration { cursor:pointer; font-size:10px; color:var(--secondary-text-color); }
