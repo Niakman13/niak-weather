@@ -189,7 +189,7 @@ try {
       registry.push({entity_id:id,platform:'atmofrance',device_id:metric==='air'?'air':'pollen',config_entry_id:city==='Ma commune'?'a':'b',
         original_name:`${name}-${city}${next?'-J+1':''}`,unique_id:`${city}-${name}${next?'-J+1':''}`});
     }
-    const hass={states,language:'fr',config:{time_zone:'Europe/Paris'},callWS:async msg=>msg.type==='config/entity_registry/list'?registry:[]};
+    const hass={states,language:'fr',config:{time_zone:'Europe/Paris'},callWS:async msg=>msg.type==='config/entity_registry/list'?registry:msg.type==='call_service'?{response:{'weather.test':{forecast:window.fixture.forecasts[msg.service_data.type]}}}:[]};
     const root=document.querySelector('main');root.replaceChildren();
     const editor=document.createElement('niak-weather-card-editor');editor.setConfig(config);editor.hass=hass;root.append(editor);await sleep(50);
     const form=editor.shadowRoot.querySelector('ha-form');const selected={...form.data};
@@ -228,6 +228,7 @@ try {
   });
   for (const [test,passed] of Object.entries(atmoBehavior)) assert.equal(passed,true,`Atmo: ${test}`);
   const atmoReports=[];
+  await page.evaluate(()=>window.atmoCard.setConfig({...window.atmoConfig,smart_brief:true}));
   for(const dark of [false,true]) for(const width of [375,768,1440]){
     await page.setViewportSize({width,height:1300});
     await page.evaluate(({dark})=>{
