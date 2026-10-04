@@ -5,18 +5,20 @@ import type { AtmoMetric, HomeAssistant, WeatherCardConfig } from './types';
 export function usesAtmoPollens(config: WeatherCardConfig): boolean {
   return config.pollen_source === 'atmo' || (config.pollen_source === undefined && atmoFields.some(f => !!config[f]));
 }
-const sectorColors = ['#50f0e6', '#50ccaa', '#f0e641', '#ff5050', '#960032', '#872181'];
 function levelDisc(r: AtmoReading) {
   const active = r.value !== undefined && r.value <= 6 && !r.stale ? r.value : 0;
   const face = r.stale ? 'mdi:clock-outline' : r.value === 7 ? 'mdi:information-outline' : !active ? 'mdi:help-outline'
     : active <= 2 ? 'mdi:emoticon-happy-outline' : active === 3 ? 'mdi:emoticon-neutral-outline'
       : active <= 5 ? 'mdi:emoticon-sad-outline' : 'mdi:emoticon-dead-outline';
   return html`<span class="nw-atmo-disc nw-atmo-ring" aria-hidden="true"><svg viewBox="0 0 48 48">
-    ${sectorColors.map((color, i) => {
+    ${Array.from({ length:6 }, (_, i) => {
       const angle = (i * 60 - 90) * Math.PI / 180, end = angle + Math.PI / 3;
       const point = (a: number) => `${(24 + 23 * Math.cos(a)).toFixed(3)} ${(24 + 23 * Math.sin(a)).toFixed(3)}`;
-      return svg`<path d=${`M24 24 L${point(angle)} A23 23 0 0 1 ${point(end)} Z`} fill=${i < active ? i === active - 1 ? r.color : color : 'var(--nw-atmo-empty,rgba(150,150,150,.08))'} />`;
-    })}<circle cx="24" cy="24" r="23.5" fill="none" stroke="var(--divider-color,rgba(150,150,150,.25))" stroke-width="1" /></svg>
+      // Transparent active sectors reveal one continuous angular gradient underneath.
+      // Opaque inactive sectors mask it completely, including unavailable/stale/event values.
+      return svg`<path d=${`M24 24 L${point(angle)} A23 23 0 0 1 ${point(end)} Z`} fill=${i < active ? 'none' : 'var(--card-background-color,#fff)'} />`;
+    })}<circle cx="24" cy="24" r="23.5" fill="none" stroke="var(--card-background-color,#fff)" stroke-width="2" />
+    <circle cx="24" cy="24" r="23.5" fill="none" stroke="var(--divider-color,rgba(150,150,150,.25))" stroke-width="1" /></svg>
     <span><ha-icon icon=${face}></ha-icon></span></span>`;
 }
 export function renderAtmo(hass: HomeAssistant, config: WeatherCardConfig, now = new Date(), scope: 'today' | 'tomorrow' | 'both' = 'both') {
@@ -71,7 +73,7 @@ export const atmoStyles = css`
   .nw-atmo-row { display:flex; flex-wrap:wrap; gap:16px 28px; margin-top:14px; min-width:0; }
   .nw-atmo-badge { display:inline-flex; flex-direction:column; align-items:center; gap:7px; cursor:pointer; padding:2px 0; min-width:80px; max-width:130px; text-align:center; }
   .nw-atmo-name { font-size:11px; font-weight:500; color:var(--primary-text-color); }
-  .nw-atmo-disc { display:grid; place-items:center; width:48px; height:48px; border-radius:50%; }
+  .nw-atmo-disc { display:grid; place-items:center; width:48px; height:48px; border-radius:50%; background:conic-gradient(#58b995 0deg,#93c977 90deg,#e1d066 150deg,#eab360 210deg,#e88b60 270deg,#dd5b69 330deg,#cf4b60 360deg); }
   .nw-atmo-disc svg, .nw-atmo-disc>span { grid-area:1 / 1; }
   .nw-atmo-disc svg { width:100%; height:100%; }
   .nw-atmo-disc path { stroke:var(--card-background-color,#fff); stroke-width:1; }

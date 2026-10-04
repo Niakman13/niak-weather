@@ -24,6 +24,8 @@ Aujourd’hui commence par la jauge de ressenti, puis les quatre cadres tempéra
 
 Les indices Atmo utilisent un disque à six secteurs colorés avec un petit visage central, le nom au-dessus et le niveau écrit en dessous. Cette présentation s’inspire visuellement de pollenprognos-card, mais conserve l’échelle Atmo sur six. Un sous-indice plus élevé que l’indice global reste visible et porte le nom du polluant ou de l’espèce, sans être présenté comme un nouvel indice global. Les concentrations ne remplissent jamais le disque. Une donnée absente, ancienne ou le code évènement 7 n’est pas présentée comme un niveau actuel sur six. Tous les polluants, espèces et concentrations restent dans les détails lorsque ceux-ci sont activés.
 
+Le disque utilise un dégradé continu vert → jaune → orange → rouge commun à l’air et aux pollens, visible seulement sur les secteurs correspondant au niveau disponible. Cette palette est un choix de présentation Niak Weather, pas le nuancier officiel Atmo. Les valeurs et libellés de la source restent inchangés ; les données indisponibles, anciennes et évènements n’affichent pas de secteurs colorés.
+
 ## Couleurs et vigilance officielle
 
 | Couleur du bandeau | Lecture |

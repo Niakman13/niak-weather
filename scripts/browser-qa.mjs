@@ -194,15 +194,17 @@ try {
     const movedDays=!!card.shadowRoot.querySelector('#today .nw-atmo-day')&&!card.shadowRoot.querySelector('#today .nw-atmo-next')&&!!card.shadowRoot.querySelector('#predictions .nw-atmo-next');
     const rings=card.shadowRoot.querySelectorAll('.nw-atmo-ring').length>2;
     const sectors=[...card.shadowRoot.querySelectorAll('.nw-atmo-disc svg')].every(e=>e.querySelectorAll('path').length===6);
+    const continuousGradient=[...card.shadowRoot.querySelectorAll('.nw-atmo-disc')].every(e=>getComputedStyle(e).backgroundImage.includes('conic-gradient'));
     const visibleWorst=!!card.shadowRoot.querySelector('#today .nw-atmo-day>.nw-atmo-row [data-entity="sensor.atmo_a_grass"]');
     states[selected.atmo_pollen_entity].state='0';card.hass={...hass};await sleep(20);
     const noFalseZero=card.shadowRoot.querySelector('.nw-atmo-day').textContent.includes('Indisponible')&&!card.shadowRoot.querySelector('.nw-atmo-day').textContent.includes('0/6');
     const missingRing=card.shadowRoot.querySelector('#today [data-entity="'+selected.atmo_pollen_entity+'"]').style.getPropertyValue('--atmo-angle')==='0deg';
+    const missingMasked=[...card.shadowRoot.querySelector('#today [data-entity="'+selected.atmo_pollen_entity+'"]').querySelectorAll('svg path')].every(e=>e.getAttribute('fill')!=='none');
     states[selected.atmo_pollen_entity].state='2';card.hass={...hass};await sleep(20);
     window.atmoInfo=[];
     card.shadowRoot.querySelector('[data-entity="'+selected.atmo_air_entity+'"]').click();
     const correctPopup=window.atmoInfo[0]===selected.atmo_air_entity;
-    return {fullPrefill,filtered,keptEmpty,changedZone,migration,levels,nativeDetails,noFalseZero,correctPopup,simplifiedLabel,movedDays,rings,sectors,visibleWorst,missingRing};
+    return {fullPrefill,filtered,keptEmpty,changedZone,migration,levels,nativeDetails,noFalseZero,correctPopup,simplifiedLabel,movedDays,rings,sectors,continuousGradient,visibleWorst,missingRing,missingMasked};
   });
   for (const [test,passed] of Object.entries(atmoBehavior)) assert.equal(passed,true,`Atmo: ${test}`);
   const atmoReports=[];
