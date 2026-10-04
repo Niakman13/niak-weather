@@ -281,7 +281,8 @@ try {
   await page.emulateMedia({reducedMotion:'no-preference'});
   const haloMotion=await page.evaluate(async()=>{
     const root=window.briefCard.shadowRoot, circle=root.querySelector('.nw-summary-emblem .me-rond'), halo=root.querySelector('.nw-summary-emblem .me-halo');
-    const animated=getComputedStyle(circle).animationName==='meRespire'&&getComputedStyle(halo).animationName==='nwHalo';
+    const animated=getComputedStyle(circle).animationName==='nwEmblemGlow'&&getComputedStyle(halo).animationName==='nwHalo';
+    if(getComputedStyle(root.querySelector('.nw-synthesis')).borderLeftWidth!=='0px') throw new Error('Unexpected synthesis stripe');
     const before=halo.getAnimations()[0]?.currentTime;
     await new Promise(r=>setTimeout(r,150));
     const advancing=halo.getAnimations()[0]?.currentTime>before;
@@ -389,7 +390,7 @@ try {
     assert.equal(geometry.overflow,false);assert.equal(geometry.distinct,true);assert.equal(geometry.rightAligned,true);
     const background=await page.evaluate(()=>{
       const root=window.skyCard.shadowRoot, header=root.querySelector('#heros'), sky=root.querySelector('niak-weather-sky'), details=root.querySelector('.nw-brief-details');
-      const matches=()=>{const h=header.getBoundingClientRect(),s=sky.getBoundingClientRect();return Math.abs(h.right-s.right)<1&&Math.abs(h.top-s.top)<1&&Math.abs(h.bottom-s.bottom)<1&&Math.abs(h.left+3-s.left)<1;};
+      const matches=()=>{const h=header.getBoundingClientRect(),s=sky.getBoundingClientRect();return Math.abs(h.right-s.right)<1&&Math.abs(h.top-s.top)<1&&Math.abs(h.bottom-s.bottom)<1&&Math.abs(h.left-s.left)<1;};
       const closed=matches();details.open=true;const expanded=matches();
       return {closed,expanded,clean:!root.querySelector('.nw-current-feels,.nw-current-source')};
     });
