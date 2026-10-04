@@ -8,7 +8,7 @@ Il faut déjà avoir :
 2. l’intégration [Météo-France](https://www.home-assistant.io/integrations/meteo_france/) configurée, avec une entité `weather` ;
 3. une station ou une passerelle Ecowitt qui publie ses mesures dans Home Assistant.
 
-La première version fonctionne même avec peu de mesures Ecowitt. Chaque mesure
+La carte fonctionne même avec peu de mesures Ecowitt. Chaque mesure
 facultative est ajoutée dans l’éditeur de la carte seulement si elle existe
 chez toi.
 
@@ -38,7 +38,7 @@ Dans un tableau de bord, clique **Ajouter une carte** puis recherche **Niak
 Weather**. L’éditeur permet de choisir l’entité Météo-France et les capteurs
 Ecowitt que tu souhaites afficher. Dès qu’une entité météo est choisie,
 Niak Weather tente de préremplir les capteurs extérieurs de la même station.
-Le bouton **Détecter la station Ecowitt** relance cette recherche. Vérifie les
+Le bloc **Entités de la station** regroupe ces choix. Le bouton **Préremplir les entités manquantes** relance cette recherche sans écraser les choix existants. Vérifie les
 résultats et modifie librement un champ si ton installation emploie un nom ou
 une unité inhabituels.
 
@@ -75,13 +75,40 @@ type **Module JavaScript** avec cette adresse :
 
 Puis recharge le navigateur.
 
-## Ce qui est disponible dans v0.1.0
+## Tester v0.2.0-beta.6
 
-- condition et température courantes ;
-- prévisions horaires et quotidiennes Météo-France ;
-- température, humidité, vent et intensité de pluie Ecowitt facultatifs ;
-- interface française ou anglaise suivant Home Assistant.
+La version beta.6 porte le rendu complet de la carte locale : bulle météo, jauge expliquée, trois tuiles, pastilles, graphique 18 h, semaine et bilan pluie/vent. La version stable 0.1.0 est plus ancienne ; sélectionne explicitement beta.6 pour tester ce nouveau rendu.
 
-Le modèle complet de la station — ressenti, soleil, rosée, foudre, tendances
-vent/baromètre, cumuls et courbes détaillées — sera ajouté dans les versions
-suivantes avec son package de templates versionné.
+1. Ouvre **Niak Weather** dans HACS, puis **⋮ → Retélécharger / Redownload**.
+2. Utilise le choix d’une autre version et sélectionne **v0.2.0-beta.6**. Si nécessaire, active l’accès aux préversions pour ce dépôt ([fonctionnement HACS](https://hacs.dev/docs/use/entities/switch/)).
+3. Télécharge, puis recharge le navigateur avec **Ctrl+F5**. Sur l’application mobile, ferme puis rouvre le tableau de bord et, si nécessaire, vide son cache frontend.
+4. Ouvre l’éditeur de la carte et clique **Préremplir les entités manquantes**. Vérifie le vent moyen, les cumuls pluie et la rafale maximale du jour.
+
+### Thermal Comfort
+
+Installe [Thermal Comfort](https://github.com/dolezsa/thermal_comfort) via HACS si ce n’est pas déjà fait, puis configure un appareil avec la température et l’humidité **extérieures** de la station. Active les capteurs Humidex et Perception de l’humidex dans Home Assistant s’ils sont désactivés.
+
+Dans **Entités Thermal Comfort**, sélectionne cet appareil. Les listes sont filtrées par type de mesure et appareil. La recherche automatique compare aussi ses lectures d’entrée à celles de la station pour éviter de prendre les capteurs d’une pièce intérieure. Si plusieurs choix sont équivalents, elle laisse le champ vide : il faut choisir manuellement. Sans humidex, la carte indique que l’humidité n’est pas comptée dans son estimation.
+
+### Reprendre exactement un template local existant
+
+Dans **Soleil, air et compatibilité locale**, choisis le capteur du modèle météo local et celui de ses prévisions. La détection les propose lorsque leurs sources correspondent à la station et à l’entité météo choisies. La carte lit alors les mêmes calculs, les mêmes tendances et les mêmes cumuls que la carte locale. Elle n’ajoute ni un nouveau package, ni une copie de ces capteurs.
+
+```yaml
+type: custom:niak-weather-card
+weather_entity: weather.ma_commune
+model_entity: sensor.meteo_maison
+forecast_entity: sensor.meteo_previsions
+mode: detailed
+forecast_source: Météo-France
+```
+
+Ces noms sont des exemples ; ils doivent correspondre aux deux capteurs de ton template. Garde le même thème et le même zoom pour comparer les deux cartes. Modifier une mesure dans l’éditeur repasse au modèle intégré afin que ce choix soit pris en compte.
+
+La distance de foudre et Confort/ouvrants sont retirés de cette version. Les orages **prévus** restent visibles. Le créneau d’aération et les alertes d’ouvrants ne sont plus affichés ; sans verdict local de bénéfice, une météo sans alerte utilise le bleu.
+
+### Si un bloc manque
+
+Un bloc ne s’affiche que si ses données existent. Le bilan demande notamment les compteurs semaine/mois et la rafale maximale du jour. Le point de rosée, l’UV, l’air intérieur et les pollens sont facultatifs. Dans le modèle intégré, les tendances vent/pression demandent que Recorder enregistre ces entités et que l’utilisateur ait accès à leur historique. Sans historique, le texte indique que la tendance est en cours de mesure. Dans le modèle local, les tendances existantes sont reprises directement.
+
+La carte ne fournit pas de nouvelles entités pour des automatisations. Elle n’a pas besoin de `button-card` : le rendu original est désormais inclus dans la ressource Niak Weather.

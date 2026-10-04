@@ -20,6 +20,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run validate
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
       - uses: softprops/action-gh-release@v2
         with:
           files: |

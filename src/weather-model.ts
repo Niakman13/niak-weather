@@ -11,9 +11,7 @@ export interface LocalMeasurements {
   rainRate?: number;
   dewPoint?: number;
   uvIndex?: number;
-  lightningDistance?: number;
   cloudCoverage?: number;
-  openWindows?: number;
 }
 
 export interface WeatherVerdict {
@@ -24,12 +22,28 @@ export interface WeatherVerdict {
   rainLevel: 0 | 1 | 2 | 3 | 4;
   nextRainHours?: number;
   nextRainAmount?: number;
-  alert?: "openings" | "thunderstorm" | "downpour" | "gusts" | "heatwave" | "frost" | "heat" | "cold" | "uv";
+  alert?: "thunderstorm" | "downpour" | "gusts" | "heatwave" | "frost" | "heat" | "cold" | "uv";
   level: "optimized" | "benefit" | "action" | "urgent";
 }
 
 const number = (value: number | undefined) => Number.isFinite(value) ? value : undefined;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+// The original Jinja model rounds EACH effect, not only their sum.
+export function round(value: number, digits = 1): number {
+  // Python round uses the exact IEEE-754 value and ties-to-even. Multiplying
+  // a JS float by 10 first can erase the side of a half-tie (e.g. 13.55).
+  if (!Number.isFinite(value) || value === 0) return value;
+  const view = new DataView(new ArrayBuffer(8)); view.setFloat64(0, Math.abs(value));
+  const bits = view.getBigUint64(0), exponent = Number((bits >> 52n) & 2047n);
+  const mantissa = (bits & ((1n << 52n) - 1n)) | (exponent ? 1n << 52n : 0n);
+  const power = (exponent || 1) - 1023 - 52;
+  let numerator = mantissa * 10n ** BigInt(digits), denominator = 1n;
+  if (power >= 0) numerator <<= BigInt(power); else denominator <<= BigInt(-power);
+  let rounded = numerator / denominator;
+  const remainder = numerator % denominator;
+  if (remainder * 2n > denominator || (remainder * 2n === denominator && rounded % 2n)) rounded++;
+  return (value < 0 ? -1 : 1) * Number(rounded) / 10 ** digits;
+}
 
 function normaliseCondition(condition: string | undefined): string {
   return (condition ?? "unknown").replace("_", "-");
@@ -53,7 +67,7 @@ export function buildWeatherVerdict(
   const dewPoint = number(local.dewPoint);
   const forecast = normaliseCondition(forecastCondition);
 
-  const effectiveWind = wind === undefined ? undefined : Math.max((wind * 0.75 + Math.max(wind, gust ?? wind) * 0.25) - 3, 0);
+  const effectiveWind = wind === undefined || wind < 0 ? undefined : round(Math.max((wind * 0.75 + Math.max(wind, gust ?? wind) * 0.25) - 3, 0));
   let windEffect = 0;
   if (effectiveWind !== undefined && base !== undefined) {
     let coefficient = base > 27 ? -0.15 : -0.25;
@@ -63,28 +77,26 @@ export function buildWeatherVerdict(
       const transition = clamp((temperature - 32) / 3, 0, 1);
       coefficient = coefficient * (1 - transition) + furnace * transition;
     }
-    windEffect = clamp(coefficient * effectiveWind, -6, 1.5);
+    windEffect = round(clamp(coefficient * effectiveWind, -6, 1.5));
   }
   const sunEffect = elevation !== undefined && elevation > 5 && solar !== undefined && solar > 50
-    ? Math.min(solar / 300, 3.5) : 0;
+    ? Math.min(round(solar / 300), 3.5) : 0;
   const rainEffect = rainRate !== undefined && rainRate >= 0.3
-    ? -1.5 * Math.min(rainRate / 2, 1) * (1 + Math.min(effectiveWind ?? 0, 30) / 60) : 0;
+    ? round(-1.5 * Math.min(rainRate / 2, 1) * (1 + Math.min(effectiveWind ?? 0, 30) / 60)) : 0;
   const nightEffect = elevation !== undefined && elevation <= -3 && local.cloudCoverage !== undefined && local.cloudCoverage < 40
-    ? -1 * (1 - local.cloudCoverage / 40) : 0;
-  const apparentTemperature = base === undefined ? undefined : Math.round((base + windEffect + sunEffect + rainEffect + nightEffect) * 10) / 10;
+    ? round(-1 * (1 - local.cloudCoverage / 40)) : 0;
+  const apparentTemperature = base === undefined ? undefined : round(base + windEffect + sunEffect + rainEffect + nightEffect);
 
   const rainLevel: WeatherVerdict["rainLevel"] = rainRate === undefined || rainRate < 0.3 ? 0
     : rainRate < 1 ? 1 : rainRate < 4 ? 2 : rainRate < 12 ? 3 : 4;
-  const lightning = local.lightningDistance !== undefined && local.lightningDistance >= 0 && local.lightningDistance <= 20;
   const fog = humidity !== undefined && humidity >= 97 && temperature !== undefined && dewPoint !== undefined
     && temperature - dewPoint <= 0.4 && rainLevel === 0;
   const sunshine = solar !== undefined && solar >= 350;
   let observedCondition = "";
   if (!forecast.startsWith("snow")) {
-    if (rainLevel >= 3) observedCondition = lightning ? "lightning-rainy" : "pouring";
-    else if (rainLevel >= 1) observedCondition = lightning ? "lightning-rainy" : "rainy";
+    if (rainLevel >= 3) observedCondition = "pouring";
+    else if (rainLevel >= 1) observedCondition = "rainy";
   }
-  if (!observedCondition && lightning) observedCondition = "lightning";
   if (!observedCondition && fog) observedCondition = "fog";
   if (!observedCondition && sunshine && ["cloudy", "fog", "rainy", "pouring", "lightning", "lightning-rainy"].includes(forecast)) observedCondition = "partlycloudy";
 
@@ -92,11 +104,9 @@ export function buildWeatherVerdict(
   const nextRainHours = rainIndex >= 0 ? rainIndex : undefined;
   const nextRainAmount = rainIndex >= 0 ? number(hourly[rainIndex].precipitation) : undefined;
   const forecastStorm = hourly.slice(0, 6).some((point) => ["lightning", "lightning-rainy", "hail"].includes(normaliseCondition(point.condition)));
-  const wetSoon = rainLevel > 0 || (nextRainHours !== undefined && nextRainHours <= 2);
 
   let alert: WeatherVerdict["alert"];
-  if (wetSoon && (local.openWindows ?? 0) > 0) alert = "openings";
-  else if (lightning || forecastStorm) alert = "thunderstorm";
+  if (forecastStorm) alert = "thunderstorm";
   else if (rainLevel === 4) alert = "downpour";
   else if ((gust ?? -Infinity) >= 80) alert = "gusts";
   else if ((apparentTemperature ?? -Infinity) >= 38) alert = "heatwave";
@@ -106,7 +116,7 @@ export function buildWeatherVerdict(
   else if ((apparentTemperature ?? Infinity) <= 2) alert = "cold";
   else if ((local.uvIndex ?? -Infinity) >= 8) alert = "uv";
 
-  const level: WeatherVerdict["level"] = alert === "openings" || alert === "thunderstorm" || alert === "heatwave" || alert === "frost" ? "urgent"
+  const level: WeatherVerdict["level"] = alert === "thunderstorm" || alert === "heatwave" || alert === "frost" || (alert === "gusts" && (gust ?? 0) >= 80) ? "urgent"
     : alert ? "action" : "optimized";
   return {
     apparentTemperature, effects: { wind: windEffect, sun: sunEffect, rain: rainEffect, night: nightEffect },

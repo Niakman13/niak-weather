@@ -11,10 +11,19 @@ export interface HomeAssistant {
   formatEntityState(state: HassEntity): string;
   formatEntityName(state: HassEntity): string;
   callWS<T>(message: Record<string, unknown>): Promise<T>;
+  config?: { time_zone?: string };
+  entities?: Record<string, HomeAssistantEntityRegistryEntry>;
 }
 
 export interface HomeAssistantEntityRegistryEntry {
+  entity_id?: string;
   device_id?: string;
+  platform?: string;
+  unique_id?: string;
+  translation_key?: string;
+  original_name?: string;
+  config_entry_id?: string;
+  disabled_by?: string | null;
 }
 
 export interface WeatherForecast {
@@ -36,7 +45,6 @@ export interface WeatherCardConfig {
   humidity_entity?: string;
   humidex_entity?: string;
   humidex_perception_entity?: string;
-  comfort_entity?: string;
   wind_speed_entity?: string;
   wind_gust_entity?: string;
   wind_bearing_entity?: string;
@@ -52,7 +60,24 @@ export interface WeatherCardConfig {
   dew_point_entity?: string;
   uv_index_entity?: string;
   illuminance_entity?: string;
-  lightning_distance_entity?: string;
+  max_daily_gust_entity?: string;
+  temperature_trend_entity?: string;
+  sun_entity?: string;
+  sun_elevation_entity?: string;
+  thermal_dew_point_entity?: string;
+  heat_index_entity?: string;
+  absolute_humidity_entity?: string;
+  thermal_perception_entity?: string;
+  air_quality_entity?: string;
+  model_entity?: string;
+  forecast_entity?: string;
+  forecast_source?: string;
+  weather_path?: string;
+  air_path?: string;
+  location?: string;
+  station_device_id?: string;
+  thermal_device_id?: string;
+  pollens?: Array<{ id: string; nom: string; ico?: string }>;
   name?: string;
   mode?: "compact" | "detailed";
 }

@@ -1,99 +1,70 @@
 # Niak Weather
 
-A weather dashboard card for Home Assistant, designed around the combination
-of a **local Ecowitt weather station** and the **Météo-France** integration.
-
-> Status: **v0.1.0 is a functional preview.** It displays current conditions,
-> optional station measurements and Météo-France forecasts. The complete local
-> weather model (apparent temperature, wind/pressure trends and the detailed
-> visual dashboard) is still under development.
+A Home Assistant weather dashboard combining an **Ecowitt station**, **Météo-France forecasts** and **Thermal Comfort humidex**.
 
 [![Open Niak Weather in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
-French installation instructions: [docs/installation.md](docs/installation.md).
+[Installation et mise à jour en français](docs/installation.md) · [Modèle et configuration](docs/data-model.md) · [Contrôles de fidélité](docs/parity.md)
+
+## v0.2.0-beta.6 — original dashboard port
+
+The renderer is mechanically ported from the original local YAML card, **not a visual approximation**. It keeps its MDI icons, animated halo and gauge, apparent-temperature breakdown, wind compass, daily rainfall, pressure trend, sensor/pollen rows, 18-hour curve, seven-day ranges and rain/wind summary. Compact and detailed views share the same renderer.
+
+The calculation model is checked against golden results produced by the original Jinja template. Six browser comparisons (375/768/1440 px, light/dark) check both screenshots and component geometry against the original renderer with identical data and theme. These tests do **not** prove the appearance of every third-party Home Assistant theme or the availability of a user's live sensors.
+
+This is a **pre-release** for testing in HACS; v0.1.0 remains the older stable preview.
+
+![Original dashboard layout, with demonstration data](docs/images/niak-weather-light.png)
+
+Demonstration data and test theme; the card uses your Home Assistant theme. [Dark preview](docs/images/niak-weather-dark.png).
 
 ## Requirements
 
-Niak Weather is intentionally not a generic replacement for Home Assistant's
-native weather card. Its purpose is to compare what is **measured above the
-home** with what is **forecast for the area**.
+- Home Assistant 2025.1 or newer and [HACS](https://www.hacs.xyz/).
+- [Météo-France](https://www.home-assistant.io/integrations/meteo_france/) configured with a `weather.*` entity for hourly/daily forecasts.
+- [Ecowitt](https://www.home-assistant.io/integrations/ecowitt/) measurements. Any supported station/gateway is suitable; no GW2000-specific entity name is required. Missing optional sensors remain absent.
+- [Thermal Comfort](https://github.com/dolezsa/thermal_comfort) configured using the station's **outdoor temperature and humidity** to provide humidex and its perception. Without humidex, the card explicitly labels its reduced thermometer-based estimate.
+- `sun.sun` (normally provided by Home Assistant) for solar elevation and sunrise/sunset. A dedicated elevation sensor can replace the default.
 
-1. The [Météo-France integration](https://www.home-assistant.io/integrations/meteo_france/), configured with a weather entity. It provides the hourly and daily forecasts.
-2. An Ecowitt weather station exposed in Home Assistant. This includes any supported Ecowitt gateway or station — it is not limited to the GW2000. Entity names are chosen in the card editor; the installation does not assume a gateway model, location or language.
-3. For the complete experience, [Thermal Comfort](https://www.home-assistant.io/integrations/thermal_comfort/) for humidex, plus the Niak Weather template package (to be published in this repository). It turns the raw station measurements into a consistent local-weather model: apparent temperature, observed condition, rain narrative, wind and pressure trends.
+No `button-card`, chart-card, card-mod or additional template package is needed to use the standalone card. Station entities can be prefilled using registry metadata and measurement names. Thermal Comfort selectors are filtered by metric/device; ambiguous setups require a manual choice and existing choices are preserved.
 
-The card can show current conditions and forecasts while the template package
-is being installed. The full model is the supported configuration for a
-complete dashboard.
+Lightning-distance sensors and Comfort/openings dependencies are removed for now. Forecast thunderstorms still appear; they are not presented as lightning measured at the station. The original green ventilation-benefit state is not invented without its source. Presentation/narratives currently follow the French local dashboard.
 
-### Ecowitt measurements used by the complete model
+## Reusing an existing local template
 
-| Purpose | Measurement |
-| --- | --- |
-| Outdoor conditions | temperature, humidity, dew point |
-| Wind | 10-minute average speed and direction, gust |
-| Rain | rate, daily, 24-hour, weekly, monthly and yearly totals |
-| Sun | solar radiation, UV index, illuminance |
-| Atmosphere | relative pressure |
+Owners of the original local card can choose their existing weather-model and forecast sensors in **Soleil, air et compatibilité locale**. The card then reads their attributes directly, keeping the existing calculations/history instead of creating a competing model. Detection proposes these sensors only when the model's source station and weather entity match.
 
-An optional WH57 lightning detector and a Home Assistant sun entity enrich the
-local condition when present. They are never fabricated when unavailable.
+For other users, the same weather rules run in the card. Wind/pressure trends use Home Assistant Recorder history, not a few seconds of browser history. The actual available time window is displayed; missing history is not fabricated. Frontend calculations do not create Home Assistant sensors or automations.
 
-An optional Comfort/openings entity lets the weather verdict treat rain with
-open windows as an urgent event. This preserves the separation of roles from
-the original dashboard: the Comfort model decides whether ventilation is
-appropriate; Niak Weather only reports that decision.
+## Install or update with HACS
 
-## Project goals
+Open the HACS button above, download **Niak Weather**, and reload the dashboard. If the repository is not found, add `https://github.com/Niakman13/niak-weather` to HACS custom repositories as **Dashboard**. For beta.6, enable pre-release versions or choose it in the repository's download/version dialog. The [French guide](docs/installation.md) includes setup, updating, the manual resource fallback and troubleshooting.
 
-- one HACS installation and one resource for the card;
-- visual configuration in Home Assistant — entity names are selected, never hard-coded;
-- Ecowitt entity detection to prefill the editor; every result remains editable;
-- a versioned template package for the full Ecowitt + Météo-France data model;
-- French and English interfaces, following the Home Assistant language;
-- hourly and daily Météo-France forecasts read directly from Home Assistant;
-- optional sensors: temperature, humidity, wind and rain rate;
-- release assets generated and verified automatically.
+```yaml
+type: custom:niak-weather-card
+weather_entity: weather.ma_commune
+temperature_entity: sensor.station_outdoor_temperature
+humidity_entity: sensor.station_outdoor_humidity
+humidex_entity: sensor.exterieur_humidex
+wind_speed_entity: sensor.station_wind_speed
+rain_rate_entity: sensor.station_rain_rate
+daily_rain_entity: sensor.station_daily_rain
+mode: detailed
+```
+
+Entity IDs above are examples. Prefer choosing actual entities in the visual editor.
 
 ## Development
 
 ```sh
-npm install
+npm ci
 npm run validate
+npx playwright install chromium
+npm run test:browser
 ```
 
-`npm run build` creates `dist/niak-weather-card.js`, the file that HACS will install from each GitHub release.
+`npm run build` produces `dist/niak-weather-card.js`. Reference sources/golden fixtures are committed so CI does not depend on a developer's local dashboard or Python environment. See [parity.md](docs/parity.md) for regenerating references and the bounded validation report.
 
-## Installation with HACS
-
-1. Install HACS first, then click the **Open Niak Weather in HACS** button above.
-2. In Home Assistant, choose **Open link**, then **Download** in HACS.
-3. HACS adds the dashboard resource automatically. Reload the dashboard and hard-refresh the browser if the card picker does not show Niak Weather immediately.
-4. Add **Niak Weather** from the card picker, then select the Météo-France weather entity and any available Ecowitt measurements.
-
-If the button cannot open your instance, go to **HACS → Dashboards → ⋮ → Custom repositories**, add `https://github.com/Niakman13/niak-weather`, choose **Dashboard**, and download it. Full French instructions and the manual resource fallback are in [docs/installation.md](docs/installation.md).
-
-## Planned card configuration
-
-```yaml
-type: custom:niak-weather-card
-weather_entity: weather.home
-temperature_entity: sensor.outdoor_temperature
-humidity_entity: sensor.outdoor_humidity
-wind_speed_entity: sensor.wind_speed
-rain_rate_entity: sensor.rain_rate
-mode: detailed # or compact
-```
-
-The Météo-France weather entity is required. The station fields are selected in
-the editor and remain optional: a basic station can show its temperature and
-rain, while a fully equipped station progressively enables wind, sun, UV,
-pressure and the richer local analysis.
-
-## Releasing
-
-Create and publish a GitHub release with a `v` tag, for example `v0.1.0`. GitHub validates the code, builds the card and attaches the installable JavaScript file to the release automatically.
-
-## License
+Published GitHub releases validate, run browser comparisons, then attach the installable JavaScript and source map. HACS updates the same resource; users do not need to rebuild anything.
 
 MIT. See [LICENSE](LICENSE).

@@ -1,206 +1,162 @@
-import { css, html, LitElement, nothing } from "lit";
-import { customElement, property } from "lit/decorators.js";
-import { displayState, weatherIcon } from "./format";
-import { forecastsFromResponse, toFiniteNumber } from "./forecast";
-import { localize } from "./localize";
-import { detectEcowittStation } from "./station-detection";
-import { buildWeatherVerdict } from "./weather-model";
-import { buildDailyRanges, buildHourlyChart } from "./forecast-chart";
-import type { ForecastResponse, HomeAssistant, WeatherCardConfig, WeatherForecast } from "./types";
-import "./niak-weather-card-editor";
+import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { customElement, property, state } from 'lit/decorators.js';
+import { forecastsFromResponse } from './forecast';
+import { buildLocalModel, finite, measurement, normaliseForecasts, type History } from './local-model';
+import { renderLocal } from './local-renderer';
+import { localStyles } from './local-styles';
+import { detectEcowittStation } from './station-detection';
+import { cleanConfig } from './niak-weather-card-editor';
+import type { ForecastResponse, HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
 
-@customElement("niak-weather-card")
+const zones = ['heros', 'essentiels', 'sect1', 'tuiles', 'pastilles', 'sect2', 'courbe', 'jours', 'sect3', 'bilan'] as const;
+
+@customElement('niak-weather-card')
 export class NiakWeatherCard extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistant;
-  private config?: WeatherCardConfig;
-  private hourly: WeatherForecast[] = [];
-  private daily: WeatherForecast[] = [];
-  private forecastFor?: string;
+  @state() private config?: WeatherCardConfig;
+  @state() private hourly: WeatherForecast[] = [];
+  @state() private daily: WeatherForecast[] = [];
+  @state() private history: History = {};
+  private generation = 0;
+  private forecastAt = 0;
+  private historyAt = 0;
+  private forecastPending = false;
+  private historyPending = false;
+  private timer?: ReturnType<typeof setInterval>;
+  private holdTimer?: ReturnType<typeof setTimeout>;
+  private gesture?: { x: number; y: number; at: number; moved: boolean; held?: boolean };
 
   public setConfig(config: WeatherCardConfig): void {
-    if (!config.weather_entity) throw new Error("weather_entity is required");
-    this.config = config;
-    void this.loadForecasts();
+    if (!config.weather_entity?.startsWith('weather.')) throw new Error('Choisis une entité weather pour Niak Weather.');
+    this.config = cleanConfig(config); this.generation++;
+    this.hourly = []; this.daily = []; this.history = {}; this.forecastAt = 0; this.historyAt = 0;
+    this.forecastPending = false; this.historyPending = false;
+    this.requestUpdate();
   }
-
-  public static getStubConfig(): WeatherCardConfig {
-    return { type: "custom:niak-weather-card", weather_entity: "weather.home", mode: "detailed" };
+  public static getStubConfig(hass?: HomeAssistant): WeatherCardConfig {
+    const weather = Object.keys(hass?.states ?? {}).find(id => id.startsWith('weather.')) ?? '';
+    return { type: 'custom:niak-weather-card', weather_entity: weather, mode: 'detailed', ...(hass ? detectEcowittStation(hass) : {}) };
   }
-
-  public static getConfigElement(): HTMLElement {
-    return document.createElement("niak-weather-card-editor");
+  public static getConfigElement(): HTMLElement { return document.createElement('niak-weather-card-editor'); }
+  public getCardSize(): number { return this.config?.mode === 'compact' ? 3 : 10; }
+  public getGridOptions() { return { columns: 'full', rows: 'auto' }; }
+  public connectedCallback(): void {
+    super.connectedCallback();
+    this.timer = setInterval(() => { this.requestUpdate(); }, 60_000);
+    this.forecastAt = 0; this.historyAt = 0;
   }
-
-  public getCardSize(): number { return 4; }
-
-  protected updated(): void {
-    void this.loadForecasts();
+  public disconnectedCallback(): void {
+    super.disconnectedCallback(); clearInterval(this.timer); clearTimeout(this.holdTimer); this.generation++;
+    this.forecastPending = false; this.historyPending = false;
   }
+  protected updated(): void { if (this.isConnected) { void this.loadForecasts(); void this.loadHistory(); } }
 
   private async loadForecasts(): Promise<void> {
-    if (!this.hass || !this.config || this.forecastFor === this.config.weather_entity) return;
-    this.forecastFor = this.config.weather_entity;
+    if (!this.hass || !this.config || this.config.forecast_entity || this.forecastPending || Date.now() - this.forecastAt < 900_000) return;
+    this.forecastPending = true; this.forecastAt = Date.now();
+    const generation = this.generation, id = this.config.weather_entity, hass = this.hass;
+    const request = (type: 'hourly' | 'daily') => hass.callWS<ForecastResponse>({ type: 'call_service', domain: 'weather', service: 'get_forecasts',
+      service_data: { type }, target: { entity_id: id }, return_response: true });
+    const results = await Promise.allSettled([request('hourly'), request('daily')]);
+    if (generation !== this.generation || !this.isConnected) return;
+    this.forecastPending = false;
+    const weather = hass.states[id];
+    const convert = (rows: WeatherForecast[]) => rows.map(p => ({ ...p,
+      temperature: measurement(p.temperature, weather?.attributes.temperature_unit, 'temperature'),
+      templow: measurement(p.templow, weather?.attributes.temperature_unit, 'temperature'),
+      precipitation: measurement(p.precipitation, weather?.attributes.precipitation_unit, 'rain') }));
+    this.hourly = results[0].status === 'fulfilled' ? convert(forecastsFromResponse(results[0].value, id)) : [];
+    this.daily = results[1].status === 'fulfilled' ? convert(forecastsFromResponse(results[1].value, id)) : [];
+    if (results.some(r => r.status === 'rejected')) this.forecastAt = Date.now() - 840_000; // Retry failures in 1 minute.
+  }
+  private async loadHistory(): Promise<void> {
+    if (!this.hass || !this.config || this.config.model_entity || this.historyPending || Date.now() - this.historyAt < 300_000) return;
+    const ids = [this.config.pressure_entity, this.config.wind_speed_entity].filter((id): id is string => !!id);
+    if (!ids.length) return;
+    this.historyPending = true; this.historyAt = Date.now();
+    const generation = this.generation;
     try {
-      const request = (type: "hourly" | "daily") => this.hass!.callWS<ForecastResponse>({
-        type: "call_service", domain: "weather", service: "get_forecasts",
-        service_data: { type }, target: { entity_id: this.config!.weather_entity }, return_response: true,
-      });
-      const [hourly, daily] = await Promise.all([request("hourly"), request("daily")]);
-      this.hourly = forecastsFromResponse(hourly, this.config.weather_entity);
-      this.daily = forecastsFromResponse(daily, this.config.weather_entity);
-    } catch {
-      // Forecast support depends on the chosen weather integration. Current conditions stay usable.
-      this.hourly = [];
-      this.daily = [];
-    }
+      const result = await this.hass.callWS<History>({ type: 'history/history_during_period', start_time: new Date(Date.now() - 10800_000).toISOString(),
+        end_time: new Date().toISOString(), entity_ids: ids, minimal_response: true, no_attributes: true });
+      if (generation === this.generation && this.isConnected) this.history = result;
+    } catch { /* Recorder may exclude the entities. No invented trend: the local renderer says it's being measured. */ }
+    finally { if (generation === this.generation) this.historyPending = false; }
   }
-
-  private timeLabel(value: string): string {
-    return new Intl.DateTimeFormat(this.hass?.language || "en", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  private localForecasts() {
+    const e = this.hass?.states[this.config?.forecast_entity ?? ''];
+    if (!e || ['unknown', 'unavailable'].includes(e.state)) return { heures: [], jours: [] };
+    return { heures: Array.isArray(e.attributes.heures) ? e.attributes.heures.slice(0, 18) : [],
+      jours: Array.isArray(e.attributes.jours) ? e.attributes.jours.slice(0, 7) : [] };
   }
-
-  private dayLabel(value: string): string {
-    return new Intl.DateTimeFormat(this.hass?.language || "en", { weekday: "short" }).format(new Date(value));
-  }
-
-  private conditionLabel(condition: string): string {
-    const french: Record<string, string> = {
-      sunny: "Grand soleil", "clear-night": "Nuit claire", partlycloudy: "Éclaircies", cloudy: "Ciel couvert",
-      fog: "Brouillard", rainy: "Pluvieux", pouring: "Fortes pluies", lightning: "Orageux", "lightning-rainy": "Orages et pluie",
-      snowy: "Neige", "snowy-rainy": "Pluie et neige", windy: "Venteux", "windy-variant": "Venteux",
-    };
-    if (this.hass?.language?.toLowerCase().startsWith("fr")) return french[condition] ?? condition;
-    return condition.replaceAll("-", " ");
-  }
-
   protected render() {
     if (!this.hass || !this.config) return nothing;
-    const t = (key: Parameters<typeof localize>[1]) => localize(this.hass?.language, key);
-    const weather = this.hass.states[this.config.weather_entity];
-    const metric = (entityId: string | undefined) => entityId ? toFiniteNumber(this.hass?.states[entityId]?.state) : undefined;
-    const comfort = this.config.comfort_entity ? this.hass.states[this.config.comfort_entity] : undefined;
-    const openWindows = toFiniteNumber(comfort?.attributes.ouverts_n) ?? toFiniteNumber(comfort?.attributes.open_windows);
-    const weatherTemperature = toFiniteNumber(weather?.attributes.temperature);
-    const verdict = buildWeatherVerdict({
-      temperature: metric(this.config.temperature_entity) ?? weatherTemperature,
-      humidity: metric(this.config.humidity_entity), humidex: metric(this.config.humidex_entity), openWindows, windSpeed: metric(this.config.wind_speed_entity), windGust: metric(this.config.wind_gust_entity),
-      solarRadiation: metric(this.config.solar_radiation_entity), rainRate: metric(this.config.rain_rate_entity), dewPoint: metric(this.config.dew_point_entity),
-      uvIndex: metric(this.config.uv_index_entity), lightningDistance: metric(this.config.lightning_distance_entity),
-    }, weather?.state, this.hourly);
-    const metrics = [
-      [t("temperature"), this.config.temperature_entity],
-      [t("humidity"), this.config.humidity_entity],
-      [t("wind"), this.config.wind_speed_entity],
-      [t("rain"), this.config.rain_rate_entity],
-    ].filter(([, entityId]) => entityId) as [string, string][];
-    const temperature = metric(this.config.temperature_entity) ?? weatherTemperature;
-    const detailed = this.config.mode !== "compact";
-    const apparent = verdict.apparentTemperature ?? temperature;
-    const condition = verdict.condition;
-    const differsFromForecast = verdict.conditionSource === "station";
-    const effects = [
-      ["💨", t("wind"), verdict.effects.wind], ["☀️", "Sun", verdict.effects.sun],
-      ["🌧️", t("rain"), verdict.effects.rain], ["🌙", "Night", verdict.effects.night],
-    ].filter(([, , effect]) => Math.abs(effect as number) >= 0.1) as [string, string, number][];
-    const measuredTiles = [
-      ["💨", t("wind"), this.config.wind_speed_entity, this.config.wind_gust_entity ? `${t("gusts")} ${displayState(this.hass.states[this.config.wind_gust_entity], t("unavailable"))}` : ""],
-      ["🌧️", t("rain"), this.config.rain_rate_entity, this.config.daily_rain_entity ? `${t("dailyRain")} ${displayState(this.hass.states[this.config.daily_rain_entity], t("unavailable"))}` : ""],
-      ["◌", t("pressure"), this.config.pressure_entity, ""],
-    ].filter(([, , entityId]) => entityId) as [string, string, string, string][];
-    const chips = [
-      ["☀️", "UV", this.config.uv_index_entity], ["◒", t("solar"), this.config.solar_radiation_entity],
-      ["💧", t("dewPoint"), this.config.dew_point_entity], ["☷", t("light"), this.config.illuminance_entity],
-    ].filter(([, , entityId]) => entityId) as [string, string, string][];
-    const hourlyChart = buildHourlyChart(this.hourly);
-    const dailyRanges = buildDailyRanges(this.daily);
-    const line = hourlyChart.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
-    const chartLabelIndexes = new Set([0, Math.floor((hourlyChart.length - 1) / 3), Math.floor((hourlyChart.length - 1) * 2 / 3), hourlyChart.length - 1]);
-
-    return html`
-      <ha-card>
-        <main>
-          <div class="hero level-${verdict.level}">
-            <div class="hero-top">
-              <div class="weather-bubble">${weatherIcon(condition)}</div>
-              <div class="summary"><span class="eyebrow">${this.config.name || t("cardName")}</span><strong>${this.conditionLabel(condition)}</strong>${differsFromForecast ? html`<em>${t("measuredHere")}</em>` : nothing}</div>
-              ${apparent !== undefined ? html`<div class="temperature"><b>${apparent}°</b><span>${t("apparent")}</span>${temperature !== undefined && Math.abs(apparent - temperature) >= .35 ? html`<small>${temperature}° ${t("thermometer")}</small>` : nothing}</div>` : nothing}
-            </div>
-            ${apparent !== undefined ? html`<div class="gauge"><div><i style="left:${Math.min(99, Math.max(1, (apparent + 5) / 50 * 100))}%"></i>${temperature !== undefined ? html`<b style="left:${Math.min(99, Math.max(1, (temperature + 5) / 50 * 100))}%"></b>` : nothing}</div><span>−5°</span><span>45°</span></div>` : nothing}
-          ${effects.length ? html`<div class="effects">${effects.map(([icon, label, effect]) => html`<span><i>${icon}</i>${label} ${effect > 0 ? "+" : "−"}${Math.abs(effect).toFixed(1)}°</span>`)}</div>` : nothing}
-          </div>
-          ${!detailed && metrics.length ? html`<div class="metrics">${metrics.map(([label, id]) => html`<div><span>${label}</span><b>${displayState(this.hass?.states[id], t("unavailable"))}</b></div>`)}</div>` : nothing}
-          ${detailed && measuredTiles.length ? html`<section class="measured"><h2>${t("today")} <small>${t("measured")}</small></h2><div class="tiles">${measuredTiles.map(([icon, label, entityId, detail]) => html`<div><i>${icon}</i><span>${label}</span><b>${displayState(this.hass?.states[entityId], t("unavailable"))}</b>${detail ? html`<small>${detail}</small>` : nothing}</div>`)}</div></section>` : nothing}
-          ${detailed && chips.length ? html`<div class="chips">${chips.map(([icon, label, entityId]) => html`<span><i>${icon}</i><b>${displayState(this.hass?.states[entityId], t("unavailable"))}</b>${label}</span>`)}</div>` : nothing}
-          ${detailed && (hourlyChart.length || dailyRanges.length) ? html`<section class="forecast-section"><h2>${t("nextHours")} <small>${t("forecastSource")}</small></h2><div class="forecast-grid">${hourlyChart.length ? html`<div class="curve-panel"><h3>${t("nextHours")}</h3><div class="curve"><svg viewBox="0 0 100 82" preserveAspectRatio="none" aria-label=${t("nextHours")}><defs><linearGradient id="niak-temperature" x1="0" x2="0" y1="0" y2="1"><stop stop-color="var(--primary-color)" stop-opacity=".35"/><stop offset="1" stop-color="var(--primary-color)" stop-opacity="0"/></linearGradient></defs><path d=${`M ${line} L 100 62 L 0 62 Z`} fill="url(#niak-temperature)"/><polyline points=${line} fill="none" stroke="var(--primary-color)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" vector-effect="non-scaling-stroke"/>${hourlyChart.map((point, index) => html`${point.rain ? html`<line x1=${point.x} x2=${point.x} y1=${78 - point.rain} y2="78" class="rain-bar" vector-effect="non-scaling-stroke"/>` : nothing}${chartLabelIndexes.has(index) ? html`<text x=${point.x} y=${Math.max(6, point.y - 4)} text-anchor="middle">${Math.round(toFiniteNumber(point.forecast.temperature) ?? 0)}°</text><text x=${point.x} y="82" text-anchor="middle">${this.timeLabel(point.forecast.datetime).slice(0, 2)}h</text>` : nothing}`)}</svg><div class="curve-icons">${hourlyChart.map((point) => html`<span>${weatherIcon(point.forecast.condition)}</span>`)}</div></div></div>` : nothing}${dailyRanges.length ? html`<div class="days-panel"><h3>${t("nextDays")}</h3><div class="daily-ranges">${dailyRanges.map((day) => html`<div><span>${this.dayLabel(day.forecast.datetime)}</span><i>${weatherIcon(day.forecast.condition)}</i><div class="range"><b style=${`left:${day.start}%;width:${day.width}%`}></b></div><small>${day.low}°</small><strong>${day.high}°</strong>${day.forecast.precipitation ? html`<em>${day.forecast.precipitation} mm</em>` : nothing}</div>`)}</div></div>` : nothing}</div></section>` : nothing}
-        </main>
-      </ha-card>`;
+    const config = this.config, hass = this.hass, now = new Date();
+    const forecast = config.forecast_entity ? this.localForecasts() : normaliseForecasts(this.hourly, this.daily, now, hass.config?.time_zone);
+    const hourly = forecast.heures.map((p: any) => ({ datetime: '', temperature: finite(p.t), precipitation: finite(p.p), condition: p.c }));
+    const calculated = buildLocalModel(hass, config, hourly, this.history, now);
+    let model = config.model_entity ? hass.states[config.model_entity] : calculated;
+    if (!model) model = { entity_id: '__niak_model', state: 'unavailable', attributes: {} };
+    // A legacy model may still publish ventilation advice: don't display the explicitly removed feature.
+    if (model.attributes.alerte === 'ouvrants') {
+      const withoutOpenings = buildLocalModel(hass, config, hourly, {}, now, model.attributes);
+      model = { ...model, attributes: { ...model.attributes,
+        ...Object.fromEntries(['alerte', 'niveau', 'sous_titre'].map(key => [key, withoutOpenings.attributes[key]])) } };
+    }
+    const weather = hass.states[config.weather_entity];
+    const variables = { mode: config.mode === 'compact' ? 'accueil' : 'complet', ent: '__niak_model', ent_prev: '__niak_forecast',
+      ent_air: config.air_quality_entity, lieu: config.location ?? String(weather?.attributes.friendly_name ?? ''),
+      source_prev: config.forecast_source ?? (/france/i.test(String(weather?.attributes.attribution)) ? 'Météo-France' : 'prévisions'),
+      jauge_min: -5, jauge_max: 45, jours_max: 7, pollens: config.pollens ?? [], page_air: config.air_path };
+    const states = { ...hass.states, __niak_model: model, __niak_forecast: { state: String(forecast.heures.length), attributes: forecast } };
+    const rendered = renderLocal(variables, states, hass);
+    return html`<ha-card><div id="container" @pointerdown=${this.down} @pointermove=${this.move} @pointercancel=${this.cancel} @pointerup=${this.up}
+      @click=${this.handleClick} @keydown=${this.keydown}>${zones.map(zone => html`<div style=${`grid-area:${zone}`} id=${zone}>${unsafeHTML(rendered[zone])}</div>`)}</div></ha-card>`;
   }
-
-  static styles = css`
-    ha-card { overflow:hidden; } main { padding:0 16px 16px; } .hero { margin:0 -16px 14px; padding:16px; border-bottom:1px solid color-mix(in srgb, var(--primary-text-color) 8%, transparent); background:radial-gradient(circle at 8% 10%, rgb(var(--weather-accent, 61,155,233) / .18), transparent 35%); } .level-urgent { --weather-accent:244,105,102; } .level-action { --weather-accent:244,180,86; } .level-optimized { --weather-accent:61,155,233; } .hero-top { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:12px; } .weather-bubble { display:grid; width:54px; height:54px; place-items:center; border:1px solid rgb(var(--weather-accent, 61,155,233) / .35); border-radius:50%; background:rgb(var(--weather-accent, 61,155,233) / .13); box-shadow:0 0 22px rgb(var(--weather-accent, 61,155,233) / .20); font-size:28px; } .summary { display:flex; min-width:0; flex-direction:column; gap:3px; } .summary strong { overflow:hidden; font-size:1.05rem; text-overflow:ellipsis; white-space:nowrap; } .eyebrow, .summary em { color:var(--secondary-text-color); font-size:.7rem; font-style:normal; text-transform:uppercase; } .summary em { width:max-content; padding:2px 6px; border-radius:8px; background:rgb(var(--weather-accent, 61,155,233) / .16); color:rgb(var(--weather-accent, 61,155,233)); } .temperature { display:flex; align-items:flex-end; flex-direction:column; } .temperature b { font-size:3rem; font-weight:300; line-height:.9; } .temperature span, .temperature small { margin-top:4px; color:var(--secondary-text-color); font-size:.7rem; } .gauge { margin-top:17px; } .gauge div { position:relative; height:6px; border-radius:4px; background:linear-gradient(90deg,#65a8e6,#66bd9e,#f0c860,#e7836e); } .gauge i, .gauge b { position:absolute; top:50%; width:12px; height:12px; border-radius:50%; transform:translate(-50%,-50%); } .gauge i { border:3px solid var(--card-background-color); background:rgb(var(--weather-accent,61,155,233)); box-shadow:0 0 0 2px rgb(var(--weather-accent,61,155,233)); } .gauge b { width:2px; height:16px; background:var(--primary-text-color); } .gauge > span { display:inline-block; width:50%; margin-top:5px; color:var(--secondary-text-color); font-size:.7rem; } .gauge > span:last-child { text-align:right; } .effects, .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:13px; } .effects span, .chips span { padding:5px 8px; border-radius:12px; background:var(--secondary-background-color); color:var(--secondary-text-color); font-size:.72rem; } .effects i, .chips i { margin-right:3px; font-style:normal; } .chips { margin-top:10px; } .chips b { margin-right:4px; color:var(--primary-text-color); } .metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } .metrics div { display:flex; flex-direction:column; gap:2px; padding:10px; border-radius:10px; background:var(--secondary-background-color); } .metrics span, small { color:var(--secondary-text-color); font-size:.75rem; } .metrics b { font-size:.95rem; } section { margin-top:18px; } h2 { margin:0 0 8px; color:var(--secondary-text-color); font-size:.75rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; } .tiles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; } .tiles div { display:flex; min-width:0; flex-direction:column; gap:3px; padding:10px; border-radius:11px; background:var(--secondary-background-color); } .tiles i { font-size:1.1rem; font-style:normal; } .tiles span { overflow:hidden; color:var(--secondary-text-color); font-size:.7rem; text-overflow:ellipsis; white-space:nowrap; } .tiles b { overflow:hidden; font-size:.9rem; text-overflow:ellipsis; white-space:nowrap; } .curve { position:relative; min-height:125px; overflow:hidden; border-radius:11px; background:var(--secondary-background-color); } svg { display:block; width:100%; height:105px; overflow:visible; } svg text { fill:var(--secondary-text-color); font-family:var(--paper-font-common-base_-_font-family, sans-serif); font-size:4px; } .rain-bar { stroke:var(--primary-color); stroke-linecap:round; stroke-width:1.5; opacity:.75; } .curve-icons { display:grid; grid-template-columns:repeat(18,minmax(0,1fr)); position:absolute; top:55px; right:0; left:0; padding:0 2px; font-size:.7rem; text-align:center; } .curve-icons span:nth-child(n+19) { display:none; } .daily-ranges { display:grid; gap:7px; } .daily-ranges > div { display:grid; grid-template-columns:38px 24px minmax(50px,1fr) 28px 28px auto; align-items:center; gap:5px; min-height:28px; } .daily-ranges span { overflow:hidden; color:var(--secondary-text-color); font-size:.72rem; text-overflow:ellipsis; text-transform:capitalize; white-space:nowrap; } .daily-ranges i { font-size:1rem; font-style:normal; } .range { position:relative; height:6px; border-radius:4px; background:color-mix(in srgb,var(--primary-text-color) 10%,transparent); } .range b { position:absolute; top:0; height:6px; border-radius:4px; background:linear-gradient(90deg,#74a9df,#e8b45e); } .daily-ranges small { text-align:right; } .daily-ranges strong { font-size:.83rem; } .daily-ranges em { color:var(--secondary-text-color); font-size:.68rem; font-style:normal; white-space:nowrap; }
-    /* Structure and proportions of the original Niak local-weather card. */
-    ha-card { container-type: inline-size; }
-    main { padding: 0; }
-    .hero { margin: 0; padding: 14px 15px 12px; background: none; }
-    .hero-top { display:flex; align-items:flex-start; gap:13px; }
-    .weather-bubble { flex:0 0 auto; width:74px; height:74px; font-size:36px; border:1.5px solid rgb(var(--weather-accent) / .22); background:rgb(var(--weather-accent) / .13); box-shadow:0 0 18px rgb(var(--weather-accent) / .30); }
-    .summary { padding-top:3px; }
-    .summary strong { color:rgb(var(--weather-accent)); font-size:16px; font-weight:800; letter-spacing:-.2px; }
-    .eyebrow { display:none; }
-    .summary em { border:1px dashed rgba(127,127,127,.45); background:none; color:var(--secondary-text-color); font-size:9.5px; font-weight:600; }
-    .temperature { margin-left:auto; padding-top:2px; }
-    .temperature b { color:rgb(var(--weather-accent)); font-size:34px; font-weight:800; letter-spacing:-1.5px; }
-    .gauge { margin-top:13px; }
-    .gauge div { height:8px; border-radius:999px; opacity:.82; }
-    .gauge i { width:18px; height:18px; border-width:2.5px; background:rgb(var(--weather-accent)); }
-    .gauge b { top:-3px; width:2px; height:14px; background:var(--card-background-color); }
-    .gauge > span { font-size:10px; font-weight:700; }
-    .effects { margin-top:11px; padding-top:10px; border-top:1px solid rgba(150,150,150,.14); }
-    .effects span, .chips span { padding:0; background:none; border-radius:0; font-size:10.5px; }
-    .effects span { font-weight:600; }
-    .measured, .forecast-section { margin-top:0; padding:12px 15px 10px; border-top:1px solid rgba(150,150,150,.16); }
-    h2 { margin:0 0 8px; color:var(--primary-text-color); font-size:11px; font-weight:800; letter-spacing:.06em; }
-    h2 small { margin-left:9px; color:var(--secondary-text-color); font-size:10px; font-weight:600; letter-spacing:0; text-transform:none; }
-    .tiles { display:flex; flex-wrap:wrap; gap:8px; }
-    .tiles div { flex:1 1 180px; min-width:0; display:grid; grid-template-columns:40px minmax(0,1fr); grid-template-rows:auto auto auto; column-gap:9px; align-items:center; padding:8px 10px; border:1px solid rgb(var(--weather-accent) / .16); border-radius:12px; background:rgb(var(--weather-accent) / .06); }
-    .tiles i { grid-row:1 / span 3; display:grid; width:40px; height:40px; place-items:center; border-radius:50%; background:rgb(var(--weather-accent) / .12); color:rgb(var(--weather-accent)); }
-    .tiles span { font-size:10.5px; font-weight:700; color:rgb(var(--weather-accent)); }
-    .tiles b { font-size:16px; letter-spacing:-.4px; }
-    .tiles small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:9.5px; font-weight:600; }
-    .chips { margin:0; padding:9px 15px 13px; border-top:1px solid rgba(150,150,150,.16); }
-    .forecast-section { padding-bottom:0; }
-    .forecast-grid { display:grid; grid-template-columns:minmax(0,1fr); }
-    .curve-panel, .days-panel { min-width:0; padding:6px 0 10px; }
-    .days-panel { border-top:1px solid rgba(150,150,150,.16); }
-    h3 { margin:0 0 6px; color:var(--secondary-text-color); font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
-    .curve { min-height:0; height:134px; border-radius:0; background:none; }
-    svg { height:112px; }
-    svg text { font-size:3px; font-weight:800; }
-    .curve-icons { top:52px; font-size:10px; }
-    .daily-ranges { gap:2px; }
-    .daily-ranges > div { min-height:26px; }
-    @container (min-width: 900px) {
-      .forecast-grid { grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); }
-      .curve-panel { padding-right:15px; }
-      .days-panel { padding:6px 0 10px 15px; border-top:0; border-left:1px solid rgba(150,150,150,.16); }
-      .curve { height:154px; }
+  private down(event: PointerEvent): void {
+    clearTimeout(this.holdTimer); if (event.button !== 0) return;
+    this.gesture = { x:event.clientX, y:event.clientY, at:Date.now(), moved:false };
+    if (this.config?.weather_path) this.holdTimer = setTimeout(() => {
+      if (this.gesture && !this.gesture.moved) { this.gesture.held = true; this.navigate(this.config!.weather_path!); }
+    }, 500);
+  }
+  private move(event: PointerEvent): void {
+    if (this.gesture && Math.hypot(event.clientX - this.gesture.x, event.clientY - this.gesture.y) > 12) {
+      this.gesture.moved = true; clearTimeout(this.holdTimer);
     }
-    @container (max-width: 400px) {
-      .weather-bubble { width:60px; height:60px; font-size:29px; }
-      .temperature b { font-size:28px; }
-      .tiles div { flex-basis:100%; }
-      .curve { height:108px; }
+  }
+  private up(): void { clearTimeout(this.holdTimer); }
+  private cancel(): void { clearTimeout(this.holdTimer); if (this.gesture) this.gesture.moved = true; }
+  private open(entityId: string): void {
+    this.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId }, bubbles: true, composed: true }));
+  }
+  private handleClick(event: MouseEvent): void {
+    event.stopPropagation(); const gesture = this.gesture; this.gesture = undefined;
+    if (gesture?.moved || gesture?.held) return;
+    const path = this.config?.weather_path;
+    if (gesture && Date.now() - gesture.at >= 500) { if (path) this.navigate(path); return; }
+    const target = event.composedPath().find(e => e instanceof HTMLElement && (e.hasAttribute('data-entity') || e.hasAttribute('data-nav'))) as HTMLElement | undefined;
+    if (target?.hasAttribute('data-nav')) { this.navigate(target.getAttribute('data-nav')!); return; }
+    const id = target?.getAttribute('data-entity') ?? this.config?.model_entity ?? this.config?.weather_entity;
+    if (!target && this.config?.mode === 'compact' && path) this.navigate(path); else if (id) this.open(id);
+  }
+  private keydown(event: KeyboardEvent): void {
+    if (!['Enter', ' '].includes(event.key)) return;
+    const target = event.target instanceof HTMLElement ? event.target.closest('[data-entity], [data-nav]') : null;
+    if (target) { event.preventDefault(); event.stopPropagation();
+      if (target.hasAttribute('data-nav')) this.navigate(target.getAttribute('data-nav')!); else this.open(target.getAttribute('data-entity')!);
     }
-  `;
+  }
+  private navigate(path: string): void {
+    if (!path.startsWith('/') || path.startsWith('//')) return;
+    history.pushState(null, '', path); window.dispatchEvent(new CustomEvent('location-changed', { bubbles: true, composed: true }));
+  }
+  static styles = [css`:host { display:block; } ha-card { padding:0; overflow:hidden; container-type:inline-size; }
+    #container { display:grid; grid-template-areas:"heros" "essentiels" "sect1" "tuiles" "pastilles" "sect2" "courbe" "jours" "sect3" "bilan"; gap:0; min-width:0; }
+    [data-entity]:focus-visible, [data-nav]:focus-visible { outline:2px solid var(--primary-color); outline-offset:3px; }`, unsafeCSS(localStyles)];
 }
-
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "niak-weather-card", name: "Niak Weather", description: "A configurable weather summary card", preview: true,
-  getEntitySuggestion: (hass: HomeAssistant, entityId: string) => {
-    if (!entityId.startsWith("weather.")) return null;
-    return { config: { type: "custom:niak-weather-card", weather_entity: entityId, mode: "detailed", ...detectEcowittStation(hass) } };
-  },
-});
-
+window.customCards.push({ type: 'niak-weather-card', name: 'Niak Weather', description: 'Météo locale Ecowitt et prévisions', preview: true,
+  getEntitySuggestion: (hass: HomeAssistant, entityId: string) => entityId.startsWith('weather.') ? {
+    config: { type: 'custom:niak-weather-card', weather_entity: entityId, mode: 'detailed', ...detectEcowittStation(hass) } } : null });
 declare global { interface Window { customCards: Array<Record<string, unknown>>; } }
