@@ -66,7 +66,7 @@ export function renderAtmo(hass: HomeAssistant, config: WeatherCardConfig, now =
   return html`${scope === 'tomorrow' ? nothing : day(false)}${scope === 'today' || config.show_atmo_tomorrow === false || config.mode === 'compact' ? nothing : day(true)}`;
 }
 export const atmoStyles = css`
-  .nw-atmo-day { border-top:1px solid var(--divider-color,rgba(150,150,150,.14)); margin-top:16px; padding:14px 0 0; color:var(--primary-text-color); font-size:12px; }
+  .nw-atmo-day { border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:12px; background:rgba(150,150,150,.035); margin-top:16px; padding:14px 16px; color:var(--primary-text-color); font-size:12px; }
   .nw-atmo-heading, .nw-atmo-next>summary { font-size:11px; font-weight:650; }
   .nw-atmo-heading span, .nw-atmo-next>summary span { color:var(--secondary-text-color); font-weight:400; margin-left:8px; }
   .nw-atmo-next>summary { cursor:pointer; padding:2px 0; }

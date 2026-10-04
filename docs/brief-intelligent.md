@@ -76,4 +76,12 @@ Le nom du capteur est un exemple. Le brief est activé par défaut dans cette b�
 
 ## Vérification de la bêta
 
+### Ajustements préparés après beta.2 (non encore publiés)
+
+La jauge de ressenti est encadrée sur toute la largeur. La valeur est affichée en grand au-dessus du curseur, dans la teinte du dégradé à sa position, ajustée pour rester lisible selon le thème. Le cadre conserve la base humidex et les contributions du vent, soleil, pluie ou ciel nocturne lorsqu’elles sont disponibles et significatives. Un humidex est une base de calcul, pas une correction à additionner une deuxième fois. Une contribution absente n’est pas remplacée par zéro.
+
+Les indices air/pollens sont également encadrés. Les titres Synthèse, Aujourd’hui et Prévisions sont agrandis et les sections espacées. Le volet « Les points à retenir » remplace le long texte technique par les points d’attention regroupés : vigilance officielle, maintenant, prochaines heures, air et pollens. Les sources restent accessibles, les limites de données se consultent séparément. Les détails des seuils restent documentés dans ce guide.
+
+Les cumuls de station sont nommés « Cette semaine » et « Ce mois » ; ils ne représentent pas des périodes glissantes de sept ou trente jours. Ce changement concerne les libellés, pas les valeurs ni les réglages de remise à zéro de la station.
+
 Des tests dédiés couvrent les cumuls de signaux, les seuils, les horaires, les indices Atmo, les données anciennes/manquantes et la priorité de la vigilance officielle. Les contrôles navigateur vérifient le bandeau à 375/768/1440 px en clair/sombre, l’ouverture des explications et les sources au clavier. Le nouveau bandeau n’a pas encore de référence visuelle approuvée ; le comportement sur une vraie installation et les contrastes de tous les thèmes restent à valider avant publication stable.

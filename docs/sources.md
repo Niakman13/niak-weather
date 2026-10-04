@@ -38,7 +38,7 @@ Dans **Entités de la station**, choisissez votre station et utilisez **Préremp
 | Rayonnement solaire, UV, luminosité | Contribution solaire au ressenti et indicateurs complémentaires. |
 | Point de rosée | Pastille rosée et règles de brouillard. |
 
-Chaque mesure est facultative individuellement. Sans capteur, elle reste absente ou indisponible ; un thermomètre configuré mais indisponible n’est pas remplacé silencieusement par la température du bulletin. Les barres « 7 jours » et « 30 jours » reprennent les compteurs **semaine et mois de la station**, pas des sommes glissantes calculées par la carte.
+Chaque mesure est facultative individuellement. Sans capteur, elle reste absente ou indisponible ; un thermomètre configuré mais indisponible n’est pas remplacé silencieusement par la température du bulletin. Les compteurs **semaine et mois de la station** ne sont pas des sommes glissantes calculées par la carte. La prochaine mise à jour les nommera « Cette semaine » et « Ce mois », à la place de « 7 jours » et « 30 jours ». Leur date de remise à zéro dépend des réglages de la station.
 
 ## Thermal Comfort — humidex et ressenti
 

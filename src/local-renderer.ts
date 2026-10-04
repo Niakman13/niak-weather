@@ -79,7 +79,7 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
          + '</span>';
   };
   if (hum !== null) {
-    deco += pastille('mdi:water-percent', 'humidex', fr(hum, 1) + '°',
+    deco += pastille('mdi:water-percent', V.dashboard ? 'base humidex' : 'humidex', fr(hum, 1) + '°',
                      'var(--mush-rgb-cyan, 77,182,172)',
                      A.perception || '', SRC.humidex);
   }
@@ -156,7 +156,8 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
       h += '<span class="me-tick" style="left: ' + pTex.toFixed(1) + '%;"'
         +  ' title="' + fr(tex, 1) + ' °C au thermomètre"></span>';
     }
-    h +=     '<span class="me-cur" style="left: ' + pRes.toFixed(1) + '%;">'
+    if (V.dashboard) h += '<strong class="nw-feels-value" style="left:clamp(42px,' + pRes.toFixed(1) + '%,calc(100% - 42px))">' + fr(res, 1) + '<small>°C</small></strong>';
+  h +=     '<span class="me-cur" style="left: ' + pRes.toFixed(1) + '%;">'
       +        '<i></i></span>';
     h +=   '</div>';
     h +=   '<div class="me-jl">'
@@ -323,8 +324,8 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
     var l = '';
     if (p24 !== null) l += ligne('24 h', pc(p24), fr(p24, 1), 'mm', SRC.pluie_24h);
     else if (pjo !== null) l += ligne('aujourd’hui', pc(pjo), fr(pjo, 1), 'mm', SRC.pluie_jour);
-    if (pse !== null) l += ligne('7 jours', pc(pse), fr(pse, 1), 'mm', SRC.pluie_semaine);
-    if (pmo !== null) l += ligne('30 jours', pc(pmo), fr(pmo, 1), 'mm', SRC.pluie_mois);
+    if (pse !== null) l += ligne('Cette semaine', pc(pse), fr(pse, 1), 'mm', SRC.pluie_semaine);
+    if (pmo !== null) l += ligne('Ce mois', pc(pmo), fr(pmo, 1), 'mm', SRC.pluie_mois);
     if (pan !== null) l += ligne('année', null, fr(pan, 1), 'mm', SRC.pluie_an, true);
     var recit = String(A.pluie_recit || '');
     blocs += '<div class="me-bl" style="--bc: ' + CYAN + ';">'

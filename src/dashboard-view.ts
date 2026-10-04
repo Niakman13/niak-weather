@@ -2,6 +2,8 @@ import { css, html, nothing } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { briefPreview } from './brief-preview';
 import { renderAtmo } from './atmo-view';
+import { finite } from './local-model';
+import { comfortColor } from './comfort-color';
 import type { WeatherBrief } from './weather-brief';
 import type { HassEntity, HomeAssistant, WeatherCardConfig } from './types';
 
@@ -13,6 +15,13 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   const condition = unavailable ? 'Météo indisponible' : String(model.attributes.titre || 'Votre météo');
   const headline = preview?.selected[0]?.group === 'official' ? brief!.title : preview?.selected[0]?.text ?? (brief && !brief.available ? 'Données insuffisantes' : condition);
   const current = unavailable ? 'Mesures indisponibles.' : brief?.summary.split('\n')[0].replace(/^Maintenant : /, '').split('. ')[0];
+  const feels = finite(model.attributes.ressenti);
+  const groups = [
+    { key:'official', title:'Vigilance officielle', description:'Bulletin du département choisi dans les réglages.' },
+    { key:'now', title:'Maintenant', description:'Mesures et estimations actuelles à la maison.' },
+    { key:'future', title:'Dans les prochaines heures', description:'Ce que prévoit le fournisseur météo ; l’heure peut évoluer.' },
+    { key:'environment', title:'Air et pollens', description:'Indices de votre zone, pour aujourd’hui ou demain selon le libellé.' },
+  ];
   return html`
     <section id="heros" class="nw-section nw-synthesis" aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
       <header class="nw-section-heading"><h2 id="nw-synthesis-title">Synthèse</h2><span>${location}</span>
@@ -25,15 +34,20 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
           : html`<p>${current || String(model.attributes.sous_titre || 'Choisissez vos sources météo.')}</p>`}
         ${brief && !preview?.selected.some(s => s.group === 'future') ? html`<p><span>À venir</span>${brief.signals.find(s => s.group === 'future')?.text ?? (brief.caveats.some(c => c.startsWith('Prévisions des')) ? 'Prévisions indisponibles.' : 'Pas de signal marqué dans les 6 h disponibles.')}</p>` : nothing}
       </div>
-      ${brief ? html`<details class="nw-brief-details"><summary>Comprendre la synthèse${preview?.remaining ? ` · ${preview.remaining} autre${preview.remaining > 1 ? 's' : ''} point${preview.remaining > 1 ? 's' : ''} important${preview.remaining > 1 ? 's' : ''}` : ''}</summary>
-        <p>${brief.summary.split('\n')[0]}</p>
-        <p>La couleur retient le niveau d’attention le plus élevé. Les seuils de la carte ne sont pas des vigilances officielles.</p>
-        ${brief.signals.map(s => html`<p><strong>${s.text}</strong> — ${s.explanation}${s.entity ? html` <button data-entity=${s.entity}>Voir la source</button>` : nothing}</p>`)}
-        ${brief.caveats.map(c => html`<p class="nw-brief-caveat">${c}</p>`)}</details>` : nothing}
+      ${brief ? html`<details class="nw-brief-details"><summary>Les points à retenir${preview?.remaining ? ` · ${preview.remaining} autre${preview.remaining > 1 ? 's' : ''} point${preview.remaining > 1 ? 's' : ''}` : ''}</summary>
+        <div class="nw-brief-groups">${groups.map(group => {
+          const signals = brief.signals.filter(s=>s.group===group.key && s.severity>0);
+          return signals.length ? html`<section class="nw-brief-group"><h4>${group.title}</h4><p class="nw-brief-context">${group.description}</p>
+            <ul>${signals.map(s=>html`<li><ha-icon icon=${s.icon}></ha-icon><span>${s.text}</span>${s.entity ? html`<button data-entity=${s.entity} aria-label=${`Source : ${s.text}`}>Source</button>` : nothing}</li>`)}</ul></section>` : nothing;
+        })}</div>
+        ${!brief.signals.some(s=>s.severity>0) ? html`<p>Pas de point d’attention renforcé parmi les données disponibles.</p>` : nothing}
+        <p class="nw-brief-context">La couleur suit le point le plus préoccupant. Seule une vigilance rouge Météo-France donne le rouge au bandeau.</p>
+        ${brief.caveats.length ? html`<details class="nw-brief-limits"><summary>Données à vérifier · ${brief.caveats.length}</summary>
+          <ul>${brief.caveats.map(c=>html`<li>${c}</li>`)}</ul></details>` : nothing}</details>` : nothing}
     </section>
     <section id="today" class="nw-section" aria-labelledby="nw-today-title" style="--vc:61,155,233">
       <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>Mesures et ressenti</span></header>
-      <div id="comfort">${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>
+      <div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}><h3 class="nw-panel-title">Ressenti</h3>${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>
       <div id="tuiles">${unsafeHTML(rendered.tuiles)}</div>
       ${!compact && rendered.bilan ? html`<details open class="nw-measure-details"><summary>Détails pluie et vent</summary><div id="bilan">${unsafeHTML(rendered.bilan)}</div></details>` : nothing}
       ${!compact ? html`<div id="pastilles">${unsafeHTML(rendered.pastilles)}</div>` : nothing}
@@ -48,10 +62,11 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
 
 export const dashboardStyles = css`
   #container { display:block; }
-  .nw-section { padding:20px 22px; border-top:1px solid var(--divider-color,rgba(150,150,150,.18)); color:var(--primary-text-color); }
+  .nw-section { padding:24px 22px; border-top:1px solid var(--divider-color,rgba(150,150,150,.18)); color:var(--primary-text-color); }
+  .nw-section+.nw-section { margin-top:20px; }
   .nw-section:first-child { border-top:0; }
   .nw-section-heading { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; margin-bottom:18px; }
-  .nw-section-heading h2 { font-size:13px; font-weight:750; margin:0; letter-spacing:.01em; }
+  .nw-section-heading h2 { font-size:19px; font-weight:750; margin:0; letter-spacing:-.25px; }
   .nw-section-heading>span { font-size:11px; color:var(--secondary-text-color); }
   .nw-section-heading .nw-attention { display:flex; align-items:center; gap:6px; margin-left:auto; font-size:10px; }
   .nw-attention i { width:7px; height:7px; border-radius:50%; background:rgb(var(--vc)); }
@@ -68,10 +83,14 @@ export const dashboardStyles = css`
   .nw-summary-lines p>span { color:var(--secondary-text-color); margin-right:8px; font-size:10px; }
   .nw-brief-details { grid-column:2; margin:10px 0 0; font-size:11px; position:relative; z-index:1; }
   .nw-brief-details summary, .nw-measure-details summary { cursor:pointer; color:var(--secondary-text-color); font-size:11px; padding:6px 0; }
-  #comfort .me-jauge { margin:0 0 16px; }
+  #comfort { border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:12px; background:rgba(150,150,150,.035); padding:14px 16px; margin-bottom:14px; }
+  .nw-panel-title { margin:0; font-size:12px; font-weight:650; color:var(--secondary-text-color); }
+  #comfort .me-jauge { margin:43px 0 16px; }
+  #comfort .nw-feels-value { position:absolute; top:-37px; transform:translateX(-50%); font-size:27px; font-weight:750; line-height:1; white-space:nowrap; color:rgb(var(--vc)); color:color-mix(in srgb,rgb(var(--vc)) 65%,var(--primary-text-color) 35%); }
+  #comfort .nw-feels-value small { font-size:12px; font-weight:500; margin-left:3px; }
   #comfort .me-rail { height:6px; }
-  #comfort .me-cur i { width:14px; height:14px; top:-7px; left:-7px; animation:none; box-shadow:none; }
-  #comfort .me-decos { border:0; padding:0; margin:0 0 14px; gap:6px 14px; }
+  #comfort .me-cur i { width:14px; height:14px; top:-7px; left:-7px; animation:none; box-shadow:none; background:rgb(var(--vc)); background:color-mix(in srgb,rgb(var(--vc)) 65%,var(--primary-text-color) 35%); }
+  #comfort .me-decos { border:0; padding:0; margin:0; gap:6px 14px; }
   #comfort .me-d b { font-size:11px; font-weight:650; }
   #tuiles .me-tuiles { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:0; border:0; }
   #tuiles .me-tu { padding:14px 12px; border-color:var(--divider-color,rgba(150,150,150,.18)); background:rgba(150,150,150,.035); border-radius:12px; gap:10px; }
@@ -84,6 +103,16 @@ export const dashboardStyles = css`
   .nw-measure-details { margin:12px 0 0; }
   #bilan .me-bilan { padding:10px 0 0; gap:12px; }
   #bilan .me-bl { background:transparent; border-color:var(--divider-color,rgba(150,150,150,.18)); }
+  #bilan .me-bln { flex-basis:102px; }
+  .nw-brief-groups { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 24px; margin:16px 0; }
+  .nw-brief-group h4 { margin:0; font-size:12px; font-weight:650; }
+  .nw-brief-context { font-size:11px; color:var(--secondary-text-color); line-height:1.5; }
+  .nw-brief-group ul { list-style:none; padding:0; margin:8px 0 0; }
+  .nw-brief-group li { display:flex; align-items:flex-start; gap:7px; padding:6px 0; line-height:1.5; font-size:12px; }
+  .nw-brief-group li>span { flex:1; min-width:0; }
+  .nw-brief-group ha-icon { --mdc-icon-size:15px; color:var(--secondary-text-color); margin-top:2px; }
+  .nw-brief-group button { flex-shrink:0; font-size:10px; padding:2px 0; border:0; background:transparent; color:var(--secondary-text-color); text-decoration:underline; text-underline-offset:3px; }
+  .nw-brief-limits li { padding:4px 0; line-height:1.5; }
   #pastilles .me-pas { padding:16px 0 4px; margin-top:14px; gap:8px 18px; }
   #pastilles .me-pa b { font-size:11px; font-weight:650; }
   .nw-forecast-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:22px; }
@@ -99,6 +128,8 @@ export const dashboardStyles = css`
   }
   @container (max-width:450px) {
     .nw-section { padding:16px 14px; }
+    .nw-section+.nw-section { margin-top:16px; }
+    .nw-section-heading h2 { font-size:17px; }
     .nw-section-heading { margin-bottom:14px; }
     .nw-section-heading .nw-attention { margin-left:0; }
     .nw-synthesis { grid-template-columns:60px minmax(0,1fr); column-gap:12px; }
@@ -106,6 +137,8 @@ export const dashboardStyles = css`
     .nw-summary-lead { min-height:66px; }
     .nw-summary-lead h3 { font-size:17px; }
     .nw-summary-lines, .nw-brief-details { grid-column:1 / -1; margin-left:0; }
+    .nw-brief-groups { grid-template-columns:minmax(0,1fr); }
+    #comfort { padding:12px; }
     #tuiles .me-tu { align-items:flex-start; padding:12px 10px; gap:5px; }
     #tuiles .me-tuic, #tuiles .me-rose { width:22px; height:22px; flex-basis:22px; }
     #tuiles .me-tuic ha-icon { --mdc-icon-size:19px; }

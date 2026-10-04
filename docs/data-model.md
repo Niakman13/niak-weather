@@ -69,7 +69,7 @@ La station passe devant la condition de la zone lorsqu’elle constate de la plu
 
 Les unités de calcul et d’affichage sont °C, km/h, mm, hPa, W/m² et lx. Les capteurs exposés en °F, m/s, mph, pouces ou Pa sont convertis avant calcul. Une valeur `unknown`, `unavailable`, vide ou sentinelle ne devient jamais un zéro plausible.
 
-Les tendances intégrées utilisent l’historique Recorder : pression sur 3 h avec au moins 20 min de données, vent sur 1 h avec au moins 15 min. Sans historique accessible, le texte reste « tendance en cours de mesure ». Les périodes pluie « 7 jours » et « 30 jours » citent les compteurs **semaine et mois de la station**, pas des sommes glissantes recomposées.
+Les tendances intégrées utilisent l’historique Recorder : pression sur 3 h avec au moins 20 min de données, vent sur 1 h avec au moins 15 min. Sans historique accessible, le texte reste « tendance en cours de mesure ». Les périodes pluie citent les compteurs **semaine et mois de la station**, pas des sommes glissantes recomposées. La prochaine mise à jour remplace les libellés « 7 jours » et « 30 jours » par « Cette semaine » et « Ce mois » ; les remises à zéro restent celles de la station.
 
 ## Sources personnalisées : réglages avancés
 

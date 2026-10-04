@@ -80,6 +80,14 @@ try {
     assert.deepEqual(layout.sections,['Synthèse','Aujourd’hui','Prévisions']);
     assert.deepEqual(layout.tiles,['Température','Vent','Pluie','Pression']);
     assert.equal(layout.order,true);assert.equal(layout.overflow,false);
+    const feelsLabel=await page.evaluate(()=>{
+      const root=window.card.shadowRoot, label=root.querySelector('.nw-feels-value'), rail=root.querySelector('#comfort .me-rail'), cursor=root.querySelector('#comfort .me-cur i');
+      const sections=root.querySelectorAll('#container>.nw-section');
+      return {above:label.getBoundingClientRect().bottom<rail.getBoundingClientRect().top,large:parseFloat(getComputedStyle(label).fontSize)>=24,sameColor:getComputedStyle(label).color===getComputedStyle(cursor).backgroundColor,
+        framed:parseFloat(getComputedStyle(root.querySelector('#comfort')).borderTopWidth)>=1,sectionGap:sections[1].getBoundingClientRect().top>sections[0].getBoundingClientRect().bottom,
+        headingLarge:parseFloat(getComputedStyle(root.querySelector('.nw-section-heading h2')).fontSize)>=17};
+    });
+    assert.deepEqual(feelsLabel,{above:true,large:true,sameColor:true,framed:true,sectionGap:true,headingLarge:true});
     const events=[]; await page.evaluate(()=>{window.info=[];window.card.addEventListener('hass-more-info',e=>window.info.push(e.detail.entityId));});
     await page.locator('niak-weather-card .me-tu').nth(1).click();
     assert.equal(await page.evaluate(()=>window.info[0]),'sensor.vent');
@@ -250,8 +258,9 @@ try {
     card.shadowRoot.querySelector('.nw-brief-details summary').click();await sleep(20);
     const nativeDetails=card.shadowRoot.querySelector('.nw-brief-details').open && window.briefInfo.length===0;
     const hasSource=!!card.shadowRoot.querySelector('.nw-brief-details button[data-entity="sensor.wind"]');
+    const readableGroups=card.shadowRoot.querySelectorAll('.nw-brief-group').length===4&&!card.shadowRoot.querySelector('.nw-brief-details').textContent.includes('≥');
     const orange=card.shadowRoot.querySelector('#heros').style.getPropertyValue('--vc').trim()==='230,125,45';
-    return {combined,nativeDetails,hasSource,orange,concise};
+    return {combined,nativeDetails,hasSource,orange,concise,readableGroups};
   });
   for(const [test,passed] of Object.entries(briefBehavior))assert.equal(passed,true,`Brief: ${test}`);
   await page.locator('niak-weather-card .nw-brief-details button[data-entity="sensor.wind"]').first().focus();await page.keyboard.press('Enter');
@@ -284,6 +293,9 @@ try {
     await page.locator('niak-weather-card').screenshot({path:`${out}/brief-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/brief-header-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     await page.locator('niak-weather-card #today .nw-atmo-day').screenshot({path:`${out}/atmo-discs-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-details').open=true;});
+    await page.locator('niak-weather-card #heros').screenshot({path:`${out}/brief-details-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-details').open=false;});
     const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();assert.deepEqual(axe.violations.map(v=>v.id),[],'Brief structural accessibility');
     briefReports.push({width,dark,overflow,accessibility:'structural scan passed; new hero has no committed visual baseline yet'});
   }
@@ -302,6 +314,19 @@ try {
     return {twoSections,fourTiles,noStale,missing};
   });
   for(const [test,passed] of Object.entries(compactAndMissing))assert.equal(passed,true,`Compact/missing: ${test}`);
-  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,haloMotion,errors},null,2));
-  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,haloMotion,errors},null,2));
+  await page.setViewportSize({width:375,height:1300});
+  const gaugeEdges=await page.evaluate(async()=>{
+    const root=document.querySelector('main');root.replaceChildren();const card=document.createElement('niak-weather-card');
+    card.setConfig({...window.fixture.config,mode:'compact',smart_brief:false});root.append(card);
+    for(const value of [-20,55]){
+      const states={...window.fixture.states,'sensor.model':{...window.fixture.states['sensor.model'],attributes:{...window.fixture.states['sensor.model'].attributes,ressenti:value}}};
+      card.hass={states,callWS:async()=>({})};await new Promise(r=>setTimeout(r,25));
+      const frame=card.shadowRoot.querySelector('#comfort').getBoundingClientRect(), label=card.shadowRoot.querySelector('.nw-feels-value').getBoundingClientRect();
+      if(label.left<frame.left||label.right>frame.right)return false;
+    }
+    return true;
+  });
+  assert.equal(gaugeEdges,true,'Extreme feel values stay within frame on mobile');
+  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,gaugeEdges,haloMotion,errors},null,2));
+  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,gaugeEdges,haloMotion,errors},null,2));
 } finally { await browser.close();server.close(); }

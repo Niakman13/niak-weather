@@ -15,7 +15,14 @@ describe('Dashboard measurements', () => {
     const output=render({t_ext:20,ressenti:22,humidex:22,effet_vent:-1,phrase_ressenti:'humidité'});
     expect(output.comfort).toContain('class="me-jauge"');
     expect(output.comfort).toContain('humidex');
+    expect(output.comfort).toContain('nw-feels-value');
+    expect(output.comfort).toContain('22,0<small>°C</small>');
     expect(output.comfort).not.toContain('me-htop');
     expect(output.tuiles).toContain('ressenti 22,0 °C');
+  });
+  it('names calendar counters without claiming rolling totals', () => {
+    const output=render({pluie_semaine:12,pluie_mois:40});
+    expect(output.bilan).toContain('Cette semaine');expect(output.bilan).toContain('Ce mois');
+    expect(output.bilan).not.toContain('7 jours');expect(output.bilan).not.toContain('30 jours');
   });
 });

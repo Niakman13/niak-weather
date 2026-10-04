@@ -26,7 +26,10 @@ for (const [name, original] of Object.entries(reference.fields)) {
     code = code.replace("var badge = ALERTE[String(A.alerte || '')] || '';", "var badge = V.brief ? V.brief.label : ALERTE[String(A.alerte || '')] || '';");
     code = code.replace('if (V.lieu) sous =', 'if (V.lieu && !V.brief) sous =');
     code = code.replace("var mesure = String(A.cond_source || '') === 'station';", "var mesure = !V.brief && String(A.cond_source || '') === 'station';");
+    code = code.replace("h +=     '<span class=\"me-cur\"", `if (V.dashboard) h += '<strong class="nw-feels-value" style="left:clamp(42px,' + pRes.toFixed(1) + '%,calc(100% - 42px))">' + fr(res, 1) + '<small>°C</small></strong>';\n  h +=     '<span class="me-cur"`);
+    code = code.replace("pastille('mdi:water-percent', 'humidex',", "pastille('mdi:water-percent', V.dashboard ? 'base humidex' : 'humidex',");
   }
+  if (name === 'bilan') code = code.replace("ligne('7 jours'", "ligne('Cette semaine'").replace("ligne('30 jours'", "ligne('Ce mois'");
   code = code.replace(/var ec = V\.ent_confort[^;]+;/g, '').replace(/var poids = \(ec[^;]+;/g, "var poids = ea.attributes.air_poids || 'neutre';");
   code = code.replace(/var geste = V\.page_air[\s\S]*?: '';/, "var geste = V.page_air ? ' data-nav=\"' + esc(V.page_air) + '\" role=\"link\" tabindex=\"0\"' : window.meGeste(V.ent_air);");
   code = code.replace("(p.ico || 'mdi:flower-pollen')", "esc(p.ico || 'mdi:flower-pollen')");
