@@ -80,6 +80,14 @@ try {
     assert.deepEqual(layout.sections,['Synthèse','Aujourd’hui','Prévisions']);
     assert.deepEqual(layout.tiles,['Température','Vent','Pluie','Pression']);
     assert.equal(layout.order,true);assert.equal(layout.overflow,false);
+    const forecastGeometry=await page.evaluate(()=>{
+      const root=window.card.shadowRoot, curve=root.querySelector('.me-courbe'), days=root.querySelector('.me-jours'), graph=root.querySelector('.me-graph');
+      return {aligned:Math.abs(curve.getBoundingClientRect().bottom-days.getBoundingClientRect().bottom)<2,curveBottom:curve.getBoundingClientRect().bottom,daysBottom:days.getBoundingClientRect().bottom,height:graph.getBoundingClientRect().height,
+        labels:[...root.querySelectorAll('.me-nowl,.me-jourl')].every(e=>e.getBoundingClientRect().top-graph.getBoundingClientRect().top>=7)};
+    });
+    if(width>850) assert.equal(forecastGeometry.aligned,true,`forecast columns fill the same height: ${JSON.stringify(forecastGeometry)}`);
+    assert.ok(forecastGeometry.height>=190,'forecast graph has usable height');
+    assert.equal(forecastGeometry.labels,true,'now/tomorrow labels inset from graph top');
     const feelsLabel=await page.evaluate(()=>{
       const root=window.card.shadowRoot, label=root.querySelector('.nw-feels-value'), rail=root.querySelector('#comfort .me-rail'), cursor=root.querySelector('#comfort .me-cur i');
       const sections=root.querySelectorAll('#container>.nw-section');

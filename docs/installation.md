@@ -33,9 +33,9 @@ jour future apparaîtra dans HACS et se fera avec le même bouton de télécharg
 4. Choisis le type **Tableau de bord** / **Dashboard**, puis valide.
 5. Ouvre Niak Weather dans HACS et clique **Télécharger**.
 
-## Tester le brief intelligent en bêta
+## Synthèse intelligente
 
-La version stable reste **v1.0.0**. Pour essayer volontairement **v1.2.0-beta.3**, consulte le [guide de la bêta](release-1.2.0-beta.3.md) : choix de la version dans HACS, nouveau bandeau, limites et retour à la stable. Une mise à jour de la carte ne nécessite pas de redémarrer Home Assistant.
+La version stable est **v1.2.0**. Consulte les [notes de mise à jour](release-1.2.0.md) : téléchargement dans HACS, nouveau bandeau et limites. Une mise à jour de la carte ne nécessite pas de redémarrer Home Assistant.
 
 ## Ajouter la carte
 
@@ -82,19 +82,19 @@ Puis recharge le navigateur.
 
 ## Installation manuelle sans HACS
 
-1. Depuis la [release v1.0.0](https://github.com/Niakman13/niak-weather/releases/tag/v1.0.0), télécharge **niak-weather-card.js** dans les fichiers joints, pas l’archive du code source.
+1. Depuis la [release v1.2.0](https://github.com/Niakman13/niak-weather/releases/tag/v1.2.0), télécharge **niak-weather-card.js** dans les fichiers joints, pas l’archive du code source.
 2. Copie ce fichier dans le dossier `www` de la configuration Home Assistant (le créer s’il n’existe pas).
 3. Ajoute une ressource **Module JavaScript** dans **Paramètres → Tableaux de bord → Ressources**, à l’adresse `/local/niak-weather-card.js`.
 4. Recharge le navigateur, puis ajoute la carte comme décrit plus haut.
 
 Dans ce mode, les mises à jour sont manuelles : remplacer le fichier par celui de la nouvelle release et recharger le navigateur. Ne charge pas en même temps les ressources `/local/` et `/hacsfiles/` de cette carte.
 
-## Installer ou mettre à jour vers v1.0.0 stable
+## Installer ou mettre à jour vers v1.2.0 stable
 
 La version stable réunit les mesures de la station, le ressenti expliqué, les prévisions et bilans, ainsi que les informations facultatives Atmo France. Une mise à jour conserve les entités et réglages enregistrés.
 
 1. Ouvre **Niak Weather** dans HACS et utilise **Mettre à jour** si proposé, sinon **⋮ → Retélécharger / Redownload**.
-2. Sélectionne **v1.0.0** si le choix d’une version est demandé. Il n’est plus nécessaire d’activer les préversions.
+2. Sélectionne **v1.2.0** si le choix d’une version est demandé. Il n’est plus nécessaire d’activer les préversions.
 3. Télécharge, puis recharge le navigateur avec **Ctrl+F5**. Sur l’application mobile, ferme puis rouvre le tableau de bord et, si nécessaire, vide son cache frontend.
 4. Les choix enregistrés sont conservés. Pour ajouter des mesures, ouvre l’éditeur et clique **Préremplir les entités manquantes** ; vérifie les nouvelles propositions avant d’enregistrer.
 

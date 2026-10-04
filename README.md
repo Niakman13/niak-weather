@@ -4,9 +4,9 @@
 
 Une température seule ne raconte pas toute la météo : 25 °C à l’ombre, avec de l’humidité ou sous un vent soutenu, ne se vivent pas de la même façon. La carte donne du contexte aux chiffres et rapproche les observations de votre maison des prévisions de votre zone, sans les confondre.
 
-**Version stable : v1.0.0.** La documentation principale et les textes de la carte sont en français.
+**Version stable : v1.2.0.** La documentation principale et les textes de la carte sont en français.
 
-**Bêta à tester : v1.2.0-beta.3.** La carte s’organise en Synthèse, Aujourd’hui et Prévisions. Le ressenti est affiché en grand dans son cadre, les indices air/pollens sont encadrés et les points d’attention sont regroupés pour faciliter la lecture. Le cercle avec halo animé et les disques en dégradé sont conservés. Cette préversion est facultative et ne remplace pas la stable. [Installer la bêta et revenir à la stable](docs/release-1.2.0-beta.3.md) · [Comprendre le brief et ses limites](docs/brief-intelligent.md).
+**Présentation : v1.2.0.** La carte s’organise en Synthèse, Aujourd’hui et Prévisions. Le ressenti est affiché en grand dans son cadre, les indices air/pollens sont encadrés et les points d’attention sont regroupés pour faciliter la lecture. Le cercle avec halo animé et les disques en dégradé sont conservés. Cette version stable intègre la synthèse intelligente. [Nouveautés et mise à jour](docs/release-1.2.0.md) · [Comprendre le brief et ses limites](docs/brief-intelligent.md).
 
 [![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
@@ -71,7 +71,7 @@ Le [guide des sources](docs/sources.md) explique pour chacune sa configuration, 
 
 1. Ouvrez le bouton HACS en haut de cette page. Il ouvre le dépôt, sans installer automatiquement la carte.
 2. Si le dépôt n’est pas trouvé, ajoutez `https://github.com/Niakman13/niak-weather` dans **HACS → ⋮ → Dépôts personnalisés**, catégorie **Tableau de bord / Dashboard**. Il s’agit d’un dépôt personnalisé, pas d’un référencement dans le catalogue HACS par défaut.
-3. Téléchargez **Niak Weather v1.0.0**, puis rechargez le navigateur.
+3. Téléchargez **Niak Weather v1.2.0**, puis rechargez le navigateur.
 4. Dans votre tableau de bord, choisissez **Ajouter une carte → Niak Weather** et sélectionnez votre entité météo.
 5. Complétez **Entités de la station**, **Entités Thermal Comfort** et, si souhaité, **Atmo France — air extérieur et pollens**. Utilisez **Préremplir les entités manquantes**, puis vérifiez les propositions avant d’enregistrer.
 
@@ -99,9 +99,9 @@ mode: detailed
 
 Ces identifiants sont des **exemples**, pas des noms imposés. Privilégiez vos entités réelles dans l’éditeur. Le [tutoriel d’installation](docs/installation.md) détaille les ressources, les réglages et le dépannage.
 
-## Mettre à jour vers v1.0.0
+## Mettre à jour vers v1.2.0
 
-Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.0.0**. Il n’est plus nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
+Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.2.0**. Il n’est plus nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
 
 Les mises à jour utilisent la même ressource et conservent vos entités et réglages. Vous pouvez enrichir la configuration progressivement, sans recommencer l’installation. [Notes de version](docs/release-1.0.0.md).
 

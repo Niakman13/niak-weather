@@ -118,12 +118,23 @@ export const dashboardStyles = css`
   .nw-forecast-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:22px; }
   .nw-forecast-grid>div { min-width:0; }
   #courbe .me-courbe, #jours .me-jours { padding:0; border:0; }
+  #courbe { display:flex; flex-direction:column; }
+  #jours { display:flex; flex-direction:column; }
+  #jours .me-jours { flex:1; box-sizing:border-box; }
+  #courbe .me-courbe { display:flex; flex-direction:column; flex:1; box-sizing:border-box; }
+  #courbe .me-ttl { margin-bottom:12px; }
+  #courbe .me-graph { flex:1 0 190px; height:auto; min-height:190px; }
+  #courbe .me-nowl, #courbe .me-jourl { top:8px; }
+  #courbe .me-axe { flex-shrink:0; margin-top:10px; }
+  #courbe .me-pied { flex-shrink:0; margin-top:8px; }
   #jours .me-jours { padding-left:20px; border-left:1px solid var(--divider-color,rgba(150,150,150,.18)); }
   #jours .me-j { padding:4px 0; }
   .nw-empty { color:var(--secondary-text-color); font-size:12px; }
   @container (max-width:850px) {
     #tuiles .me-tuiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .nw-forecast-grid { grid-template-columns:minmax(0,1fr); gap:20px; }
+    #courbe .me-courbe { height:auto; }
+    #courbe .me-graph { flex:none; height:200px; min-height:200px; }
     #jours .me-jours { padding:0; border:0; }
   }
   @container (max-width:450px) {

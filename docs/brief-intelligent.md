@@ -1,6 +1,6 @@
-# Brief intelligent — v1.2.0-beta.3
+# Brief intelligent — v1.2.0
 
-Cette fonction est disponible dans la bêta v1.2.0-beta.3 et n’est pas incluse dans la release stable v1.0.0. Son objectif est de transformer les mesures et prévisions en un résumé compréhensible : **ce que l’on ressent maintenant, ce qui arrive et ce qui mérite de l’attention**. [Installation de la bêta](release-1.2.0-beta.3.md).
+Cette fonction est incluse dans la version stable v1.2.0. Son objectif est de transformer les mesures et prévisions en un résumé compréhensible : **ce que l’on ressent maintenant, ce qui arrive et ce qui mérite de l’attention**. [Installation et nouveautés](release-1.2.0.md).
 
 ## Un bandeau, trois lectures
 
@@ -12,9 +12,9 @@ Cette fonction est disponible dans la bêta v1.2.0-beta.3 et n’est pas incluse
 
 Le bandeau limite les signaux visibles. S’il reste d’autres points importants, il le signale et les conserve dans **Comprendre la synthèse**, avec le raisonnement, les limites et un bouton pour ouvrir l’entité source. Un phénomène important ne disparaît pas dans une moyenne.
 
-### Présentation épurée de beta.2
+### Présentation en trois sections
 
-La beta.2 organise la carte en **Synthèse**, **Aujourd’hui** et **Prévisions** dans un seul cadre.
+La carte s’organise en **Synthèse**, **Aujourd’hui** et **Prévisions** dans un seul cadre.
 
 La synthèse présente au maximum trois signaux importants, en conservant le plus prioritaire puis en diversifiant entre observations et prévisions. Les autres points importants sont comptés dans **Comprendre la synthèse** et restent consultables, avec leurs sources et limites. Ce changement allège l’affichage ; il ne modifie pas les seuils ni la couleur, qui tiennent compte de tous les signaux.
 
@@ -72,11 +72,11 @@ smart_brief: true
 vigilance_entity: sensor.mon_departement_weather_alert
 ```
 
-Le nom du capteur est un exemple. Le brief est activé par défaut dans cette bêta ; `smart_brief: false` conserve le bandeau simple. La v1.0.0 installée n’est pas modifiée tant qu’une nouvelle version n’est pas téléchargée.
+Le nom du capteur est un exemple. Le brief est activé par défaut dans cette version ; `smart_brief: false` conserve le bandeau simple. La v1.0.0 installée n’est pas modifiée tant qu’une nouvelle version n’est pas téléchargée.
 
-## Vérification de la bêta
+## Vérifications
 
-### Ajustements de beta.3
+### Ressenti et points à retenir
 
 La jauge de ressenti est encadrée sur toute la largeur. La valeur est affichée en grand au-dessus du curseur, dans la teinte du dégradé à sa position, ajustée pour rester lisible selon le thème. Le cadre conserve la base humidex et les contributions du vent, soleil, pluie ou ciel nocturne lorsqu’elles sont disponibles et significatives. Un humidex est une base de calcul, pas une correction à additionner une deuxième fois. Une contribution absente n’est pas remplacée par zéro.
 
@@ -84,4 +84,4 @@ Les indices air/pollens sont également encadrés. Les titres Synthèse, Aujourd
 
 Les cumuls de station sont nommés « Cette semaine » et « Ce mois » ; ils ne représentent pas des périodes glissantes de sept ou trente jours. Ce changement concerne les libellés, pas les valeurs ni les réglages de remise à zéro de la station.
 
-Des tests dédiés couvrent les cumuls de signaux, les seuils, les horaires, les indices Atmo, les données anciennes/manquantes et la priorité de la vigilance officielle. Les contrôles navigateur vérifient le bandeau à 375/768/1440 px en clair/sombre, l’ouverture des explications et les sources au clavier. Le nouveau bandeau n’a pas encore de référence visuelle approuvée ; le comportement sur une vraie installation et les contrastes de tous les thèmes restent à valider avant publication stable.
+Des tests dédiés couvrent les cumuls de signaux, les seuils, les horaires, les indices Atmo, les données anciennes/manquantes et la priorité de la vigilance officielle. Les contrôles navigateur vérifient le bandeau à 375/768/1440 px en clair/sombre, l’ouverture des explications et les sources au clavier. Le nouveau bandeau n’a pas encore de référence visuelle approuvée ; le comportement sur une vraie installation et les contrastes de tous les thèmes restent à valider selon les thèmes utilisés.
