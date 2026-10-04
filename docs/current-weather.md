@@ -1,4 +1,4 @@
-# Météo actuelle et ciel animé — v1.3 en préparation
+# Météo actuelle et ciel animé — v1.3.0
 
 Le bandeau affiche la météo actuelle à droite de la synthèse : condition et température. Le ressenti reste dans la synthèse et sa jauge, sans répétition dans le bloc de droite. L’origine du ciel est accessible au survol de la condition et par un clic sur sa source.
 
@@ -40,4 +40,4 @@ Les contrôles couvrent les sources, conversions d’unités, données manquante
 
 Le ciel est une réalisation CSS propre à Niak Weather, inspirée du principe de ciel vivant de [Dynamic Weather Card](https://github.com/teuchezh/dynamic-weather-card). Il ne charge pas cette carte et ne télécharge aucune image ou animation distante.
 
-Cette évolution est préparée sous le numéro **1.3.0-beta.1**. Elle n’est pas encore publiée dans HACS ; la version stable reste **1.2.0**.
+Cette évolution est disponible dans la version stable **1.3.0**. Mettez à jour Niak Weather dans HACS puis rechargez votre navigateur. Vos entités et réglages sont conservés.
