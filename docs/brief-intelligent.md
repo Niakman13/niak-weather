@@ -12,6 +12,16 @@ Cette fonction est disponible dans la bêta v1.2.0-beta.1 et n’est pas incluse
 
 Le bandeau limite les phrases par rubrique. S’il reste d’autres points importants, il le signale et les conserve dans **Comprendre le brief et ses limites**, avec le raisonnement, les limites et un bouton pour ouvrir l’entité source. Un phénomène important ne disparaît pas dans une moyenne.
 
+### Présentation épurée en préparation après beta.1
+
+La prochaine itération de présentation organise la carte en **Synthèse**, **Aujourd’hui** et **Prévisions** dans un seul cadre. Elle n’est pas encore incluse dans le téléchargement beta.1.
+
+La synthèse présente au maximum trois signaux importants, en conservant le plus prioritaire puis en diversifiant entre observations et prévisions. Les autres points importants sont comptés dans **Comprendre la synthèse** et restent consultables, avec leurs sources et limites. Ce changement allège l’affichage ; il ne modifie pas les seuils ni la couleur, qui tiennent compte de tous les signaux.
+
+Aujourd’hui commence par la jauge de ressenti, puis les quatre cadres température/ressenti, vent, pluie et pression. Les détails pluie/vent suivent, visibles mais repliables ; viennent ensuite les mesures techniques et Atmo du jour. Prévisions conserve les graphiques horaires et quotidiens, suivis des indices Atmo de demain. Le mode compact conserve Synthèse et Aujourd’hui, sans les historiques détaillés ou prévisions.
+
+Les indices Atmo utilisent un anneau coloré accompagné du niveau écrit et de sa valeur sur six. Un sous-indice plus élevé que l’indice global reste visible et porte le nom du polluant ou de l’espèce, sans être présenté comme un nouvel indice global. Les concentrations ne remplissent jamais l’anneau. Une donnée absente, ancienne ou le code évènement 7 n’est pas présentée comme un niveau actuel sur six. Tous les polluants, espèces et concentrations restent dans les détails lorsque ceux-ci sont activés.
+
 ## Couleurs et vigilance officielle
 
 | Couleur du bandeau | Lecture |

@@ -30,11 +30,22 @@ for (const [name, original] of Object.entries(reference.fields)) {
   code = code.replace(/var ec = V\.ent_confort[^;]+;/g, '').replace(/var poids = \(ec[^;]+;/g, "var poids = ea.attributes.air_poids || 'neutre';");
   code = code.replace(/var geste = V\.page_air[\s\S]*?: '';/, "var geste = V.page_air ? ' data-nav=\"' + esc(V.page_air) + '\" role=\"link\" tabindex=\"0\"' : window.meGeste(V.ent_air);");
   code = code.replace("(p.ico || 'mdi:flower-pollen')", "esc(p.ico || 'mdi:flower-pollen')");
+  if (name === 'tuiles') {
+    code = code.replace("var out = '';", `var out = V.dashboard ? '<div class="me-tu" style="--tc:var(--mush-rgb-blue,61,155,233)"' + window.meGeste(SRC.t_ext) + '><div class="me-tuic"><ha-icon icon="mdi:thermometer"></ha-icon></div><div class="me-tut"><span class="nw-metric-name">Température</span><span class="me-tuv">' + esc(fr(nb(A.t_ext), 1)) + '<i>°C</i></span><span class="me-tul">' + (nb(A.ressenti) === null ? 'ressenti indisponible' : 'ressenti ' + esc(fr(nb(A.ressenti), 1)) + ' °C') + '</span><span class="me-tus">' + (nb(A.t_ext) === null ? 'température indisponible' : esc(A.perception || 'au thermomètre')) + '</span></div></div>' : '';`);
+    code = code.replace('if (vv !== null) {', 'if (vv !== null || V.dashboard) {');
+    code = code.replace("esc(A.beaufort_tx || 'vent moyen')", "esc(vv === null ? 'vent indisponible' : A.beaufort_tx || 'vent moyen')");
+    code = code.replace('if (pj !== null || pt !== null) {', 'if (pj !== null || pt !== null || V.dashboard) {');
+    code = code.replace(": 'pas de pluie en ce moment';", ": pt === null ? 'intensité indisponible' : 'pas de pluie en ce moment';");
+    code = code.replace('if (pr !== null) {', 'if (pr !== null || V.dashboard) {');
+    code = code.replace("esc(B.tx || 'baromètre')", "esc(pr === null ? 'pression indisponible' : B.tx || 'baromètre')");
+    let metric = 0;
+    code = code.replaceAll("'<div class=\"me-tut\">'", () => `'<div class="me-tut">' + (V.dashboard ? '<span class="nw-metric-name">${['Vent', 'Pluie', 'Pression'][metric++]}</span>' : '')`);
+  }
   // Never borrow ventilation recommendations from a removed integration.
   code = code.replace(/var cre = String\(A\.creneau \|\| ''\);/g, "var cre = '';" );
   out += ` function ${name}() {\n${code}\n }\n`;
 }
-out += ' return {' + Object.keys(reference.fields).map(n => `${n}: ${n}()`).join(', ') + '};\n}\n';
+out += ' const rendered = {' + Object.keys(reference.fields).map(n => `${n}: ${n}()`).join(', ') + '};\n const gauge = rendered.heros.indexOf(\'<div class="me-jauge">\');\n return {...rendered, comfort: gauge < 0 ? "" : rendered.heros.slice(gauge, -6)};\n}\n';
 writeFileSync('src/local-renderer.ts', out);
 const css = reference.css.replaceAll('[onclick]', ':is([data-entity], [data-nav])');
 writeFileSync('src/local-styles.ts', '// Generated: exact original CSS apart from event attribute selectors.\nexport const localStyles = ' + JSON.stringify(css) + ';\n');

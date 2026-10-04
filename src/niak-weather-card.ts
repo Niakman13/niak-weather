@@ -1,5 +1,4 @@
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { customElement, property, state } from 'lit/decorators.js';
 import { forecastsFromResponse } from './forecast';
 import { buildWeatherBrief, type BriefPoint } from './weather-brief';
@@ -8,10 +7,9 @@ import { renderLocal } from './local-renderer';
 import { localStyles } from './local-styles';
 import { detectEcowittStation } from './station-detection';
 import { cleanConfig } from './niak-weather-card-editor';
-import { atmoStyles, renderAtmo, usesAtmoPollens } from './atmo-view';
+import { atmoStyles, usesAtmoPollens } from './atmo-view';
+import { dashboardStyles, renderDashboard } from './dashboard-view';
 import type { ForecastResponse, HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
-
-const zones = ['heros', 'essentiels', 'sect1', 'tuiles', 'pastilles', 'sect2', 'courbe', 'jours', 'sect3', 'bilan'] as const;
 
 @customElement('niak-weather-card')
 export class NiakWeatherCard extends LitElement {
@@ -111,22 +109,15 @@ export class NiakWeatherCard extends LitElement {
       ? forecast.heures.map((p: any) => ({ hours: Number(p.j) * 24 + Number(p.h) - localHour, temperature: finite(p.t), precipitation: finite(p.p), condition: p.c }))
       : this.hourly.map(p => ({ hours: (Date.parse(p.datetime) - now.getTime()) / 3600_000, temperature: p.temperature, precipitation: p.precipitation, condition: p.condition }));
     const brief = config.smart_brief === false ? undefined : buildWeatherBrief(hass, config, model, briefPoints, now);
-    if (brief) {
-      const location = config.location ?? String(weather?.attributes.friendly_name ?? '');
-      model = { ...model, state: brief.available ? 'ready' : 'unavailable', attributes: { ...model.attributes, titre: brief.title,
-        sous_titre: location ? brief.summary.replace('\n', ` · ${location}\n`) : brief.summary } };
-    }
-    const variables = { mode: config.mode === 'compact' ? 'accueil' : 'complet', ent: '__niak_model', ent_prev: '__niak_forecast',
+    if (['unknown', 'unavailable'].includes(model.state)) model = { ...model, attributes:{} };
+    const variables = { mode: 'complet', dashboard:true, ent: '__niak_model', ent_prev: '__niak_forecast',
       ent_air: config.air_quality_entity, lieu: config.location ?? String(weather?.attributes.friendly_name ?? ''),
       source_prev: config.forecast_source ?? (/france/i.test(String(weather?.attributes.attribution)) ? 'Météo-France' : 'prévisions'),
       jauge_min: -5, jauge_max: 45, jours_max: 7, brief, pollens: usesAtmoPollens(config) || config.pollen_source === 'none' ? [] : config.pollens ?? [], page_air: config.air_path };
     const states = { ...hass.states, __niak_model: model, __niak_forecast: { state: String(forecast.heures.length), attributes: forecast } };
     const rendered = renderLocal(variables, states, hass);
     return html`<ha-card><div id="container" ?data-smart-brief=${!!brief} @pointerdown=${this.down} @pointermove=${this.move} @pointercancel=${this.cancel} @pointerup=${this.up}
-      @click=${this.handleClick} @keydown=${this.keydown}>${zones.map(zone => html`<div style=${`grid-area:${zone}`} id=${zone}>${unsafeHTML(rendered[zone])}${zone === 'heros' && brief ? html`<details class="nw-brief-details"><summary>Comprendre le brief et ses limites</summary>
-        <p>La couleur indique le point le plus préoccupant, pas une moyenne. Les seuils de la carte ne sont pas des vigilances officielles.</p>
-        ${brief.signals.map(s => html`<p><strong>${s.text}</strong> — ${s.explanation}${s.entity ? html` <button data-entity=${s.entity}>Voir la source</button>` : nothing}</p>`)}
-        ${brief.caveats.map(c => html`<p class="nw-brief-caveat">${c}</p>`)}</details>` : nothing}${zone === 'pastilles' ? renderAtmo(hass, config, now) : nothing}</div>`)}</div></ha-card>`;
+      @click=${this.handleClick} @keydown=${this.keydown}>${renderDashboard(rendered, brief, model, hass, config, now, variables.lieu)}</div></ha-card>`;
   }
   private down(event: PointerEvent): void {
     clearTimeout(this.holdTimer); if (event.button !== 0) return;
@@ -169,26 +160,13 @@ export class NiakWeatherCard extends LitElement {
     history.pushState(null, '', path); window.dispatchEvent(new CustomEvent('location-changed', { bubbles: true, composed: true }));
   }
   static styles = [css`:host { display:block; } ha-card { padding:0; overflow:hidden; container-type:inline-size; }
-    #container { display:grid; grid-template-areas:"heros" "essentiels" "sect1" "tuiles" "pastilles" "sect2" "courbe" "jours" "sect3" "bilan"; gap:0; min-width:0; }
+    #container { display:block; min-width:0; }
     [data-entity]:focus-visible, [data-nav]:focus-visible { outline:2px solid var(--primary-color); outline-offset:3px; }`, unsafeCSS(localStyles), atmoStyles, css`
-    #container[data-smart-brief] .me-p { white-space:pre-line; line-height:1.65; color:var(--primary-text-color); }
-    #container[data-smart-brief] .me-t { white-space:normal; overflow-wrap:anywhere; color:var(--primary-text-color); }
-    #container[data-smart-brief] .me-badge { white-space:normal; color:var(--primary-text-color); }
-    #container[data-smart-brief] .me-htop { flex-wrap:wrap; }
-    #container[data-smart-brief] .me-htx { flex-basis:240px; }
-    @container (max-width:600px) {
-      #container[data-smart-brief] .me-htop { display:grid; grid-template-columns:auto 1fr auto; gap:10px; }
-      #container[data-smart-brief] .me-bulle { grid-column:1; grid-row:1; }
-      #container[data-smart-brief] .me-hval { grid-column:3; grid-row:1; }
-      #container[data-smart-brief] .me-htx { grid-column:1 / -1; grid-row:2; }
-    }
-    .nw-brief-details { margin:0 15px 12px; font-size:12px; color:var(--primary-text-color); }
-    .nw-brief-details summary { cursor:pointer; color:var(--secondary-text-color); padding:8px 0; }
     .nw-brief-details p { line-height:1.6; margin:8px 0; overflow-wrap:anywhere; }
     .nw-brief-details button { font:inherit; color:var(--primary-text-color); background:transparent; border:1px solid var(--divider-color,#999); border-radius:6px; padding:4px 8px; cursor:pointer; }
     .nw-brief-caveat { border-left:3px solid #be8c23; padding-left:8px; }
     @media (prefers-reduced-motion:reduce) { #container[data-smart-brief] .me-rond, #container[data-smart-brief] .me-cur i { animation:none; } }
-    `];
+    `, dashboardStyles];
 }
 window.customCards = window.customCards || [];
 window.customCards.push({ type: 'niak-weather-card', name: 'Niak Weather', description: 'Météo locale Ecowitt et prévisions', preview: true,

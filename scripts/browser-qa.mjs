@@ -2,7 +2,6 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
-import pixelmatch from 'pixelmatch';
 import * as mdi from '@mdi/js';
 import AxeBuilder from '@axe-core/playwright';
 import assert from 'node:assert/strict';
@@ -61,10 +60,6 @@ try {
       await import('/card.js');
     }, { reference, fixture: fixtures[0], icons: mdi, dark });
     const baseline = await page.locator('#baseline').screenshot({ path:`${out}/original-${width}-${dark?'dark':'light'}.png`, animations:'disabled' });
-    const metrics = await page.evaluate(() => {
-      const root = document.querySelector('#baseline');
-      return Object.fromEntries(['.me-bulle','.me-hv','.me-tu','.me-graph','.me-bl','.me-j'].map(s=>{const e=root.querySelector(s),r=e.getBoundingClientRect();return[s,{x:r.x,y:r.y,w:r.width,h:r.height,font:getComputedStyle(e).fontSize}]}));
-    });
     await page.evaluate(() => {
       document.querySelector('#baseline').remove(); const card = document.createElement('niak-weather-card');
       card.setConfig(window.fixture.config); card.hass = { states:window.fixture.states,language:'fr',config:{time_zone:'Europe/Paris'},callWS:async()=>({}) };
@@ -73,23 +68,26 @@ try {
     await page.locator('niak-weather-card .me-bl').first().waitFor();
     const actual = await page.locator('niak-weather-card').screenshot({ path:`${out}/niak-${width}-${dark?'dark':'light'}.png`,animations:'disabled' });
     const a = PNG.sync.read(baseline), b=PNG.sync.read(actual);
-    assert.equal(b.width,a.width, 'card width'); assert.equal(b.height,a.height,'card height');
-    const diff = new PNG({width:a.width,height:a.height}); const pixels=pixelmatch(a.data,b.data,diff.data,a.width,a.height,{threshold:.05});
-    if (pixels) writeFileSync(`${out}/diff-${width}-${dark?'dark':'light'}.png`,PNG.sync.write(diff));
-    const measured=await page.evaluate(()=>{
-      const root=window.card.shadowRoot;
-      return Object.fromEntries(['.me-bulle','.me-hv','.me-tu','.me-graph','.me-bl','.me-j'].map(s=>{const e=root.querySelector(s),r=e.getBoundingClientRect();return[s,{x:r.x,y:r.y,w:r.width,h:r.height,font:getComputedStyle(e).fontSize}]}));
+    assert.equal(b.width,a.width, 'card width');
+    const layout=await page.evaluate(()=>{
+      const root=window.card.shadowRoot, host=window.card.getBoundingClientRect();
+      const sections=[...root.querySelectorAll('#container>.nw-section')].map(s=>s.querySelector('h2').textContent);
+      const tiles=[...root.querySelectorAll('.me-tu')].map(s=>s.querySelector('.nw-metric-name').textContent);
+      const order=root.querySelector('#comfort').getBoundingClientRect().top<root.querySelector('#tuiles').getBoundingClientRect().top;
+      const overflow=[...root.querySelectorAll('.nw-section,.me-tu,.me-bl,.me-graph,.me-j')].some(e=>{const r=e.getBoundingClientRect();return r.width&&(r.left<host.left-1||r.right>host.right+1)});
+      return {sections,tiles,order,overflow};
     });
-    assert.deepEqual(measured,metrics,'original component geometry');
-    assert.equal(pixels,0,'pixel-identical renderer under the same theme and data');
+    assert.deepEqual(layout.sections,['Synthèse','Aujourd’hui','Prévisions']);
+    assert.deepEqual(layout.tiles,['Température','Vent','Pluie','Pression']);
+    assert.equal(layout.order,true);assert.equal(layout.overflow,false);
     const events=[]; await page.evaluate(()=>{window.info=[];window.card.addEventListener('hass-more-info',e=>window.info.push(e.detail.entityId));});
-    await page.locator('niak-weather-card .me-tu').first().click();
+    await page.locator('niak-weather-card .me-tu').nth(1).click();
     assert.equal(await page.evaluate(()=>window.info[0]),'sensor.vent');
-    await page.locator('niak-weather-card .me-hval').focus(); await page.keyboard.press('Enter');
+    await page.locator('niak-weather-card .me-tu').first().focus(); await page.keyboard.press('Enter');
     assert.equal(await page.evaluate(()=>window.info[1]),'sensor.t_ext');
     const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();
     assert.deepEqual(axe.violations.map(v=>v.id),[], 'automated structural accessibility');
-    reports.push({width,dark,height:b.height,differentPixels:pixels,geometry:'identical',interactions:'mouse + keyboard passed',accessibility:'structural scan passed; contrast inherited from HA theme'});
+    reports.push({width,dark,height:b.height,geometry:'three-section redesign; no approved visual baseline yet',layout,interactions:'mouse + keyboard passed',accessibility:'structural scan passed; contrast inherited from HA theme'});
   }
   // Lifecycle and editor behavior use the actual bundled elements, not rewritten mocks of their logic.
   const behavior = await page.evaluate(async () => {
@@ -192,14 +190,18 @@ try {
     const migration=!text.includes('Ancien pollen EU')&&text.includes('air intérieur')&&text.includes('Air extérieur');
     const levels=text.includes('Extrêmement élevé')&&text.includes('1,4 µg/m³')&&text.includes('Dégradé');
     const tomorrow=card.shadowRoot.querySelector('.nw-atmo-next');tomorrow.querySelector('summary').click();await sleep(10);
-    const nativeDetails=tomorrow.open&&window.atmoInfo.length===0;
+    const nativeDetails=!tomorrow.open&&window.atmoInfo.length===0;
+    const movedDays=!!card.shadowRoot.querySelector('#today .nw-atmo-day')&&!card.shadowRoot.querySelector('#today .nw-atmo-next')&&!!card.shadowRoot.querySelector('#predictions .nw-atmo-next');
+    const rings=card.shadowRoot.querySelectorAll('.nw-atmo-ring').length>2;
+    const visibleWorst=!!card.shadowRoot.querySelector('#today .nw-atmo-day>.nw-atmo-row [data-entity="sensor.atmo_a_grass"]');
     states[selected.atmo_pollen_entity].state='0';card.hass={...hass};await sleep(20);
     const noFalseZero=card.shadowRoot.querySelector('.nw-atmo-day').textContent.includes('Indisponible')&&!card.shadowRoot.querySelector('.nw-atmo-day').textContent.includes('0/6');
+    const missingRing=card.shadowRoot.querySelector('#today [data-entity="'+selected.atmo_pollen_entity+'"]').style.getPropertyValue('--atmo-angle')==='0deg';
     states[selected.atmo_pollen_entity].state='2';card.hass={...hass};await sleep(20);
     window.atmoInfo=[];
     card.shadowRoot.querySelector('[data-entity="'+selected.atmo_air_entity+'"]').click();
     const correctPopup=window.atmoInfo[0]===selected.atmo_air_entity;
-    return {fullPrefill,filtered,keptEmpty,changedZone,migration,levels,nativeDetails,noFalseZero,correctPopup,simplifiedLabel};
+    return {fullPrefill,filtered,keptEmpty,changedZone,migration,levels,nativeDetails,noFalseZero,correctPopup,simplifiedLabel,movedDays,rings,visibleWorst,missingRing};
   });
   for (const [test,passed] of Object.entries(atmoBehavior)) assert.equal(passed,true,`Atmo: ${test}`);
   const atmoReports=[];
@@ -221,6 +223,7 @@ try {
     const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();assert.deepEqual(axe.violations.map(v=>v.id),[],'Atmo structural accessibility');
     atmoReports.push({width,dark,overflow,accessibility:'structural scan passed'});
   }
+  await page.locator('niak-weather-card #today .nw-atmo-breakdown summary').click();
   await page.locator('niak-weather-card .nw-atmo-day [data-entity="sensor.atmo_a_grass_concentration"]').focus();await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(()=>window.atmoInfo.at(-1)),'sensor.atmo_a_grass_concentration','Atmo concentration keyboard popup');
   // Smart brief is a deliberate new hero, not an update of the v1 visual baseline.
@@ -238,13 +241,14 @@ try {
     card.setConfig({...window.atmoCard.config,smart_brief:true,vigilance_entity:'sensor.vigilance'});
     card.hass={...window.atmoCard.hass,states};root.append(card);window.briefCard=card;window.briefInfo=[];
     card.addEventListener('hass-more-info',e=>window.briefInfo.push(e.detail.entityId));await sleep(50);
-    const text=card.shadowRoot.querySelector('.me-p').textContent;
-    const combined=['Maintenant','À venir','Air et pollens','75 km/h','Fortes pluies','Vigilance Météo-France orange'].every(s=>text.includes(s));
+    const text=card.shadowRoot.querySelector('#heros').textContent;
+    const combined=['75 km/h','Fortes pluies','Vigilance Météo-France orange'].every(s=>text.includes(s));
+    const concise=card.shadowRoot.querySelectorAll('.nw-summary-lines p').length<=3;
     card.shadowRoot.querySelector('.nw-brief-details summary').click();await sleep(20);
     const nativeDetails=card.shadowRoot.querySelector('.nw-brief-details').open && window.briefInfo.length===0;
     const hasSource=!!card.shadowRoot.querySelector('.nw-brief-details button[data-entity="sensor.wind"]');
-    const orange=card.shadowRoot.querySelector('.me-hero').style.getPropertyValue('--vc').trim()==='230,125,45';
-    return {combined,nativeDetails,hasSource,orange};
+    const orange=card.shadowRoot.querySelector('#heros').style.getPropertyValue('--vc').trim()==='230,125,45';
+    return {combined,nativeDetails,hasSource,orange,concise};
   });
   for(const [test,passed] of Object.entries(briefBehavior))assert.equal(passed,true,`Brief: ${test}`);
   await page.locator('niak-weather-card .nw-brief-details button[data-entity="sensor.wind"]').first().focus();await page.keyboard.press('Enter');
@@ -267,6 +271,20 @@ try {
     briefReports.push({width,dark,overflow,accessibility:'structural scan passed; new hero has no committed visual baseline yet'});
   }
   assert.deepEqual(errors,[],'browser console/network');
-  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,errors},null,2));
-  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,errors},null,2));
+  const compactAndMissing=await page.evaluate(async()=>{
+    const root=document.querySelector('main');root.replaceChildren();
+    const card=document.createElement('niak-weather-card');
+    const states={'weather.test':{entity_id:'weather.test',state:'unavailable',attributes:{}},'sensor.old':{entity_id:'sensor.old',state:'unavailable',attributes:{t_ext:40,ressenti:48,vent:90,pluie_taux:12}}};
+    card.setConfig({type:'custom:niak-weather-card',weather_entity:'weather.test',model_entity:'sensor.old',mode:'compact'});
+    card.hass={states,callWS:async()=>({})};root.append(card);await new Promise(r=>setTimeout(r,30));
+    const shadow=card.shadowRoot;
+    const twoSections=shadow.querySelectorAll('#container>.nw-section').length===2&&!shadow.querySelector('#predictions');
+    const fourTiles=shadow.querySelectorAll('.me-tu').length===4;
+    const noStale=!shadow.querySelector('#today').textContent.includes('48')&&!shadow.querySelector('#today').textContent.includes('40');
+    const missing=shadow.querySelector('#today').textContent.includes('intensité indisponible');
+    return {twoSections,fourTiles,noStale,missing};
+  });
+  for(const [test,passed] of Object.entries(compactAndMissing))assert.equal(passed,true,`Compact/missing: ${test}`);
+  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,errors},null,2));
+  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,compactAndMissing,errors},null,2));
 } finally { await browser.close();server.close(); }

@@ -621,10 +621,10 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   var CYAN = 'var(--mush-rgb-cyan, 77,182,172)';
   var ORANGE = 'var(--mush-rgb-orange, 244,180,86)';
   var GRIS = 'var(--mush-rgb-grey, 150,150,150)';
-  var out = '';
+  var out = V.dashboard ? '<div class="me-tu" style="--tc:var(--mush-rgb-blue,61,155,233)"' + window.meGeste(SRC.t_ext) + '><div class="me-tuic"><ha-icon icon="mdi:thermometer"></ha-icon></div><div class="me-tut"><span class="nw-metric-name">Température</span><span class="me-tuv">' + esc(fr(nb(A.t_ext), 1)) + '<i>°C</i></span><span class="me-tul">' + (nb(A.ressenti) === null ? 'ressenti indisponible' : 'ressenti ' + esc(fr(nb(A.ressenti), 1)) + ' °C') + '</span><span class="me-tus">' + (nb(A.t_ext) === null ? 'température indisponible' : esc(A.perception || 'au thermomètre')) + '</span></div></div>' : '';
   var vv = nb(A.vent), vg = nb(A.rafales), vd = nb(A.vent_deg);
   var rose = String(A.vent_secteur || A.vent_rose || '');
-  if (vv !== null) {
+  if (vv !== null || V.dashboard) {
     var bf = nb(A.beaufort);
     var wc = (vg !== null && vg >= 60) ? ORANGE
            : (vg !== null && vg >= 40) ? BLEU : GRIS;
@@ -649,18 +649,18 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
     out += '<div class="me-tu" style="--tc: ' + wc + ';" title="'
          +   esc(titre_v) + '"' + window.meGeste(SRC.vent) + '>'
          +   cadran
-         +   '<div class="me-tut">'
+         +   '<div class="me-tut">' + (V.dashboard ? '<span class="nw-metric-name">Vent</span>' : '')
          +     '<span class="me-tuv">' + esc(fr(vv, 0)) + '<i>km/h</i></span>'
          +     '<span class="me-tul">'
          +       (rose ? 'secteur ' + esc(rose)
-                        : esc(A.beaufort_tx || 'vent moyen')) + '</span>'
+                        : esc(vv === null ? 'vent indisponible' : A.beaufort_tx || 'vent moyen')) + '</span>'
          +     '<span class="me-tus">' + esc(dtl) + '</span>'
          +   '</div>'
          + '</div>';
   }
   var pj = nb(A.pluie_jour), pt = nb(A.pluie_taux);
   var pdans = nb(A.pluie_dans), pmm = nb(A.pluie_mm);
-  if (pj !== null || pt !== null) {
+  if (pj !== null || pt !== null || V.dashboard) {
     var pleut = (pt !== null && pt > 0.05);
     var pc2 = (pleut || (pdans !== null && pdans >= 0)) ? CYAN : GRIS;
     var gouttes = '';
@@ -671,7 +671,7 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
       }
     }
     var sousp = pleut ? (fr(pt, 1) + ' mm/h en ce moment')
-                      : 'pas de pluie en ce moment';
+                      : pt === null ? 'intensité indisponible' : 'pas de pluie en ce moment';
     out += '<div class="me-tu" style="--tc: ' + pc2 + ';"'
          +   window.meGeste(SRC.pluie_jour) + '>'
          +   '<div class="me-tuic' + (pleut ? ' me-tuic--pluie' : '') + '">'
@@ -679,7 +679,7 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
                                           : 'mdi:water-outline') + '"></ha-icon>'
          +     gouttes
          +   '</div>'
-         +   '<div class="me-tut">'
+         +   '<div class="me-tut">' + (V.dashboard ? '<span class="nw-metric-name">Pluie</span>' : '')
          +     '<span class="me-tuv">' + esc(fr(pj, 1)) + '<i>mm</i></span>'
          +     '<span class="me-tul">depuis minuit</span>'
          +     '<span class="me-tus">' + esc(sousp) + '</span>'
@@ -689,7 +689,7 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   var B = (A.baro && typeof A.baro === 'object') ? A.baro : {};
   var pr = nb(A.pression), bd = nb(B.d);
   var bs = String(B.s || ''), bfen = nb(B.f);
-  if (pr !== null) {
+  if (pr !== null || V.dashboard) {
     var ang = 0, bc = GRIS;
     if (bs === 'hausse') { ang = -42; bc = BLEU; }
     else if (bs === 'baisse') { ang = 42; bc = ORANGE; }
@@ -707,9 +707,9 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
          +     '<ha-icon icon="mdi:arrow-up-thick" class="me-fle" style="'
          +       'transform: rotate(' + (ang + 90) + 'deg);"></ha-icon>'
          +   '</div>'
-         +   '<div class="me-tut">'
+         +   '<div class="me-tut">' + (V.dashboard ? '<span class="nw-metric-name">Pression</span>' : '')
          +     '<span class="me-tuv">' + esc(fr(pr, 0)) + '<i>hPa</i></span>'
-         +     '<span class="me-tul">' + esc(B.tx || 'baromètre') + '</span>'
+         +     '<span class="me-tul">' + esc(pr === null ? 'pression indisponible' : B.tx || 'baromètre') + '</span>'
          +     '<span class="me-tus">' + esc(det) + '</span>'
          +   '</div>'
          + '</div>';
@@ -823,5 +823,7 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   return out ? '<div class="me-pas">' + out + '</div>' : '';
 
  }
- return {heros: heros(), essentiels: essentiels(), sect1: sect1(), sect2: sect2(), sect3: sect3(), bilan: bilan(), courbe: courbe(), jours: jours(), tuiles: tuiles(), pastilles: pastilles()};
+ const rendered = {heros: heros(), essentiels: essentiels(), sect1: sect1(), sect2: sect2(), sect3: sect3(), bilan: bilan(), courbe: courbe(), jours: jours(), tuiles: tuiles(), pastilles: pastilles()};
+ const gauge = rendered.heros.indexOf('<div class="me-jauge">');
+ return {...rendered, comfort: gauge < 0 ? "" : rendered.heros.slice(gauge, -6)};
 }
