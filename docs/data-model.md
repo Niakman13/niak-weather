@@ -1,14 +1,22 @@
-# Modèle et configuration
+# Mécanique météo, prévisions et configuration
 
 [Sources et prérequis](sources.md) · [Installation](installation.md)
 
-## Un rendu, deux chemins de données
+## Trois lectures complémentaires
 
-Le rendu reprend le JavaScript et les styles de la carte YAML locale. Les entités sont configurables et ne dépendent ni d’un modèle de passerelle, ni d’une ville ou d’un nom de capteur particulier.
+Niak Weather distingue l’**observation à la maison**, la **prévision pour la zone** et l’**évolution des mesures**. L’entité météo fournit le bulletin et les prévisions ; la station apporte température, humidité, vent, pluie et capteurs complémentaires ; l’historique et les compteurs donnent du recul sur ces mesures. L’air et les pollens Atmo restent une lecture environnementale indépendante.
 
-Sans `model_entity`, les règles du template local sont portées dans la carte. Avec `model_entity`, la carte cite directement les attributs du capteur local existant. Ce second chemin conserve ses historiques et ses calculs indépendamment du navigateur ; le premier ne crée pas de nouveaux capteurs dans Home Assistant. Modifier une mesure dans l’éditeur désactive la reprise du modèle local pour que ce choix soit effectivement utilisé.
+Le modèle est intégré à la carte : aucune installation de template n’est nécessaire. Les entités sont configurables et ne dépendent ni d’un modèle de passerelle, ni d’une ville ou d’un nom de capteur imposé. Les calculs d’affichage ne créent pas de nouveaux capteurs Home Assistant.
 
-`forecast_entity` permet de reprendre un capteur existant publiant `heures` et `jours`. Sans lui, les prévisions sont demandées à `weather.get_forecasts`, séparément pour les heures et les jours, toutes les 15 minutes. Une prévision quotidienne non prise en charge ne masque pas les prévisions horaires.
+## Comment les prévisions sont utilisées
+
+Pendant que la carte est affichée, elle demande les prévisions à `weather.get_forecasts`, séparément pour les heures et les jours, toutes les 15 minutes. La disponibilité des données dépend du fournisseur, pas de cette fréquence de lecture. Une prévision quotidienne non prise en charge ne masque pas les prévisions horaires. En cas d’échec, une nouvelle demande est possible après une minute ; une réponse reçue après un changement d’entité est ignorée.
+
+La carte retient jusqu’à **18 points horaires** et **7 prévisions quotidiennes**, puis les repère dans le fuseau horaire Home Assistant. Ce sont les températures prévues du fournisseur, pas le ressenti estimé de la station. La courbe lisse les points pour faciliter la lecture, sans produire de nouvelles prévisions. Elle demande au moins trois températures valides. Elle affiche les extrema, les repères horaires, le passage à demain, les périodes nocturnes et les barres de précipitations prévues. Les plages quotidiennes comparent minimums et maximums sur une échelle commune ; un minimum absent n’est pas inventé.
+
+Les premières heures alimentent aussi les phrases de synthèse. Le modèle repère la première précipitation annoncée d’au moins **0,3 mm** ; pendant une pluie mesurée, il recherche une accalmie dans les 12 premiers points et additionne les précipitations prévues sur les 6 premiers points. Les conditions orage/grêle des 6 premiers points peuvent déclencher un signal d’orage annoncé. Les délais sont exprimés à partir de la position du point dans la série **supposée horaire** : ils ne sont pas un calcul de probabilité, ni une garantie d’heure exacte.
+
+Niak Weather **ne génère pas son propre bulletin météo**, ne corrige pas les prévisions futures à partir de la station et ne déduit pas une pluie certaine d’une tendance de pression. Les quantités et horizons ne sont fiables que dans la limite des données fournies.
 
 ## Entités
 
@@ -35,9 +43,9 @@ Sans `model_entity`, les règles du template local sont portées dans la carte. 
 | `atmo_<mesure>_tomorrow_entity` | Même mesure prévue à J+1, filtrée séparément |
 | `pollen_source` | `atmo` (Atmo France), `legacy` (Polleninformation), ou `none` (masquer les pollens) |
 | `show_atmo_details`, `show_atmo_tomorrow` | Détails et prévisions facultatifs (activés par défaut en complet) |
-| `model_entity`, `forecast_entity` | Compatibilité avec les deux capteurs du template local |
+| `model_entity`, `forecast_entity` | Sources avancées de modèle pré-calculé et de prévisions structurées, non nécessaires à l’installation |
 
-Les autres choix Thermal Comfort (`thermal_dew_point_entity`, `heat_index_entity`, `absolute_humidity_entity`, `thermal_perception_entity`) sont filtrés et préremplis par appareil. Le point de rosée Thermal Comfort sert de repli si celui de la station n’est pas choisi/disponible. **Indice de chaleur et humidité absolue ne sont pas additionnés à l’humidex** : ce serait compter plusieurs fois le même effet. La carte locale ne les affiche pas en pastilles supplémentaires.
+Les autres choix Thermal Comfort (`thermal_dew_point_entity`, `heat_index_entity`, `absolute_humidity_entity`, `thermal_perception_entity`) sont filtrés et préremplis par appareil. Le point de rosée Thermal Comfort sert de repli si celui de la station n’est pas choisi/disponible. **Indice de chaleur et humidité absolue ne sont pas additionnés à l’humidex** : ce serait compter plusieurs fois le même effet. Ces mesures ne sont pas affichées en pastilles supplémentaires.
 
 `location` personnalise le lieu, sinon le nom de l’entité météo est utilisé. `forecast_source` personnalise le fournisseur. `weather_path` configure la navigation sur appui long (et sur le fond de la carte compacte). `air_path` configure la destination de la pastille d’air intérieur ; sans lui, elle ouvre son entité.
 
@@ -53,16 +61,20 @@ pollens:
     ico: mdi:grass
 ```
 
-## Règles conservées du template
+## Estimation du ressenti et conditions observées
 
-Le ressenti est l’humidex, ou à défaut le thermomètre, corrigé des effets du vent, du rayonnement, de la pluie et du ciel nocturne. La vitesse effective tient compte de 25 % des rafales et d’un socle de 3 km/h. Le vent refroidit généralement, mais peut réchauffer dans une fournaise humide. Chaque effet est arrondi avant leur somme, comme dans le template Jinja ; sans humidex, l’absence de correction d’humidité est annoncée explicitement.
+Le ressenti est l’humidex, ou à défaut le thermomètre, corrigé des effets du vent, du rayonnement, de la pluie et du ciel nocturne. La vitesse effective combine 75 % du vent moyen et 25 % du maximum entre vent moyen et rafales, puis retire une marge de 3 km/h, sans devenir négative. Le vent refroidit généralement, mais peut réchauffer dans une fournaise humide. Chaque effet est arrondi avant leur somme ; sans humidex, l’absence de correction d’humidité est annoncée explicitement.
 
-La station passe devant la condition de la zone lorsqu’elle constate de la pluie, du brouillard dense ou un soleil fort contredisant le bulletin. Elle ne prétend pas constater de la foudre. Les orages à venir restent des prévisions. Les seuils et l’ordre des verdicts du template sont conservés, à l’exception des règles dépendant de Foudre et Confort/ouvrants, retirées à la demande.
+La station passe devant la condition de la zone lorsqu’elle constate de la pluie, du brouillard dense ou un soleil fort contredisant le bulletin. Elle ne prétend pas constater de la foudre. Les orages à venir restent des prévisions. Les signaux de synthèse sont hiérarchisés : orage annoncé, pluie très forte, rafales, chaleur, froid ou UV selon les données disponibles. Ils attirent l’attention sur une situation, sans constituer une alerte officielle. La carte ne gère ni la détection de foudre ni les ouvrants.
 
-Les unités de calcul et d’affichage restent °C, km/h, mm, hPa, W/m² et lx, comme la carte locale. Les capteurs exposés en °F, m/s, mph, pouces ou Pa sont convertis avant calcul. Une valeur `unknown`, `unavailable`, vide ou sentinelle ne devient jamais un zéro plausible.
+Les unités de calcul et d’affichage sont °C, km/h, mm, hPa, W/m² et lx. Les capteurs exposés en °F, m/s, mph, pouces ou Pa sont convertis avant calcul. Une valeur `unknown`, `unavailable`, vide ou sentinelle ne devient jamais un zéro plausible.
 
-Les tendances intégrées utilisent l’historique Recorder : pression sur 3 h avec au moins 20 min de données, vent sur 1 h avec au moins 15 min. Sans historique accessible, le texte reste « tendance en cours de mesure ». Avec le capteur local, ses propres tendances sont reprises sans recalcul. Les périodes pluie « 7 jours » et « 30 jours » gardent les libellés du rendu original, mais citent les compteurs **semaine et mois de la station**, pas des sommes glissantes recomposées.
+Les tendances intégrées utilisent l’historique Recorder : pression sur 3 h avec au moins 20 min de données, vent sur 1 h avec au moins 15 min. Sans historique accessible, le texte reste « tendance en cours de mesure ». Les périodes pluie « 7 jours » et « 30 jours » citent les compteurs **semaine et mois de la station**, pas des sommes glissantes recomposées.
 
-Le graphique garde une hauteur fixe par palier, une courbe Catmull-Rom, un fond nocturne, des barres de pluie, les extrema et les repères maintenant/demain. Texte et repères sont en HTML pour ne pas être étirés avec le SVG. Les jours ont une échelle commune et un minimum absent n’est jamais inventé.
+## Sources personnalisées : réglages avancés
+
+Par défaut, laissez `model_entity` et `forecast_entity` vides. `model_entity` permet d’utiliser un capteur dont les attributs contiennent un modèle pré-calculé compatible avec le schéma d’affichage ; il ne s’agit pas d’un capteur de température ordinaire. Ses calculs et tendances sont alors repris sans recalcul. Modifier une mesure dans l’éditeur désactive ce modèle pour prendre en compte le nouveau choix.
+
+`forecast_entity` remplace les demandes de prévisions par la lecture d’un capteur structuré : `heures` est une liste de points `{ h, j, c, t, p }` et `jours` une liste `{ n, e, c, t, m, p }`. `h` est l’heure, `j`/`e` le décalage du jour, `c` la condition météo, `t` la température/maximale, `m` la minimale, `p` la pluie en mm et `n` le libellé du jour. Ces options s’adressent aux utilisateurs préparant leurs données en amont ; elles ne sont pas des prérequis de Niak Weather.
 
 Le modèle décrit un ressenti local estimé. Ses badges ne remplacent pas la vigilance officielle Météo-France ni les alertes de sécurité.

@@ -42,7 +42,7 @@ Chaque mesure est facultative individuellement. Sans capteur, elle reste absente
 
 ## Thermal Comfort — humidex et ressenti
 
-**Statut :** facultatif ; recommandé pour retrouver le ressenti complet du modèle local.
+**Statut :** facultatif ; recommandé pour un ressenti tenant compte de l’humidité.
 
 **Prérequis :** installer [Thermal Comfort](https://github.com/dolezsa/thermal_comfort) dans les intégrations HACS, suivre ses instructions de redémarrage, puis créer un appareil utilisant la **température extérieure et l’humidité extérieure**. Ne pas sélectionner l’appareil d’une chambre ou d’un salon. Activer les entités Humidex et Perception de l’humidex si elles sont désactivées.
 
@@ -56,7 +56,7 @@ Sans humidex, le thermomètre sert de base et la carte annonce explicitement que
 
 **Statut :** facultatif pour démarrer ; recommandé pour des corrections et repères adaptés au lieu.
 
-**Prérequis :** [l’intégration Soleil](https://www.home-assistant.io/integrations/sun/), généralement présente dans la configuration Home Assistant par défaut, et un emplacement correct de la maison. Niak Weather utilise `sun.sun` automatiquement. Un autre Soleil ou un capteur d’élévation peut être choisi dans **Soleil, air et compatibilité locale**.
+**Prérequis :** [l’intégration Soleil](https://www.home-assistant.io/integrations/sun/), généralement présente dans la configuration Home Assistant par défaut, et un emplacement correct de la maison. Niak Weather utilise `sun.sun` automatiquement. Un autre Soleil ou un capteur d’élévation peut être choisi dans la section des options Soleil et air.
 
 **Apport à la carte :** élévation solaire pour les contributions soleil/nuit au ressenti et heures de lever/coucher pour le fond nocturne du graphique. Le réchauffement solaire demande aussi le rayonnement mesuré par la station ; la correction nocturne utilise aussi la couverture nuageuse.
 
@@ -80,7 +80,7 @@ Ce sont des données de **zone**, pas des mesures du jardin. Les indices, concen
 
 **Prérequis :** des entités Polleninformation EU déjà configurées dans Home Assistant. Choisir **Polleninformation** dans **Source des pollens**. La liste `pollens` se configure en YAML ; le préremplissage peut proposer les entités reconnues dans ce mode. Voir [l’exemple de configuration](data-model.md).
 
-**Apport à la carte :** noms d’espèces et niveaux de pollens dans la ligne du rendu local. Cette voie garde son échelle d’origine 0–4 et ne fournit pas le nouveau bloc de pollution extérieure Atmo. Quand Atmo est sélectionné, la liste Polleninformation n’est pas affichée en double, mais reste conservée dans la configuration. L’air extérieur Atmo peut rester affiché indépendamment de ce choix.
+**Apport à la carte :** noms d’espèces et niveaux de pollens dans la ligne de pollens de la carte. Cette voie garde son échelle d’origine 0–4 et ne fournit pas le nouveau bloc de pollution extérieure Atmo. Quand Atmo est sélectionné, la liste Polleninformation n’est pas affichée en double, mais reste conservée dans la configuration. L’air extérieur Atmo peut rester affiché indépendamment de ce choix.
 
 Pour une nouvelle installation souhaitant les données extérieures détaillées, le parcours Atmo est documenté dans le guide dédié. Il n’est pas nécessaire de désinstaller Polleninformation si d’autres cartes l’utilisent.
 
@@ -88,7 +88,7 @@ Pour une nouvelle installation souhaitant les données extérieures détaillées
 
 **Statut :** facultatif et indépendant d’Atmo France.
 
-**Prérequis :** un capteur de votre installation qui fournit déjà un **indice global d’air intérieur en %**. Sélectionnez-le dans **Soleil, air et compatibilité locale → Indice de qualité de l’air intérieur (%)**. Ne choisissez pas un capteur brut de CO₂ en ppm, ni un capteur PM2.5 en µg/m³, ni l’indice Atmo extérieur.
+**Prérequis :** un capteur de votre installation qui fournit déjà un **indice global d’air intérieur en %**. Sélectionnez-le dans le champ **Indice de qualité de l’air intérieur (%)** des options Soleil et air. Ne choisissez pas un capteur brut de CO₂ en ppm, ni un capteur PM2.5 en µg/m³, ni l’indice Atmo extérieur.
 
 **Apport à la carte :** pastille « air intérieur » reprenant cet indice, sans nouveau calcul. Un clic ouvre l’entité ; une page dédiée peut être définie dans **Page qualité de l’air intérieur**. Niak Weather ne crée pas l’indice à partir des capteurs de CO₂, particules ou composés organiques : cette agrégation reste à réaliser en amont si vous la souhaitez. Sans indice compatible, laissez le champ vide.
 
@@ -100,13 +100,13 @@ Pour une nouvelle installation souhaitant les données extérieures détaillées
 
 **Apport à la carte :** tendance de pression sur 3 h (au moins 20 min de données) et de vent sur 1 h (au moins 15 min). La carte affiche la fenêtre réellement disponible, pas une évolution déduite de quelques secondes d’ouverture du navigateur. Sans historique suffisant, elle indique que la tendance est en cours de mesure. Les tendances de température demandent leur propre entité.
 
-## Templates locaux — reprise d’une installation existante
+## Sources personnalisées — usage avancé
 
-**Statut :** facultatif ; réservé à ceux qui possèdent déjà les templates compatibles de la carte locale d’origine.
+**Statut :** facultatif ; aucune source personnalisée n’est nécessaire pour installer Niak Weather.
 
-**Prérequis :** un capteur de modèle météo exposant les attributs attendus et, si souhaité, un capteur de prévisions avec `heures` et `jours`. Sélectionnez-les dans **Soleil, air et compatibilité locale**. Un capteur quelconque appelé « météo » ne suffit pas.
+**Prérequis :** des capteurs respectant le contrat de données de la carte : `model_entity` pour un modèle pré-calculé et `forecast_entity` pour des prévisions structurées en `heures` et `jours`. Un capteur quelconque appelé « météo » ne suffit pas.
 
-**Apport à la carte :** reprise directe des calculs, historiques et prévisions existants, sans recréer de capteurs. Sans eux, Niak Weather utilise son modèle intégré et demande les prévisions à l’entité météo. Modifier une mesure dans l’éditeur désactive la reprise du modèle local pour que votre choix soit utilisé. [Contrat et réglages](data-model.md).
+**Apport à la carte :** possibilité d’utiliser des calculs ou prévisions préparés en amont. Par défaut, Niak Weather utilise son modèle intégré et votre entité météo. Modifier une mesure dans l’éditeur désactive le modèle pré-calculé pour que ce choix soit utilisé. [Contrat et réglages](data-model.md).
 
 ## Ce qui n’est pas nécessaire
 

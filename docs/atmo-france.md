@@ -1,6 +1,6 @@
 # Air extérieur et pollens — Atmo France
 
-La carte locale utilisait Polleninformation EU pour les espèces de pollens et un autre capteur pour l’air **intérieur**. Niak Weather peut désormais utiliser [Atmo France](https://github.com/sebcaps/atmofrance) pour les pollens et l’air **extérieur**, sans remplacer l’indice intérieur et sans mélanger leurs échelles.
+[Atmo France](https://github.com/sebcaps/atmofrance) enrichit Niak Weather avec une lecture de l’air **extérieur** et des pollens : indice global, détail des polluants, espèces et concentrations, aujourd’hui et demain. Ces données complètent les mesures météo, sans remplacer l’indice d’air **intérieur** ni mélanger leurs échelles.
 
 ## Configurer l’intégration
 
@@ -47,4 +47,4 @@ La date affichée est celle de **publication Atmo**, pas l’heure d’une mesur
 
 Après la mise à jour v1.0.0, ouvrir l’éditeur et préremplir les entités Atmo si ce n’est pas déjà fait. La source Atmo est proposée si une zone est identifiable. L’ancienne liste `pollens` est conservée mais n’est plus affichée en double. Pour utiliser cette source, choisir **Polleninformation** et conserver sa liste ; pour ne montrer aucun pollen, choisir **Ne pas afficher les pollens**. L’air extérieur reste indépendant de ce choix.
 
-Il n’est pas nécessaire de désinstaller Polleninformation : d’autres tableaux de bord ou automatisations peuvent encore l’utiliser. Cette évolution ne modifie pas les intégrations, automatisations ou templates locaux existants.
+Il n’est pas nécessaire de désinstaller Polleninformation : d’autres tableaux de bord ou automatisations peuvent encore l’utiliser. Cette évolution ne modifie pas les intégrations, automatisations ou capteurs personnalisés existants.

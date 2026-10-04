@@ -87,7 +87,7 @@ Dans ce mode, les mises à jour sont manuelles : remplacer le fichier par celui 
 
 ## Installer ou mettre à jour vers v1.0.0 stable
 
-La version v1.0.0 stable conserve le rendu complet de la carte locale et Atmo France pour l’air extérieur et les pollens. Elle reprend les fonctionnalités validées de beta.7 ; seul le libellé de la source alternative est simplifié en **Polleninformation**. Les configurations et entités existantes restent compatibles.
+La version stable réunit les mesures de la station, le ressenti expliqué, les prévisions et bilans, ainsi que les informations facultatives Atmo France. Une mise à jour conserve les entités et réglages enregistrés.
 
 1. Ouvre **Niak Weather** dans HACS et utilise **Mettre à jour** si proposé, sinon **⋮ → Retélécharger / Redownload**.
 2. Sélectionne **v1.0.0** si le choix d’une version est demandé. Il n’est plus nécessaire d’activer les préversions.
@@ -104,25 +104,14 @@ Installe [Thermal Comfort](https://github.com/dolezsa/thermal_comfort) via HACS 
 
 Dans **Entités Thermal Comfort**, sélectionne cet appareil. Les listes sont filtrées par type de mesure et appareil. La recherche automatique compare aussi ses lectures d’entrée à celles de la station pour éviter de prendre les capteurs d’une pièce intérieure. Si plusieurs choix sont équivalents, elle laisse le champ vide : il faut choisir manuellement. Sans humidex, la carte indique que l’humidité n’est pas comptée dans son estimation.
 
-### Reprendre exactement un template local existant
+### Comprendre ce que tu vois
 
-Dans **Soleil, air et compatibilité locale**, choisis le capteur du modèle météo local et celui de ses prévisions. La détection les propose lorsque leurs sources correspondent à la station et à l’entité météo choisies. La carte lit alors les mêmes calculs, les mêmes tendances et les mêmes cumuls que la carte locale. Elle n’ajoute ni un nouveau package, ni une copie de ces capteurs.
+La partie actuelle combine les observations de la station avec le bulletin de la zone. Le ressenti est une estimation expliquée ; la courbe horaire et les plages quotidiennes affichent les températures **prévues par le fournisseur**, pas ce ressenti. Les phrases sur la pluie et les orages interprètent les prévisions reçues. Pour les détails, consulte la [mécanique météo et prévisions](data-model.md).
 
-```yaml
-type: custom:niak-weather-card
-weather_entity: weather.ma_commune
-model_entity: sensor.meteo_maison
-forecast_entity: sensor.meteo_previsions
-mode: detailed
-forecast_source: Météo-France
-```
-
-Ces noms sont des exemples ; ils doivent correspondre aux deux capteurs de ton template. Garde le même thème et le même zoom pour comparer les deux cartes. Modifier une mesure dans l’éditeur repasse au modèle intégré afin que ce choix soit pris en compte.
-
-La distance de foudre et Confort/ouvrants sont retirés de cette version. Les orages **prévus** restent visibles. Le créneau d’aération et les alertes d’ouvrants ne sont plus affichés ; sans verdict local de bénéfice, une météo sans alerte utilise le bleu.
+Aucun capteur de modèle ni template supplémentaire n’est nécessaire. Les champs avancés `model_entity` et `forecast_entity` servent uniquement aux sources personnalisées respectant le contrat de la carte.
 
 ### Si un bloc manque
 
-Un bloc ne s’affiche que si ses données existent. Le bilan demande notamment les compteurs semaine/mois et la rafale maximale du jour. Le point de rosée, l’UV, l’air intérieur et les pollens sont facultatifs. Dans le modèle intégré, les tendances vent/pression demandent que Recorder enregistre ces entités et que l’utilisateur ait accès à leur historique. Sans historique, le texte indique que la tendance est en cours de mesure. Dans le modèle local, les tendances existantes sont reprises directement.
+Un bloc ne s’affiche que si ses données existent. Le bilan demande notamment les compteurs semaine/mois et la rafale maximale du jour. Le point de rosée, l’UV, l’air intérieur et les pollens sont facultatifs. Dans le modèle intégré, les tendances vent/pression demandent que Recorder enregistre ces entités et que l’utilisateur ait accès à leur historique. Sans historique, le texte indique que la tendance est en cours de mesure.
 
-La carte ne fournit pas de nouvelles entités pour des automatisations. Elle n’a pas besoin de `button-card` : le rendu original est désormais inclus dans la ressource Niak Weather.
+La carte ne fournit pas de nouvelles entités pour des automatisations. Son rendu est autonome : elle n’a pas besoin de `button-card` ni d’une carte graphique supplémentaire.

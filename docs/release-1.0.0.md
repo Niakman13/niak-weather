@@ -1,14 +1,14 @@
 # Niak Weather v1.0.0 — première version stable
 
-Le tableau de bord météo validé et son support Atmo France passent en version stable. Le rendu et les fonctions de beta.7 sont conservés, sans modification des calculs ni des choix d’entités.
+Niak Weather est une carte météo pour Home Assistant qui rassemble les observations de la station, un ressenti expliqué, les prévisions horaires/quotidiennes et les bilans pluie/vent. Atmo France complète ce tableau avec l’air extérieur et les pollens d’aujourd’hui et de demain.
 
-La source alternative de pollens s’appelle désormais simplement **Polleninformation** dans l’éditeur. La mention « ancienne liste YAML » est retirée. Sa valeur interne reste compatible avec les configurations existantes : aucune migration manuelle n’est nécessaire.
+L’éditeur propose le préremplissage et des filtres par station/appareil, mesure, zone et horizon. Les choix existants sont conservés ; un choix ambigu reste manuel. **Polleninformation** est une alternative facultative pour les pollens.
 
 La carte inclut les mesures Ecowitt, les prévisions Météo-France, le ressenti Thermal Comfort, le graphique 18 h, les bilans pluie/vent et les entités Atmo France d’aujourd’hui/demain. Les données facultatives restent configurables et les choix automatiques ne remplacent pas les choix manuels.
 
-La page principale du dépôt est désormais entièrement en **français**. Un guide explique chaque source, son utilité, les entités qu’elle apporte et les prérequis **obligatoires ou facultatifs**. Il distingue la carte minimale du rendu enrichi, l’air intérieur de l’air extérieur, et documente l’installation HACS comme le téléchargement manuel.
+La documentation principale est en **français** et présente l’intérêt de la carte ainsi que sa mécanique de lecture météo et de prévisions. Un guide explique chaque source, son utilité, les entités qu’elle apporte et les prérequis **obligatoires ou facultatifs**. Il distingue la carte minimale du rendu enrichi, l’air intérieur de l’air extérieur, et documente l’installation HACS comme le téléchargement manuel.
 
-## Mise à jour depuis une beta
+## Installation et mises à jour
 
 Dans **HACS → Niak Weather**, installer la mise à jour **v1.0.0**, ou utiliser **⋮ → Retélécharger** et sélectionner cette version. Recharger ensuite le navigateur avec **Ctrl+F5**. Sur mobile, fermer/rouvrir le tableau de bord et vider le cache frontend si nécessaire. Les préversions ne sont plus nécessaires pour installer cette version stable ; les entités et réglages actuels sont conservés.
 

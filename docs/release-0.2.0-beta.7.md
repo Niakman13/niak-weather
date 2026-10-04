@@ -17,6 +17,6 @@ Dans HACS → Niak Weather → **⋮ → Retélécharger**, choisir **v0.2.0-bet
 
 Cette version reste une préversion : **la publication stable v1 est en attente**.
 
-Validation : 121 tests, six comparaisons du rendu météo d’origine sans différence, six captures du nouveau bloc en clair/sombre sans débordement, filtres/préremplissage/changement de commune et interactions. Les tests navigateur utilisent un environnement Home Assistant simulé ; la nouvelle configuration reste à vérifier sur l’instance après mise à jour.
+Validation : 121 tests, six comparaisons du rendu météo de référence sans différence, six captures du nouveau bloc en clair/sombre sans débordement, filtres/préremplissage/changement de commune et interactions. Les tests navigateur utilisent un environnement Home Assistant simulé ; la nouvelle configuration reste à vérifier sur l’instance après mise à jour.
 
 [Guide Atmo France](https://github.com/Niakman13/niak-weather/blob/main/docs/atmo-france.md) · [Installation](https://github.com/Niakman13/niak-weather/blob/main/docs/installation.md)
