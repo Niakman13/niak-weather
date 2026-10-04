@@ -87,6 +87,8 @@ export const dashboardStyles = css`
   .nw-synthesis { position:relative; isolation:isolate; overflow:hidden; display:grid; grid-template-columns:76px minmax(0,1fr) minmax(240px,.65fr); column-gap:20px; border-left:3px solid rgb(var(--vc)); }
   .nw-sky-backdrop { position:absolute; inset:0; z-index:-2; pointer-events:none; }
   .nw-sky-backdrop::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent 45%,#10243b24 70%,#10243b85); }
+  .nw-synthesis::after { content:''; position:absolute; inset:auto 0 0; height:110px; max-height:45%; z-index:-1; pointer-events:none; background:linear-gradient(180deg,transparent,var(--card-background-color,#fff)); }
+  .nw-synthesis+#today { border-top:0; }
   .nw-synthesis::before { content:''; position:absolute; inset:0; z-index:-1; pointer-events:none; background:linear-gradient(90deg,var(--card-background-color,#fff) 0%,color-mix(in srgb,var(--card-background-color,#fff) 97%,transparent) 32%,color-mix(in srgb,var(--card-background-color,#fff) 90%,transparent) 48%,color-mix(in srgb,var(--card-background-color,#fff) 55%,transparent) 64%,color-mix(in srgb,var(--card-background-color,#fff) 12%,transparent) 83%,transparent 100%); }
   .nw-synthesis>.nw-section-heading { grid-column:1 / 3; grid-row:1; position:relative; z-index:1; }
   .nw-summary-emblem { grid-column:1; grid-row:2 / span 2; align-self:start; margin-top:3px; width:76px; height:76px; pointer-events:none; }
