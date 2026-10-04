@@ -1,6 +1,6 @@
-# Brief intelligent — v1.2.0-beta.1
+# Brief intelligent — v1.2.0-beta.2
 
-Cette fonction est disponible dans la bêta v1.2.0-beta.1 et n’est pas incluse dans la release stable v1.0.0. Son objectif est de transformer les mesures et prévisions en un résumé compréhensible : **ce que l’on ressent maintenant, ce qui arrive et ce qui mérite de l’attention**. [Installation de la bêta](release-1.2.0-beta.1.md).
+Cette fonction est disponible dans la bêta v1.2.0-beta.2 et n’est pas incluse dans la release stable v1.0.0. Son objectif est de transformer les mesures et prévisions en un résumé compréhensible : **ce que l’on ressent maintenant, ce qui arrive et ce qui mérite de l’attention**. [Installation de la bêta](release-1.2.0-beta.2.md).
 
 ## Un bandeau, trois lectures
 
@@ -10,11 +10,11 @@ Cette fonction est disponible dans la bêta v1.2.0-beta.1 et n’est pas incluse
 
 **Air et pollens** retient le plus défavorable des indices Atmo disponibles, sans moyenner un polluant préoccupant avec des indices favorables. Aujourd’hui et demain sont distingués. Les concentrations ne sont pas converties en risques et le code 7 reste un évènement. L’indice d’air intérieur personnalisé peut être cité en %, sans lui attribuer un seuil sanitaire universel. Polleninformation reste une alternative, sans double affichage.
 
-Le bandeau limite les phrases par rubrique. S’il reste d’autres points importants, il le signale et les conserve dans **Comprendre le brief et ses limites**, avec le raisonnement, les limites et un bouton pour ouvrir l’entité source. Un phénomène important ne disparaît pas dans une moyenne.
+Le bandeau limite les signaux visibles. S’il reste d’autres points importants, il le signale et les conserve dans **Comprendre la synthèse**, avec le raisonnement, les limites et un bouton pour ouvrir l’entité source. Un phénomène important ne disparaît pas dans une moyenne.
 
-### Présentation épurée en préparation après beta.1
+### Présentation épurée de beta.2
 
-La prochaine itération de présentation organise la carte en **Synthèse**, **Aujourd’hui** et **Prévisions** dans un seul cadre. Elle n’est pas encore incluse dans le téléchargement beta.1.
+La beta.2 organise la carte en **Synthèse**, **Aujourd’hui** et **Prévisions** dans un seul cadre.
 
 La synthèse présente au maximum trois signaux importants, en conservant le plus prioritaire puis en diversifiant entre observations et prévisions. Les autres points importants sont comptés dans **Comprendre la synthèse** et restent consultables, avec leurs sources et limites. Ce changement allège l’affichage ; il ne modifie pas les seuils ni la couleur, qui tiennent compte de tous les signaux.
 

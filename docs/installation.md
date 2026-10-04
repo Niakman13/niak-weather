@@ -35,7 +35,7 @@ jour future apparaîtra dans HACS et se fera avec le même bouton de télécharg
 
 ## Tester le brief intelligent en bêta
 
-La version stable reste **v1.0.0**. Pour essayer volontairement **v1.2.0-beta.1**, consulte le [guide de la bêta](release-1.2.0-beta.1.md) : choix de la version dans HACS, nouveau bandeau, limites et retour à la stable. Une mise à jour de la carte ne nécessite pas de redémarrer Home Assistant.
+La version stable reste **v1.0.0**. Pour essayer volontairement **v1.2.0-beta.2**, consulte le [guide de la bêta](release-1.2.0-beta.2.md) : choix de la version dans HACS, nouveau bandeau, limites et retour à la stable. Une mise à jour de la carte ne nécessite pas de redémarrer Home Assistant.
 
 ## Ajouter la carte
 

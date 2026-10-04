@@ -6,7 +6,7 @@ Une température seule ne raconte pas toute la météo : 25 °C à l’ombre, av
 
 **Version stable : v1.0.0.** La documentation principale et les textes de la carte sont en français.
 
-**Bêta à tester : v1.2.0-beta.1.** Un nouveau bandeau interprète le ressenti actuel, les phénomènes importants, les six prochaines heures, l’air et les pollens. Ses couleurs expriment le niveau d’attention le plus élevé ; le rouge est réservé à une vigilance rouge officielle. Cette préversion est facultative et ne remplace pas la stable. [Installer la bêta et revenir à la stable](docs/release-1.2.0-beta.1.md) · [Comprendre le brief et ses limites](docs/brief-intelligent.md).
+**Bêta à tester : v1.2.0-beta.2.** La carte s’organise en Synthèse, Aujourd’hui et Prévisions. Le bandeau intelligent est allégé et conserve son cercle avec halo animé ; les indices Atmo utilisent des disques à secteurs en dégradé. Cette préversion est facultative et ne remplace pas la stable. [Installer la bêta et revenir à la stable](docs/release-1.2.0-beta.2.md) · [Comprendre le brief et ses limites](docs/brief-intelligent.md).
 
 [![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
