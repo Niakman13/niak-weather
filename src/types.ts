@@ -91,5 +91,4 @@ export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   show_atmo_tomorrow?: boolean;
   pollens?: Array<{ id: string; nom: string; ico?: string }>;
   name?: string;
-  mode?: "compact" | "detailed";
 }

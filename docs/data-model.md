@@ -42,11 +42,11 @@ Niak Weather **ne génère pas son propre bulletin météo**, ne corrige pas les
 | `atmo_<mesure>_tomorrow_entity` | Même mesure prévue à J+1, filtrée séparément |
 | `pollen_source` | `atmo` (Atmo France), `legacy` (Polleninformation), ou `none` (masquer les pollens) |
 | `show_atmo_details`, `show_atmo_tomorrow` | Détails et prévisions facultatifs (activés par défaut en complet) |
-| `show_synthesis`, `show_today`, `show_predictions` | Afficher les trois sections indépendamment (activées par défaut ; prévisions masquées en mode compact) |
+| `show_synthesis`, `show_today`, `show_predictions` | Afficher les trois sections indépendamment (activées par défaut) |
 
 Les autres choix Thermal Comfort (`thermal_dew_point_entity`, `heat_index_entity`, `absolute_humidity_entity`, `thermal_perception_entity`) sont filtrés et préremplis par appareil. Le point de rosée Thermal Comfort sert de repli si celui de la station n’est pas choisi/disponible. **Indice de chaleur et humidité absolue ne sont pas additionnés à l’humidex** : ce serait compter plusieurs fois le même effet. Ces mesures ne sont pas affichées en pastilles supplémentaires.
 
-`location` personnalise le lieu, sinon le nom de l’entité météo est utilisé. `forecast_source` personnalise le fournisseur. `weather_path` configure la navigation sur appui long (et sur le fond de la carte compacte).
+`location` personnalise le lieu, sinon le nom de l’entité météo est utilisé. `forecast_source` personnalise le fournisseur. `weather_path` configure la navigation sur appui long.
 
 Atmo France est désormais proposé en priorité. L’air extérieur, les polluants, les niveaux de pollens et leurs concentrations sont traités séparément du modèle météo : aucun indice Atmo n’entre dans le calcul du ressenti. La détection utilise le registre et les attributs géographiques ; un choix ambigu reste vide. Les 38 champs (19 mesures × aujourd’hui/demain) sont disponibles dans l’éditeur. [Contrat des données et guide](atmo-france.md).
 

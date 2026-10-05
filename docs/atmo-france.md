@@ -35,7 +35,7 @@ show_atmo_tomorrow: true
 
 ## Lire les données correctement
 
-Le bloc **Air extérieur et pollens · Aujourd’hui** reprend les indices quotidiens prévus de la zone, pas des mesures de la station dans le jardin. Demain est dépliable en mode complet. Un clic ou Entrée ouvre la fiche du capteur concerné, y compris une concentration. Les détails peuvent être masqués dans les réglages ; le mode compact ne montre que les indices globaux du jour.
+Le bloc **Air extérieur et pollens · Aujourd’hui** reprend les indices quotidiens prévus de la zone, pas des mesures de la station dans le jardin. Demain est dépliable dans la section Prévisions. Un clic ou Entrée ouvre la fiche du capteur concerné, y compris une concentration. Les détails et le bloc de demain peuvent être masqués indépendamment dans les réglages.
 
 L’air et les polluants ont une échelle de **1 (Bon) à 6 (Extrêmement mauvais)**. Le code **7 signifie Évènement**, pas une concentration ni un pourcentage. Les pollens vont de **1 (Très faible) à 6 (Extrêmement élevé)** : ces six niveaux ne sont pas ramenés aux quatre niveaux de Polleninformation. **0 signifie Indisponible**, et ne veut pas dire « aucun pollen » ou « air parfait ».
 

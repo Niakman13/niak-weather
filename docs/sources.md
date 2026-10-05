@@ -70,7 +70,7 @@ Sans ces données, le modèle intégré utilise des valeurs de repli (élévatio
 
 Dans **Atmo France — air extérieur et pollens**, choisissez la zone et préremplissez les entités. Les champs sont séparés par mesure, unité/type et horizon aujourd’hui/demain. La source des pollens doit être **Atmo France** pour afficher ses pollens.
 
-**Apport à la carte :** indice global d’air extérieur, cinq sous-indices de polluants (PM2.5, PM10, NO₂, O₃, SO₂), indice global pollen, niveaux et concentrations de six espèces : Graminées, Ambroisie, Armoise, Aulne, Bouleau et Olivier. Jusqu’à 38 entités sont configurables : 19 mesures pour aujourd’hui et 19 pour demain. Le mode complet permet de déplier demain ; le compact montre seulement les indices globaux du jour.
+**Apport à la carte :** indice global d’air extérieur, cinq sous-indices de polluants (PM2.5, PM10, NO₂, O₃, SO₂), indice global pollen, niveaux et concentrations de six espèces : Graminées, Ambroisie, Armoise, Aulne, Bouleau et Olivier. Jusqu’à 38 entités sont configurables : 19 mesures pour aujourd’hui et 19 pour demain. Les détails et les prévisions de demain possèdent leurs propres interrupteurs ; demain apparaît dans la section Prévisions lorsqu’elle est activée.
 
 Ce sont des données de **zone**, pas des mesures du jardin. Les indices, concentrations et pourcentages intérieurs ne sont pas interchangeables. Une donnée absente n’est pas interprétée comme « aucun pollen ». Les prévisions de demain dépendent de leur disponibilité. [Installation, échelles et migration détaillées](atmo-france.md).
 

@@ -1,10 +1,12 @@
 # Affichage modulable et sources des conditions actuelles
 
-Ces réglages sont disponibles à partir de la version **1.4.0-beta.2**. La version stable reste **1.3.7**.
+Ces réglages sont disponibles dans la version stable **1.4.0**.
 
 ## Choisir les sections
 
-Dans **Général**, trois interrupteurs permettent d’afficher ou de masquer indépendamment le bandeau **Synthèse / météo actuelle**, la section **Aujourd’hui** et la section **Prévisions**. Les trois sont activés par défaut. Le mode compact continue de masquer les prévisions.
+Dans **Général**, trois interrupteurs permettent d’afficher ou de masquer indépendamment le bandeau **Synthèse / météo actuelle**, la section **Aujourd’hui** et la section **Prévisions**. Les trois sont activés par défaut.
+
+Le choix Accueil (compact) / Complet est supprimé. Une ancienne configuration `mode: compact` est convertie en `show_predictions: false`, sauf si un choix explicite existe déjà pour cette section. Le réglage `mode` est retiré lors de la prochaine sauvegarde dans l’éditeur. Les prévisions peuvent ensuite être réactivées librement ; aucun ancien mode ne masque les mesures techniques ou les détails Atmo. Les configurations `mode: detailed` sont simplement nettoyées sans masquer de section.
 
 Quand le brief intelligent est désactivé, le bandeau devient **Météo actuelle** : le résumé de gauche disparaît pour éviter de répéter la condition déjà affichée à droite. Le ciel animé reste disponible.
 

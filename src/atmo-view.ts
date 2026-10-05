@@ -50,7 +50,7 @@ export function renderAtmo(hass: HomeAssistant, config: WeatherCardConfig, now =
     const body = html`<div class="nw-atmo-row">${air ? badge(air, 'Air extérieur', 'mdi:air-filter', false) : nothing}${pollen ? badge(pollen, 'Pollens', 'mdi:flower-pollen', true) : nothing}
       ${extraAir ? badge(extraAir.r!, atmoMetrics[extraAir.metric].label.replace(' — sous-indice', ''), atmoMetrics[extraAir.metric].icon, false) : nothing}
       ${extraPollen ? badge(extraPollen.r!, atmoMetrics[extraPollen.metric].label, atmoMetrics[extraPollen.metric].icon, true) : nothing}</div>
-      ${config.show_atmo_details === false || config.mode === 'compact' ? nothing : html`<details class="nw-atmo-breakdown"><summary>Détails des polluants et pollens</summary>
+      ${config.show_atmo_details === false ? nothing : html`<details class="nw-atmo-breakdown"><summary>Détails des polluants et pollens</summary>
         ${pollution.length ? html`<div class="nw-atmo-kind">Sous-indices de pollution · échelle Atmo 1–6</div><div class="nw-atmo-row">${pollution.map(({ metric, r }) => badge(r!, atmoMetrics[metric].label.replace(' — sous-indice', ''), atmoMetrics[metric].icon, false))}</div>` : nothing}
         ${species.length ? html`<div class="nw-atmo-kind">Niveaux de pollens · échelle Atmo 1–6</div><div class="nw-atmo-row nw-atmo-species">${species.map(({ metric, r, c }) => html`<div class="nw-atmo-species-item">
           ${r ? badge(r, atmoMetrics[metric].label, atmoMetrics[metric].icon, true) : nothing}
@@ -63,7 +63,7 @@ export function renderAtmo(hass: HomeAssistant, config: WeatherCardConfig, now =
     return next ? html`<details open class="nw-atmo-day nw-atmo-next"><summary>${title}</summary>${body}</details>`
       : html`<section class="nw-atmo-day" aria-label="Air extérieur et pollens Atmo France aujourd’hui"><div class="nw-atmo-heading">${title}</div>${body}</section>`;
   };
-  return html`${scope === 'tomorrow' ? nothing : day(false)}${scope === 'today' || config.show_atmo_tomorrow === false || config.mode === 'compact' ? nothing : day(true)}`;
+  return html`${scope === 'tomorrow' ? nothing : day(false)}${scope === 'today' || config.show_atmo_tomorrow === false ? nothing : day(true)}`;
 }
 export const atmoStyles = css`
   .nw-atmo-day { border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:12px; background:rgba(150,150,150,.035); margin-top:16px; padding:14px 16px; color:var(--primary-text-color); font-size:12px; }

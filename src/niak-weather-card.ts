@@ -6,7 +6,8 @@ import { buildLocalModel, finite, measurement, normaliseForecasts, type History 
 import { renderLocal } from './local-renderer';
 import { localStyles } from './local-styles';
 import { detectEcowittStation } from './station-detection';
-import { cleanConfig } from './niak-weather-card-editor';
+import { cleanConfig } from './config';
+import './niak-weather-card-editor';
 import { atmoStyles, usesAtmoPollens } from './atmo-view';
 import { dashboardStyles, renderDashboard } from './dashboard-view';
 import type { ForecastResponse, HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
@@ -43,10 +44,14 @@ export class NiakWeatherCard extends LitElement {
   }
   public static getStubConfig(hass?: HomeAssistant): WeatherCardConfig {
     const weather = Object.keys(hass?.states ?? {}).find(id => id.startsWith('weather.')) ?? '';
-    return { type: 'custom:niak-weather-card', weather_entity: weather, mode: 'detailed' };
+    return { type: 'custom:niak-weather-card', weather_entity: weather };
   }
   public static getConfigElement(): HTMLElement { return document.createElement('niak-weather-card-editor'); }
-  public getCardSize(): number { return this.config?.mode === 'compact' ? 3 : 10; }
+  public getCardSize(): number {
+    if (!this.config) return 10;
+    return Math.max(1, (this.config.show_synthesis === false ? 0 : 3)
+      + (this.config.show_today === false ? 0 : 4) + (this.config.show_predictions === false ? 0 : 3));
+  }
   public getGridOptions() { return { columns: 'full', rows: 'auto' }; }
   public connectedCallback(): void {
     super.connectedCallback();
@@ -145,7 +150,7 @@ export class NiakWeatherCard extends LitElement {
     const target = event.composedPath().find(e => e instanceof HTMLElement && (e.hasAttribute('data-entity') || e.hasAttribute('data-nav'))) as HTMLElement | undefined;
     if (target?.hasAttribute('data-nav')) { this.navigate(target.getAttribute('data-nav')!); return; }
     const id = target?.getAttribute('data-entity') ?? this.config?.weather_entity;
-    if (!target && this.config?.mode === 'compact' && path) this.navigate(path); else if (id) this.open(id);
+    if (id) this.open(id);
   }
   private keydown(event: KeyboardEvent): void {
     if (!['Enter', ' '].includes(event.key)) return;
@@ -170,5 +175,5 @@ export class NiakWeatherCard extends LitElement {
 window.customCards = window.customCards || [];
 window.customCards.push({ type: 'niak-weather-card', name: 'Niak Weather', description: 'Météo locale Ecowitt et prévisions', preview: true,
   getEntitySuggestion: (hass: HomeAssistant, entityId: string) => entityId.startsWith('weather.') ? {
-    config: { type: 'custom:niak-weather-card', weather_entity: entityId, mode: 'detailed', ...detectEcowittStation(hass) } } : null });
+    config: { type: 'custom:niak-weather-card', weather_entity: entityId, ...detectEcowittStation(hass) } } : null });
 declare global { interface Window { customCards: Array<Record<string, unknown>>; } }

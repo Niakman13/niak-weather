@@ -13,7 +13,6 @@ import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } fr
 export function renderDashboard(rendered: Record<string, string>, brief: WeatherBrief | undefined, model: HassEntity,
   hass: HomeAssistant, config: WeatherCardConfig, now: Date, location: string, hourly:WeatherForecast[] = []) {
   const preview = brief ? briefPreview(brief) : undefined;
-  const compact = config.mode === 'compact';
   const unavailable = ['unknown', 'unavailable'].includes(model.state);
   const condition = unavailable ? 'Météo indisponible' : String(model.attributes.titre || 'Votre météo');
   const headline = preview?.selected[0]?.group === 'official' ? brief!.title : preview?.selected[0]?.text ?? (brief && !brief.available ? 'Données insuffisantes' : condition);
@@ -66,11 +65,11 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
       <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>${showComfort ? 'Mesures et ressenti' : 'Conditions actuelles'}</span></header>
       ${showComfort?html`<div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}><h3 class="nw-panel-title">Ressenti</h3>${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>`:nothing}
       <div id="tuiles">${renderCurrentMetrics(metrics,hass)}</div>
-      ${!compact && rendered.bilan ? html`<details open class="nw-measure-details"><summary>Détails pluie et vent</summary><div id="bilan">${unsafeHTML(rendered.bilan)}</div></details>` : nothing}
-      ${!compact ? html`<div id="pastilles">${unsafeHTML(rendered.pastilles)}</div>` : nothing}
+      ${rendered.bilan ? html`<details open class="nw-measure-details"><summary>Détails pluie et vent</summary><div id="bilan">${unsafeHTML(rendered.bilan)}</div></details>` : nothing}
+      <div id="pastilles">${unsafeHTML(rendered.pastilles)}</div>
       ${renderAtmo(hass, config, now, 'today')}
     </section>`}
-    ${compact || config.show_predictions===false ? nothing : html`<section id="predictions" class="nw-section" aria-labelledby="nw-predictions-title">
+    ${config.show_predictions===false ? nothing : html`<section id="predictions" class="nw-section" aria-labelledby="nw-predictions-title">
       <header class="nw-section-heading"><h2 id="nw-predictions-title">Prévisions</h2><span>${config.forecast_source ?? (/france/i.test(String(hass.states[config.weather_entity]?.attributes.attribution)) ? 'Météo-France' : 'Prévisions météo')}</span></header>
       <div class="nw-forecast-grid"><div id="courbe">${unsafeHTML(rendered.courbe)}</div><div id="jours">${unsafeHTML(rendered.jours)}</div></div>
       ${renderAtmo(hass, config, now, 'tomorrow')}

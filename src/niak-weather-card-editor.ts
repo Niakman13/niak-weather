@@ -4,17 +4,12 @@ import { getRegistry, stationRules, thermalFields, type RegistryContext, type Se
 import { categoryFields, fillCategory, manualCandidates, measurementMatches, sourceDevices, sourceStatus, vigilanceCandidates, type SourceCategory } from './config-sources';
 import type { HomeAssistant, WeatherCardConfig } from './types';
 import { atmoAreas, atmoCandidates, atmoFields, atmoField, atmoMetrics } from './atmo';
+import { cleanConfig } from './config';
 import type { AtmoField, AtmoMetric } from './types';
-export function cleanConfig(config: WeatherCardConfig): WeatherCardConfig {
-  const copy = { ...config } as WeatherCardConfig & { lightning_distance_entity?: string; comfort_entity?: string; air_quality_entity?: string; model_entity?: string; forecast_entity?: string; air_path?: string };
-  delete copy.lightning_distance_entity; delete copy.comfort_entity;
-  delete copy.air_quality_entity; delete copy.model_entity; delete copy.forecast_entity; delete copy.air_path;
-  return copy;
-}
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
-  weather_entity: 'Entité météo', mode: 'Affichage', location: 'Lieu', forecast_source: 'Fournisseur des prévisions',
+  weather_entity: 'Entité météo', location: 'Lieu', forecast_source: 'Fournisseur des prévisions',
   smart_brief: 'Activer le brief intelligent', vigilance_entity: 'Vigilance officielle Météo-France (département)',
-  show_synthesis:'Afficher la section Synthèse / météo actuelle',show_today:'Afficher la section Aujourd’hui',show_predictions:'Afficher la section Prévisions (mode complet)',
+  show_synthesis:'Afficher la section Synthèse / météo actuelle',show_today:'Afficher la section Aujourd’hui',show_predictions:'Afficher la section Prévisions',
   weather_animations: 'Animer le ciel de la météo actuelle', weather_animation_quality: 'Qualité des animations météo',
   temperature_entity: 'Température extérieure', humidity_entity: 'Humidité extérieure',
   wind_speed_entity: 'Vitesse du vent (moyenne si disponible)', wind_gust_entity: 'Rafales', wind_bearing_entity: 'Direction du vent',
@@ -76,7 +71,7 @@ export class NiakWeatherCardEditor extends LitElement {
   private valueChanged(event: CustomEvent<{ value: Partial<WeatherCardConfig> }>, category: SourceCategory): void {
     event.stopPropagation(); if (!this.config) return;
     const extras: Record<SourceCategory, string[]> = {
-      general:['location','mode','smart_brief','weather_animations','weather_animation_quality','weather_path','show_synthesis','show_today','show_predictions'],
+      general:['location','smart_brief','weather_animations','weather_animation_quality','weather_path','show_synthesis','show_today','show_predictions'],
       weather:['forecast_source'],station:['station_device_id'],thermal:['thermal_device_id'],
       atmo:['atmo_area','pollen_source','show_atmo_details','show_atmo_tomorrow'],
     };
@@ -124,7 +119,6 @@ export class NiakWeatherCardEditor extends LitElement {
     if (this.config!.sun_elevation_entity && !elevationIds.includes(this.config!.sun_elevation_entity)) elevationIds.push(this.config!.sun_elevation_entity);
     const schemas: Record<SourceCategory, unknown[]> = {
       general: [{ name: 'location', selector: { text: {} } },
-      { name: 'mode', selector: { select: { options: [{ value: 'compact', label: 'Accueil (compact)' }, { value: 'detailed', label: 'Complet' }] } } },
       ...['show_synthesis','show_today','show_predictions'].map(name=>({name,selector:{boolean:{}}})),
       {name:'smart_brief',selector:{boolean:{}}}, {name:'weather_animations',selector:{boolean:{}}},
       {name:'weather_animation_quality',selector:{select:{options:[{value:'standard',label:'Standard'},{value:'low',label:'Allégée (tablette)'}]}}},

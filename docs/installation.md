@@ -35,7 +35,7 @@ jour future apparaîtra dans HACS et se fera avec le même bouton de télécharg
 
 ## Synthèse intelligente
 
-La version stable est **v1.2.0**. Consulte les [notes de mise à jour](release-1.2.0.md) : téléchargement dans HACS, nouveau bandeau et limites. Une mise à jour de la carte ne nécessite pas de redémarrer Home Assistant.
+La version stable est **v1.4.0**. Consulte les [notes de mise à jour](release-1.4.0.md) : configuration par source, sections indépendantes et affichage sans station. Une mise à jour de la carte ne nécessite pas de redémarrer Home Assistant.
 
 ## Ajouter la carte
 
@@ -62,11 +62,10 @@ temperature_entity: sensor.temperature_exterieure
 humidity_entity: sensor.humidite_exterieure
 wind_speed_entity: sensor.vitesse_vent
 rain_rate_entity: sensor.intensite_pluie
-mode: detailed
 ```
 
 Les noms ci-dessus sont des exemples : sélectionne toujours tes propres
-entités. `mode: compact` retire les prévisions pour une carte d’accueil.
+entités. Les trois interrupteurs de Général contrôlent les sections affichées.
 
 ## Si la ressource n’a pas été ajoutée automatiquement
 
@@ -88,14 +87,16 @@ Puis recharge le navigateur.
 
 Dans ce mode, les mises à jour sont manuelles : remplacer le fichier par celui de la nouvelle release et recharger le navigateur. Ne charge pas en même temps les ressources `/local/` et `/hacsfiles/` de cette carte.
 
-## Installer ou mettre à jour vers v1.2.0 stable
+## Installer ou mettre à jour vers v1.4.0 stable
 
 La version stable réunit les mesures de la station, le ressenti expliqué, les prévisions et bilans, ainsi que les informations facultatives Atmo France. Une mise à jour conserve les entités et réglages enregistrés.
 
 1. Ouvre **Niak Weather** dans HACS et utilise **Mettre à jour** si proposé, sinon **⋮ → Retélécharger / Redownload**.
-2. Sélectionne **v1.2.0** si le choix d’une version est demandé. Il n’est plus nécessaire d’activer les préversions.
+2. Sélectionne **v1.4.0** si le choix d’une version est demandé. Il n’est pas nécessaire d’activer les préversions.
 3. Télécharge, puis recharge le navigateur avec **Ctrl+F5**. Sur l’application mobile, ferme puis rouvre le tableau de bord et, si nécessaire, vide son cache frontend.
 4. Les choix enregistrés sont conservés. Pour ajouter des mesures ou réparer des références introuvables, ouvre la catégorie concernée et clique **Remplir automatiquement** ; vérifie les propositions avant d’enregistrer.
+
+Le choix Accueil / Complet a disparu. Les trois interrupteurs de Général contrôlent les sections. Une ancienne configuration compacte garde les prévisions masquées, sauf choix explicite contraire ; leur interrupteur permet de les réactiver. L’ancien champ `mode` est retiré lors de la sauvegarde dans l’éditeur.
 
 ### Atmo France : air extérieur et pollens
 

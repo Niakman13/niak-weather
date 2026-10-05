@@ -387,8 +387,9 @@ try {
     const form=editor.shadowRoot.querySelector('ha-form[data-category="general"]');
     const controls=['show_synthesis','show_today','show_predictions'].every(name=>form.schema.some(s=>s.name===name&&s.selector.boolean));
     const persisted=form.data.show_today===false;editor.remove();
-    card.setConfig({...config,mode:'compact'});await card.updateComplete;
-    return {noDuplicate,noFakeComfort,providerFrames,truthfulRain,switches,controls,persisted};
+    const noModeControl=!form.schema.some(s=>s.name==='mode');
+    card.setConfig({...config,show_predictions:false});await card.updateComplete;
+    return {noDuplicate,noFakeComfort,providerFrames,truthfulRain,switches,controls,persisted,noModeControl};
   });
   for(const [key,value] of Object.entries(displayOptions))assert.equal(value,true,`Display options: ${key}`);
   for(const dark of [false,true])for(const width of [375,1440]){
@@ -412,13 +413,26 @@ try {
     const fourTiles=shadow.querySelectorAll('.me-tu').length===4;
     const noStale=!shadow.querySelector('#today').textContent.includes('48')&&!shadow.querySelector('#today').textContent.includes('40');
     const missing=shadow.querySelector('#today').textContent.includes('Donnée indisponible');
-    return {twoSections,fourTiles,noStale,missing};
+    const migrated=!('mode' in card.config)&&card.config.show_predictions===false;
+    card.setConfig({...card.config,show_predictions:true});await card.updateComplete;
+    const reenabled=!!shadow.querySelector('#predictions');
+    const editor=document.createElement('niak-weather-card-editor');
+    editor.setConfig({type:'custom:niak-weather-card',weather_entity:'weather.test',mode:'compact'});
+    editor.hass=card.hass;root.append(editor);await editor.updateComplete;
+    const form=editor.shadowRoot.querySelector('ha-form[data-category="general"]');
+    const editorMigrated=form.data.show_predictions===false&&!('mode' in form.data);
+    let emitted;
+    editor.addEventListener('config-changed',e=>{emitted=e.detail.config;});
+    form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,show_predictions:true}},bubbles:true,composed:true}));
+    const savesWithoutMode=emitted?.show_predictions===true&&!('mode' in emitted);
+    editor.remove();
+    return {twoSections,fourTiles,noStale,missing,migrated,reenabled,editorMigrated,savesWithoutMode};
   });
   for(const [test,passed] of Object.entries(compactAndMissing))assert.equal(passed,true,`Compact/missing: ${test}`);
   await page.setViewportSize({width:375,height:1300});
   const gaugeEdges=await page.evaluate(async()=>{
     const root=document.querySelector('main');root.replaceChildren();const card=document.createElement('niak-weather-card');
-    card.setConfig({...window.fixture.config,mode:'compact',smart_brief:false});root.append(card);
+    card.setConfig({...window.fixture.config,show_predictions:false,smart_brief:false});root.append(card);
     for(const value of [-20,55]){
       const states={...window.fixture.states,'sensor.model':{...window.fixture.states['sensor.model'],attributes:{...window.fixture.states['sensor.model'].attributes,ressenti:value}}};
       card.hass={states,callWS:async()=>({})};await new Promise(r=>setTimeout(r,25));

@@ -71,7 +71,7 @@ export function fillCategory(hass: HomeAssistant, context: RegistryContext, conf
   if (deviceField && search[deviceField] && !context.entities.some(r=>r.device_id===search[deviceField])) delete search[deviceField];
   if (category === 'atmo' && search.atmo_area && !atmoAreas(hass, context).some(a=>a.value===search.atmo_area)) delete search.atmo_area;
   let detected: Partial<WeatherCardConfig> = {};
-  if (category === 'general') detected = {mode:config.mode??'detailed',smart_brief:config.smart_brief??true,weather_animations:config.weather_animations??true,weather_animation_quality:config.weather_animation_quality??'standard'};
+  if (category === 'general') detected = {smart_brief:config.smart_brief??true,weather_animations:config.weather_animations??true,weather_animation_quality:config.weather_animation_quality??'standard'};
   else if (category === 'weather') {
     const weather = Object.values(hass.states).filter(e=>e.entity_id.startsWith('weather.'));
     const preferred=weather.filter(e=>context.entities.find(r=>r.entity_id===e.entity_id)?.platform==='meteo_france'||/meteo.france/.test(norm(e.attributes.attribution)));
