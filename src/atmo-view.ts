@@ -37,8 +37,6 @@ export function renderAtmo(hass: HomeAssistant, config: WeatherCardConfig, now =
     const species = includePollen ? pollenMetrics.map(metric => ({ metric, r: read(metric, next), c: read(`${metric}_concentration` as AtmoMetric, next) })).filter(v => !!v.r || !!v.c) : [];
     const readings = [air, pollen, ...pollution.map(v => v.r), ...species.flatMap(v => [v.r, v.c])].filter((r): r is AtmoReading => !!r);
     if (!readings.length) return nothing;
-    const zone = [...new Set(readings.map(r => r.zone).filter(Boolean))].join(' / ');
-    const dates = [...new Set(readings.map(r => r.updated).filter(Boolean))].join(' / ');
     // Keep a concerning sub-index visible even when the configured global index is lower/missing.
     // Never rename that sub-index as a global index or use concentrations as levels.
     const worstPollutant = pollution.filter(v => !v.r!.stale && v.r!.value !== undefined && v.r!.value! <= 6)
@@ -47,28 +45,47 @@ export function renderAtmo(hass: HomeAssistant, config: WeatherCardConfig, now =
       .sort((a, b) => b.r!.value! - a.r!.value!)[0];
     const extraAir = worstPollutant && (!air || air.stale || air.value === undefined || worstPollutant.r!.value! > air.value) ? worstPollutant : undefined;
     const extraPollen = worstSpecies && (!pollen || pollen.stale || pollen.value === undefined || worstSpecies.r!.value! > pollen.value) ? worstSpecies : undefined;
-    const body = html`<div class="nw-atmo-row">${air ? badge(air, 'Air extérieur', 'mdi:air-filter', false) : nothing}${pollen ? badge(pollen, 'Pollens', 'mdi:flower-pollen', true) : nothing}
-      ${extraAir ? badge(extraAir.r!, atmoMetrics[extraAir.metric].label.replace(' — sous-indice', ''), atmoMetrics[extraAir.metric].icon, false) : nothing}
-      ${extraPollen ? badge(extraPollen.r!, atmoMetrics[extraPollen.metric].label, atmoMetrics[extraPollen.metric].icon, true) : nothing}</div>
-      ${config.show_atmo_details === false ? nothing : html`<details class="nw-atmo-breakdown"><summary>Détails des polluants et pollens</summary>
-        ${pollution.length ? html`<div class="nw-atmo-kind">Sous-indices de pollution · échelle Atmo 1–6</div><div class="nw-atmo-row">${pollution.map(({ metric, r }) => badge(r!, atmoMetrics[metric].label.replace(' — sous-indice', ''), atmoMetrics[metric].icon, false))}</div>` : nothing}
-        ${species.length ? html`<div class="nw-atmo-kind">Niveaux de pollens · échelle Atmo 1–6</div><div class="nw-atmo-row nw-atmo-species">${species.map(({ metric, r, c }) => html`<div class="nw-atmo-species-item">
+    const card = (kind: 'air' | 'pollen') => {
+      const isAir=kind==='air', primary=isAir?air:pollen;
+      const ownReadings=(isAir?[air,...pollution.map(v=>v.r)]:[pollen,...species.flatMap(v=>[v.r,v.c])]).filter((r):r is AtmoReading=>!!r);
+      if (!ownReadings.length) return nothing;
+      const zone=[...new Set(ownReadings.map(r=>r.zone).filter(Boolean))].join(' / ');
+      const dates=[...new Set(ownReadings.map(r=>r.updated).filter(Boolean))].join(' / ');
+      const body = html`<div class="nw-atmo-row nw-atmo-main">${primary ? badge(primary, isAir?'Air extérieur':'Pollens', isAir?'mdi:air-filter':'mdi:flower-pollen', !isAir) : nothing}
+      ${isAir&&extraAir ? badge(extraAir.r!, atmoMetrics[extraAir.metric].label.replace(' — sous-indice', ''), atmoMetrics[extraAir.metric].icon, false) : nothing}
+      ${!isAir&&extraPollen ? badge(extraPollen.r!, atmoMetrics[extraPollen.metric].label, atmoMetrics[extraPollen.metric].icon, true) : nothing}</div>
+      ${config.show_atmo_details === false ? nothing : html`<details class="nw-atmo-breakdown"><summary>${isAir?'Détails des polluants':'Détails des pollens'}</summary>
+        ${isAir&&pollution.length ? html`<div class="nw-atmo-kind">Sous-indices de pollution · échelle Atmo 1–6</div><div class="nw-atmo-row">${pollution.map(({ metric, r }) => badge(r!, atmoMetrics[metric].label.replace(' — sous-indice', ''), atmoMetrics[metric].icon, false))}</div>` : nothing}
+        ${!isAir&&species.length ? html`<div class="nw-atmo-kind">Niveaux de pollens · échelle Atmo 1–6</div><div class="nw-atmo-row nw-atmo-species">${species.map(({ metric, r, c }) => html`<div class="nw-atmo-species-item">
           ${r ? badge(r, atmoMetrics[metric].label, atmoMetrics[metric].icon, true) : nothing}
           ${c ? html`<span class="nw-atmo-concentration" data-entity=${c.id} role="button" tabindex="0" aria-label=${`Concentration ${atmoMetrics[metric].label}`} title="Concentration déclarée par l’intégration Atmo France">
             ${!r || r.value !== undefined ? c.value === undefined ? 'Concentration indisponible' : `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(c.value)}${c.unit ? ' ' + c.unit : ' (unité non fournie)'}` : 'Concentration non confirmée'}
             ${c.stale ? ' · données anciennes' : ''}</span>` : nothing}</div>`)}</div>` : nothing}
-        ${dates ? html`<div class="nw-atmo-date">Publication Atmo : ${dates}. ${readings.some(r => r.stale) ? 'Données anciennes : à vérifier dans l’intégration.' : ''}</div>` : nothing}</details>`}
-      ${readings.some(r => r.stale) ? html`<p class="nw-atmo-date">Certaines données sont anciennes : vérifier les sources.</p>` : nothing}`;
-    const title = html`${next ? 'Demain · Air et pollens' : 'Air et pollens'} <span>Atmo France${zone ? ' · ' + zone : ''}</span>`;
-    return next ? html`<section class="nw-atmo-day nw-atmo-next" aria-label="Air extérieur et pollens Atmo France demain"><div class="nw-atmo-heading">${title}</div>${body}</section>`
-      : html`<section class="nw-atmo-day" aria-label="Air extérieur et pollens Atmo France aujourd’hui"><div class="nw-atmo-heading">${title}</div>${body}</section>`;
+        ${dates ? html`<div class="nw-atmo-date">Publication Atmo : ${dates}. ${ownReadings.some(r => r.stale) ? 'Données anciennes : à vérifier dans l’intégration.' : ''}</div>` : nothing}</details>`}
+      ${ownReadings.some(r => r.stale) ? html`<p class="nw-atmo-date">Certaines données sont anciennes : vérifier les sources.</p>` : nothing}`;
+      return html`<section class=${`nw-atmo-day${next?' nw-atmo-next':''}`} data-kind=${kind} aria-label=${`${isAir?'Air extérieur':'Pollens'} Atmo France ${next?'demain':'aujourd’hui'}`}>
+        <header class="nw-atmo-heading"><h3><ha-icon icon=${isAir?'mdi:air-filter':'mdi:flower-pollen'}></ha-icon>${isAir?'Air extérieur':'Pollens'}</h3><span class="nw-history-source">Atmo France</span></header>
+        <div class="nw-atmo-location">${next?'Demain':'Aujourd’hui'}${zone?' · '+zone:''}</div>${body}</section>`;
+    };
+    return html`<div class="nw-atmo-grid">${card('air')}${card('pollen')}</div>`;
   };
   return html`${scope === 'tomorrow' ? nothing : day(false)}${scope === 'today' || config.show_atmo_tomorrow === false ? nothing : day(true)}`;
 }
 export const atmoStyles = css`
-  .nw-atmo-day { border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:12px; background:rgba(150,150,150,.035); margin-top:16px; padding:14px 16px; color:var(--primary-text-color); font-size:12px; }
-  .nw-atmo-heading { font-size:11px; font-weight:650; }
-  .nw-atmo-heading span { color:var(--secondary-text-color); font-weight:400; margin-left:8px; }
+  .nw-atmo-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px; }
+  .nw-atmo-day { min-width:0;display:flex;flex-direction:column;border:1px solid var(--divider-color,rgba(150,150,150,.2)); border-radius:16px; background:rgba(150,150,150,.035); padding:20px; color:var(--primary-text-color); font-size:12px; }
+  .nw-atmo-day:only-child { grid-column:1/-1; }
+  .nw-atmo-heading { display:flex;align-items:center;justify-content:space-between;gap:8px; }
+  .nw-atmo-heading h3 { display:flex;align-items:center;gap:9px;margin:0;font-size:18px; }
+  .nw-atmo-heading ha-icon { color:#58b995;--mdc-icon-size:24px; }
+  .nw-atmo-location { color:var(--secondary-text-color);font-size:11px;margin-top:8px; }
+  .nw-atmo-main { margin:18px 0;align-items:center; }
+  .nw-atmo-main>.nw-atmo-badge { display:grid;grid-template-columns:64px minmax(0,1fr);column-gap:14px;max-width:none;text-align:left;min-width:0; }
+  .nw-atmo-main .nw-atmo-name { grid-column:2;grid-row:1; }
+  .nw-atmo-main .nw-atmo-disc { width:64px;height:64px;grid-column:1;grid-row:1/3; }
+  .nw-atmo-main .nw-atmo-caption { grid-column:2;align-items:flex-start; }
+  .nw-atmo-main .nw-atmo-caption>span { font-size:20px; }
+  .nw-atmo-main .nw-atmo-badge small { font-size:12px; }
   .nw-atmo-row { display:flex; flex-wrap:wrap; gap:16px 28px; margin-top:14px; min-width:0; }
   .nw-atmo-badge { display:inline-flex; flex-direction:column; align-items:center; gap:7px; cursor:pointer; padding:2px 0; min-width:80px; max-width:130px; text-align:center; }
   .nw-atmo-name { font-size:11px; font-weight:500; color:var(--primary-text-color); }
@@ -81,7 +98,7 @@ export const atmoStyles = css`
   .nw-atmo-caption { display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; }
   .nw-atmo-caption>span { font-size:11px; font-weight:600; }
   .nw-atmo-badge small { font-size:10px; color:var(--secondary-text-color); }
-  .nw-atmo-breakdown { margin-top:12px; }
+  .nw-atmo-breakdown { margin-top:auto;padding-top:8px; }
   .nw-atmo-breakdown>summary { cursor:pointer; color:var(--secondary-text-color); font-size:10px; padding:4px 0; }
   .nw-atmo-breakdown .nw-atmo-disc { width:42px; height:42px; }
   .nw-atmo-breakdown .nw-atmo-disc>span { width:20px; height:20px; }
@@ -90,5 +107,5 @@ export const atmoStyles = css`
   .nw-atmo-species-item { display:flex; flex-direction:column; gap:3px; max-width:100%; }
   .nw-atmo-concentration { cursor:pointer; font-size:10px; color:var(--secondary-text-color); }
   .nw-atmo-stale { font-style:italic; }
-  @container (max-width:400px) { .nw-atmo-heading span { display:block; margin:3px 0 0; } .nw-atmo-row { gap:12px 20px; } }
+  @container (max-width:650px) { .nw-atmo-grid { grid-template-columns:1fr; }.nw-atmo-day { padding:16px; }.nw-atmo-row { gap:12px 20px; } }
 `;

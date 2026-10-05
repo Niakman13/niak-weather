@@ -71,6 +71,7 @@ try {
     });
     await page.locator('niak-weather-card .me-bl').first().waitFor();
     const actual = await page.locator('niak-weather-card').screenshot({ path:`${out}/niak-${width}-${dark?'dark':'light'}.png`,animations:'disabled' });
+    await page.locator('niak-weather-card .nw-forecast-grid').screenshot({path:`${out}/forecast-panels-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     const a = PNG.sync.read(baseline), b=PNG.sync.read(actual);
     assert.equal(b.width,a.width, 'card width');
     const layout=await page.evaluate(()=>{
@@ -231,14 +232,16 @@ try {
     const continuousGradient=[...card.shadowRoot.querySelectorAll('.nw-atmo-disc')].every(e=>getComputedStyle(e).backgroundImage.includes('conic-gradient'));
     const visibleWorst=!!card.shadowRoot.querySelector('#today .nw-atmo-day>.nw-atmo-row [data-entity="sensor.atmo_a_grass"]');
     states[selected.atmo_pollen_entity].state='0';card.hass={...hass};await sleep(20);
-    const noFalseZero=card.shadowRoot.querySelector('.nw-atmo-day').textContent.includes('Indisponible')&&!card.shadowRoot.querySelector('.nw-atmo-day').textContent.includes('0/6');
+    const pollenCard=card.shadowRoot.querySelector('#today .nw-atmo-day[data-kind="pollen"]');
+    const noFalseZero=pollenCard.textContent.includes('Indisponible')&&!pollenCard.textContent.includes('0/6');
+    const splitCards=card.shadowRoot.querySelectorAll('#today .nw-atmo-day').length===2&&card.shadowRoot.querySelectorAll('#predictions .nw-atmo-day').length===2;
     const missingRing=card.shadowRoot.querySelector('#today [data-entity="'+selected.atmo_pollen_entity+'"]').style.getPropertyValue('--atmo-angle')==='0deg';
     const missingMasked=[...card.shadowRoot.querySelector('#today [data-entity="'+selected.atmo_pollen_entity+'"]').querySelectorAll('svg path')].every(e=>e.getAttribute('fill')!=='none');
     states[selected.atmo_pollen_entity].state='2';card.hass={...hass};await sleep(20);
     window.atmoInfo=[];
     card.shadowRoot.querySelector('[data-entity="'+selected.atmo_air_entity+'"]').click();
     const correctPopup=window.atmoInfo[0]===selected.atmo_air_entity;
-    return {fullPrefill,filtered,keptEmpty,changedZone,migration,levels,nativeDetails,noFalseZero,correctPopup,simplifiedLabel,movedDays,rings,sectors,continuousGradient,visibleWorst,missingRing,missingMasked};
+    return {fullPrefill,filtered,keptEmpty,changedZone,migration,levels,nativeDetails,noFalseZero,correctPopup,simplifiedLabel,movedDays,rings,sectors,continuousGradient,visibleWorst,missingRing,missingMasked,splitCards};
   });
   for (const [test,passed] of Object.entries(atmoBehavior)) assert.equal(passed,true,`Atmo: ${test}`);
   const atmoReports=[];
@@ -260,7 +263,7 @@ try {
     const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();assert.deepEqual(axe.violations.map(v=>v.id),[],'Atmo structural accessibility');
     atmoReports.push({width,dark,overflow,accessibility:'structural scan passed'});
   }
-  await page.locator('niak-weather-card #today .nw-atmo-breakdown summary').click();
+  await page.locator('niak-weather-card #today .nw-atmo-day[data-kind="pollen"] .nw-atmo-breakdown summary').click();
   await page.locator('niak-weather-card .nw-atmo-day [data-entity="sensor.atmo_a_grass_concentration"]').focus();await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(()=>window.atmoInfo.at(-1)),'sensor.atmo_a_grass_concentration','Atmo concentration keyboard popup');
   // Smart brief is a deliberate new hero, not an update of the v1 visual baseline.
@@ -335,7 +338,7 @@ try {
     assert.equal(overflow,false,`Brief overflow ${width}/${dark}`);
     await page.locator('niak-weather-card').screenshot({path:`${out}/brief-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/brief-header-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
-    await page.locator('niak-weather-card #today .nw-atmo-day').screenshot({path:`${out}/atmo-discs-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    await page.locator('niak-weather-card #today .nw-atmo-grid').screenshot({path:`${out}/atmo-discs-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-details').open=true;});
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/brief-details-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-details').open=false;});
@@ -633,6 +636,7 @@ try {
     const equalHeightWithOneExpanded=heights.every(a=>heights.every(b=>Math.abs(a.top-b.top)>1||Math.abs(a.height-b.height)<1));
     root.querySelector('.nw-statistics').open=false;
     const windDirection=!!root.querySelector('.nw-wind-direction .me-rose')&&!root.querySelector('.nw-wind-direction').closest('details')&&getComputedStyle(root.querySelector('.nw-wind-direction .me-aigp')).fill==='rgb(40, 130, 240)'&&root.querySelector('.nw-wind-direction').textContent.includes('SO · 225°');
+    const compactSummary=!root.querySelector('.nw-history-card footer')&&!root.querySelector('.nw-pressure-context')&&!!root.querySelector('.nw-wind-headline .nw-wind-direction')&&!root.querySelector('.nw-wind-headline').textContent.includes('Rafale max. du jour')&&!!root.querySelector('.nw-statistics [data-entity="sensor.maximum"]');
     const complementaryWind=!!root.querySelector('.nw-wind-curve--gust')&&root.querySelector('.nw-wind-headline').textContent.includes('Vent moyen maintenant')&&root.querySelector('.nw-wind-headline').textContent.includes('Rafales maintenant');
     const matchingBackground=getComputedStyle(root.querySelector('.nw-history-card')).backgroundColor===getComputedStyle(root.querySelector('#comfort')).backgroundColor;
     const noRelativeBars=!root.querySelector('#bilan .me-blb');
@@ -644,7 +648,7 @@ try {
     let clicked;card.addEventListener('hass-more-info',e=>clicked=e.detail.entityId);
     root.querySelector('.nw-rain-counters button').click();
     const sourceClick=clicked==='sensor.pluie_semaine';
-    return {twoCards,charts,collapsedByDefault,independentStatistics,equalHeightWithOneExpanded,windDirection,complementaryWind,matchingBackground,noRelativeBars,honestScale,noFakeZero,splitRequests,cached,sourceClick};
+    return {twoCards,charts,collapsedByDefault,independentStatistics,equalHeightWithOneExpanded,windDirection,compactSummary,complementaryWind,matchingBackground,noRelativeBars,honestScale,noFakeZero,splitRequests,cached,sourceClick};
   });
   for(const [key,value] of Object.entries(recentDetails))assert.equal(value,true,`Recent details: ${key}`);
   for(const dark of [false,true])for(const width of [375,768,1440]){

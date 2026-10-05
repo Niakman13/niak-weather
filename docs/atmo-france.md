@@ -35,7 +35,7 @@ show_atmo_tomorrow: true
 
 ## Lire les données correctement
 
-Le bloc **Air extérieur et pollens · Aujourd’hui** reprend les indices quotidiens prévus de la zone, pas des mesures de la station dans le jardin. Demain est dépliable dans la section Prévisions. Un clic ou Entrée ouvre la fiche du capteur concerné, y compris une concentration. Les détails et le bloc de demain peuvent être masqués indépendamment dans les réglages.
+Les deux cadres **Air extérieur** et **Pollens** reprennent les indices quotidiens prévus de la zone, pas des mesures de la station dans le jardin. Chacun porte une bulle **Atmo France**, son horizon et sa zone, conserve le cercle coloré et dispose de ses propres détails repliés par défaut. Les mêmes deux cadres présentent demain dans la section Prévisions, sans volet supplémentaire pour cacher les valeurs principales. Un sous-indice plus préoccupant que l’indice global reste visible sans ouvrir les détails. Un clic ou Entrée ouvre la fiche du capteur concerné, y compris une concentration. Les détails et les cadres de demain peuvent être masqués indépendamment dans les réglages.
 
 L’air et les polluants ont une échelle de **1 (Bon) à 6 (Extrêmement mauvais)**. Le code **7 signifie Évènement**, pas une concentration ni un pourcentage. Les pollens vont de **1 (Très faible) à 6 (Extrêmement élevé)** : ces six niveaux ne sont pas ramenés aux quatre niveaux de Polleninformation. **0 signifie Indisponible**, et ne veut pas dire « aucun pollen » ou « air parfait ».
 

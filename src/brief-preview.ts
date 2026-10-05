@@ -15,11 +15,13 @@ export function briefPreview(brief: WeatherBrief) {
 /** The left panel explains attention/outlook, never repeats the current sky. */
 export function briefPresentation(brief: WeatherBrief) {
   const preview=briefPreview(brief),priority=preview.selected[0];
-  const outlook=priority?undefined:brief.signals.find(s=>s.group==='future');
+  const context=priority?undefined:brief.signals.find(s=>s.key==='rain-now')??brief.signals.find(s=>s.key==='pressure');
+  const outlook=priority||context?undefined:brief.signals.find(s=>s.group==='future');
   return {
     ...preview,
-    headline:priority?.group==='official'?brief.title:priority?.text??outlook?.text??(brief.available?'Pas de point d’attention marqué':'Données insuffisantes pour une synthèse'),
-    icon:priority?.icon??outlook?.icon??'mdi:information-outline',
+    headline:priority?.group==='official'?brief.title:priority?.text??context?.text??outlook?.text??(brief.available?'Pas de point d’attention marqué':'Données insuffisantes pour une synthèse'),
+    icon:priority?.icon??context?.icon??outlook?.icon??'mdi:information-outline',
+    contextKey:context?.key,
     outlookKey:outlook?.key,
   };
 }

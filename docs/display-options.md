@@ -18,6 +18,8 @@ Une entité météo suffit pour afficher les conditions du bulletin. La tempéra
 
 Chaque cadre dispose d’un volet **Statistiques** replié par défaut pour ses graphiques. Les chiffres clés et la petite rose des vents restent visibles. Les historiques des capteurs ne sont jamais fabriqués à partir des prévisions météo.
 
+La rose des vents accompagne les chiffres sur la même ligne ; le maximum journalier est réservé aux statistiques. Les commentaires répétant les chiffres disparaissent au profit des informations pertinentes du brief. Air extérieur et pollens ont chacun leur cadre, leur source et leurs détails repliables, aujourd’hui comme demain. La courbe horaire et le tableau de la semaine disposent également de deux cadres distincts.
+
 Les mesures locales renseignées et disponibles sont prioritaires, cadre par cadre, avec une bulle **Station locale**. Si un capteur local devient indisponible et qu’un attribut météo peut le remplacer, la bulle indique explicitement **repli**. Un clic ouvre l’entité qui fournit la valeur affichée.
 
 ## Ne pas confondre pluie prévue et pluie mesurée

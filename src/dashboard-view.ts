@@ -53,7 +53,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
       </aside>
       ${brief ? html`<details class="nw-brief-details"><summary>Les points à retenir${preview?.remaining ? ` · ${preview.remaining} autre${preview.remaining > 1 ? 's' : ''} point${preview.remaining > 1 ? 's' : ''}` : ''}</summary>
         <div class="nw-brief-groups">${groups.map(group => {
-          const signals = brief.signals.filter(s=>s.group===group.key && (s.severity>0 || s.key===preview?.outlookKey));
+          const signals = brief.signals.filter(s=>s.group===group.key && (s.severity>0 || s.key===preview?.outlookKey || s.key==='rain-now' || s.key==='pressure'));
           return signals.length ? html`<section class="nw-brief-group"><h4>${group.title}</h4><p class="nw-brief-context">${group.description}</p>
             <ul>${signals.map(s=>html`<li><ha-icon icon=${s.icon}></ha-icon><span>${s.text}</span>${s.entity ? html`<button data-entity=${s.entity} aria-label=${`Source : ${s.text}`}>Source</button>` : nothing}</li>`)}</ul></section>` : nothing;
         })}</div>
@@ -183,7 +183,7 @@ export const dashboardStyles = css`
   #jours .nw-week-labels small { font-size:8px; font-weight:400; }
   #jours .nw-week-labels .me-jbar { background:none; }
   .nw-forecast-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:22px; }
-  .nw-forecast-grid>div { min-width:0; }
+  .nw-forecast-grid>div { min-width:0;padding:20px;border:1px solid var(--divider-color,rgba(150,150,150,.2));border-radius:16px;background:rgba(150,150,150,.035); }
   #courbe .me-courbe, #jours .me-jours { padding:0; border:0; }
   #courbe { display:flex; flex-direction:column; }
   #jours { display:flex; flex-direction:column; }
@@ -194,7 +194,6 @@ export const dashboardStyles = css`
   #courbe .me-nowl, #courbe .me-jourl { top:8px; }
   #courbe .me-axe { flex-shrink:0; margin-top:10px; }
   #courbe .me-pied { flex-shrink:0; margin-top:8px; }
-  #jours .me-jours { padding-left:20px; border-left:1px solid var(--divider-color,rgba(150,150,150,.18)); }
   #jours .me-j { padding:4px 0; }
   .nw-empty { color:var(--secondary-text-color); font-size:12px; }
   @container (max-width:850px) {

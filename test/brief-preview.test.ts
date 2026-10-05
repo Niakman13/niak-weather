@@ -17,6 +17,14 @@ describe('Concise summary presentation', () => {
   it('does not duplicate a sole signal', () => {
     const s=signal('wind','now',2);expect(briefPreview(brief([s]))).toEqual({selected:[s],remaining:0});
   });
+  it('uses measured rain or a meaningful pressure trend without inventing an attention level',()=>{
+    for(const key of ['rain-now','pressure']) {
+      const result=briefPresentation(brief([signal(key,'now',0),signal('temperature-future','future',0)]));
+      expect(result.headline).toBe(key);expect(result.contextKey).toBe(key);
+      expect(result.outlookKey).toBeUndefined();expect(result.selected).toEqual([]);
+    }
+    expect(briefPresentation(brief([signal('wind-soft','now',0)])).headline).toBe('Pas de point d’attention marqué');
+  });
   it('uses a forecast outlook without Atmo or attention signals, without raising its level',()=>{
     const b=brief([signal('wind-soft','now',0),{...signal('temperature-future','future',0),text:'Fraîcheur annoncée dans 5 h',icon:'mdi:thermometer'}]);
     const result=briefPresentation(b);
