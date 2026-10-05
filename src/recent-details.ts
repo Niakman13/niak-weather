@@ -171,6 +171,7 @@ export const recentDetailsStyles=css`
   .nw-wind-direction .me-rose { width:38px;height:38px;flex:0 0 38px;animation:none; }
   .nw-wind-direction .me-aig { transform-box:view-box;transform-origin:50% 50%; }
   .nw-wind-direction small { display:block;font-size:10px;margin-top:3px; }
+  .nw-wind-headline>.nw-wind-direction { border-left:1px solid var(--divider-color,rgba(150,150,150,.2));padding-left:12px; }
   .nw-history-card .nw-history-source { white-space:normal;text-align:right; }
   .nw-history-card header { display:flex;align-items:center;justify-content:space-between;gap:8px; }
   .nw-history-card h3 { display:flex;align-items:center;gap:9px;margin:0;font-size:18px;color:var(--primary-text-color); }

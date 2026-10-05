@@ -481,8 +481,8 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
       var xd = (X(b) + X(b - 1)) / 2;
       demain = '<i class="me-jour" style="left:' + xd.toFixed(2)
              + '%;height:' + PB + '%;"></i>'
-             + '<span class="me-jourl" style="left:' + xd.toFixed(2)
-             + '%;">DEMAIN</span>';
+             + '<span class="me-jourl" style="left:clamp(0px,' + xd.toFixed(2)
+             + '%,calc(100% - 48px));">DEMAIN</span>';
       break;
     }
   }

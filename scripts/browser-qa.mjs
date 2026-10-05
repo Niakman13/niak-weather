@@ -93,6 +93,14 @@ try {
     if(width>850) assert.equal(forecastGeometry.aligned,true,`forecast columns fill the same height: ${JSON.stringify(forecastGeometry)}`);
     assert.ok(forecastGeometry.height>=190,'forecast graph has usable height');
     assert.equal(forecastGeometry.labels,true,'now/tomorrow labels inset from graph top');
+    const nearbyLabels=await page.evaluate(()=>{
+      const root=window.card.shadowRoot,now=root.querySelector('.me-nowl'),next=root.querySelector('.me-jourl');
+      if(!next)return true;
+      const original=next.style.left;next.style.left=now.style.left;
+      const a=now.getBoundingClientRect(),b=next.getBoundingClientRect();next.style.left=original;
+      return a.bottom<b.top||b.bottom<a.top;
+    });
+    assert.equal(nearbyLabels,true,'now/tomorrow labels remain distinct even with adjacent markers');
     const refinedLayout=await page.evaluate(()=>{
       const root=window.card.shadowRoot,labels=root.querySelector('.nw-week-labels');
       const row=root.querySelector('.me-j:not(.nw-week-labels)');
@@ -260,6 +268,17 @@ try {
     });
     assert.equal(overflow,false,`Atmo overflow ${width}/${dark}`);
     await page.locator('niak-weather-card').screenshot({path:`${out}/atmo-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    await page.evaluate(()=>window.atmoCard.shadowRoot.querySelectorAll('#today .nw-atmo-breakdown').forEach(e=>e.open=true));
+    const detailLayout=await page.evaluate(()=>{
+      const root=window.atmoCard.shadowRoot;
+      return [...root.querySelectorAll('#today .nw-atmo-breakdown .nw-atmo-row')].every(e=>getComputedStyle(e).display==='grid'&&getComputedStyle(e).justifyItems==='center')&&[...root.querySelectorAll('#today .nw-atmo-species-item')].every(e=>getComputedStyle(e).alignItems==='center');
+    });assert.equal(detailLayout,true,'Atmo details use centered grids');
+    const inlinePollenValues=await page.evaluate(()=>[...window.atmoCard.shadowRoot.querySelectorAll('#today .nw-atmo-values')].every(e=>{
+      const level=e.querySelector('.nw-atmo-level'),concentration=e.querySelector('.nw-atmo-concentration');
+      return !level||Math.abs(level.getBoundingClientRect().top-concentration.getBoundingClientRect().top)<2;
+    }));assert.equal(inlinePollenValues,true,'Pollen level and concentration share one line');
+    await page.locator('niak-weather-card #today .nw-atmo-grid').screenshot({path:`${out}/atmo-details-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    await page.evaluate(()=>window.atmoCard.shadowRoot.querySelectorAll('#today .nw-atmo-breakdown').forEach(e=>e.open=false));
     const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();assert.deepEqual(axe.violations.map(v=>v.id),[],'Atmo structural accessibility');
     atmoReports.push({width,dark,overflow,accessibility:'structural scan passed'});
   }
@@ -287,11 +306,18 @@ try {
     const nativeDetails=card.shadowRoot.querySelector('.nw-brief-details').open && window.briefInfo.length===0;
     const hasSource=!!card.shadowRoot.querySelector('.nw-brief-details button[data-entity="sensor.rafales"]');
     const readableGroups=card.shadowRoot.querySelectorAll('.nw-brief-group').length===4&&!card.shadowRoot.querySelector('.nw-brief-details').textContent.includes('≥');
+    const infoAtTitle=!!card.shadowRoot.querySelector('.nw-section-heading .nw-brief-details summary .nw-info-icon')&&!card.shadowRoot.querySelector('#heros>.nw-brief-details');
+    const help=card.shadowRoot.querySelector('.nw-brief-details');help.querySelector('summary').focus();help.querySelector('summary').click();
+    const helpClosed=!help.open;help.querySelector('summary').click();
     const orange=card.shadowRoot.querySelector('#heros').style.getPropertyValue('--vc').trim()==='230,125,45';
-    return {combined,nativeDetails,hasSource,orange,concise,readableGroups};
+    return {combined,nativeDetails,hasSource,orange,concise,readableGroups,infoAtTitle,helpClosed};
   });
   for(const [test,passed] of Object.entries(briefBehavior))assert.equal(passed,true,`Brief: ${test}`);
   await page.locator('niak-weather-card .nw-brief-details button[data-entity="sensor.rafales"]').first().focus();await page.keyboard.press('Enter');
+  await page.locator('niak-weather-card .nw-brief-details>summary').focus();await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>window.briefCard.shadowRoot.querySelector('.nw-brief-details').open),false,'Synthesis help closes with keyboard');
+  await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>window.briefCard.shadowRoot.querySelector('.nw-brief-details').open),true,'Synthesis help opens with keyboard');
   assert.equal(await page.evaluate(()=>window.briefInfo.at(-1)),'sensor.rafales','Brief source keyboard popup');
   const noAtmoBrief=await page.evaluate(async()=>{
     const card=document.createElement('niak-weather-card');card.id='no-atmo-card';window.noAtmoCard=card;
@@ -637,6 +663,7 @@ try {
     root.querySelector('.nw-statistics').open=false;
     const windDirection=!!root.querySelector('.nw-wind-direction .me-rose')&&!root.querySelector('.nw-wind-direction').closest('details')&&getComputedStyle(root.querySelector('.nw-wind-direction .me-aigp')).fill==='rgb(40, 130, 240)'&&root.querySelector('.nw-wind-direction').textContent.includes('SO · 225°');
     const compactSummary=!root.querySelector('.nw-history-card footer')&&!root.querySelector('.nw-pressure-context')&&!!root.querySelector('.nw-wind-headline .nw-wind-direction')&&!root.querySelector('.nw-wind-headline').textContent.includes('Rafale max. du jour')&&!!root.querySelector('.nw-statistics [data-entity="sensor.maximum"]');
+    const directionDivider=getComputedStyle(root.querySelector('.nw-wind-direction')).borderLeftWidth==='1px';
     const complementaryWind=!!root.querySelector('.nw-wind-curve--gust')&&root.querySelector('.nw-wind-headline').textContent.includes('Vent moyen maintenant')&&root.querySelector('.nw-wind-headline').textContent.includes('Rafales maintenant');
     const matchingBackground=getComputedStyle(root.querySelector('.nw-history-card')).backgroundColor===getComputedStyle(root.querySelector('#comfort')).backgroundColor;
     const noRelativeBars=!root.querySelector('#bilan .me-blb');
@@ -648,7 +675,7 @@ try {
     let clicked;card.addEventListener('hass-more-info',e=>clicked=e.detail.entityId);
     root.querySelector('.nw-rain-counters button').click();
     const sourceClick=clicked==='sensor.pluie_semaine';
-    return {twoCards,charts,collapsedByDefault,independentStatistics,equalHeightWithOneExpanded,windDirection,compactSummary,complementaryWind,matchingBackground,noRelativeBars,honestScale,noFakeZero,splitRequests,cached,sourceClick};
+    return {twoCards,charts,collapsedByDefault,independentStatistics,equalHeightWithOneExpanded,windDirection,compactSummary,directionDivider,complementaryWind,matchingBackground,noRelativeBars,honestScale,noFakeZero,splitRequests,cached,sourceClick};
   });
   for(const [key,value] of Object.entries(recentDetails))assert.equal(value,true,`Recent details: ${key}`);
   for(const dark of [false,true])for(const width of [375,768,1440]){

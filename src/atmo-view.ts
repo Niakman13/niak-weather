@@ -24,10 +24,10 @@ function levelDisc(r: AtmoReading) {
 export function renderAtmo(hass: HomeAssistant, config: WeatherCardConfig, now = new Date(), scope: 'today' | 'tomorrow' | 'both' = 'both') {
   const includePollen = config.pollen_source !== 'none' && config.pollen_source !== 'legacy';
   const read = (metric: AtmoMetric, next: boolean) => atmoReading(hass, config[atmoField(metric, next)], !['air', ...pollutantMetrics].includes(metric), metric.endsWith('_concentration'), now);
-  const badge = (r: AtmoReading, label: string, icon: string, pollen: boolean) => html`
+  const badge = (r: AtmoReading, label: string, icon: string, pollen: boolean, inlineValues = false) => html`
     <span class="nw-atmo-badge" data-entity=${r.id} role="button" tabindex="0" aria-label=${`${label} : ${r.label}${r.stale ? ', données anciennes' : ''}`} style=${`--atmo-color:${r.color};--atmo-angle:${r.value !== undefined && r.value <= 6 && !r.stale ? r.value * 60 : 0}deg`} title=${`${label} · ${r.label}${r.updated ? ' · publication ' + r.updated : ''}`}>
       <b class="nw-atmo-name">${label}</b>${levelDisc(r)}
-      <span class="nw-atmo-caption"><span>${r.label}</span>${r.value === undefined ? nothing : html`<small>${r.value === 7 && !pollen ? 'code 7 · hors échelle' : `${r.value}/6`}</small>`}
+      <span class="nw-atmo-caption"><span>${r.label}</span>${r.value === undefined || inlineValues ? nothing : html`<small>${r.value === 7 && !pollen ? 'code 7 · hors échelle' : `${r.value}/6`}</small>`}
       ${r.stale ? html`<small class="nw-atmo-stale">données anciennes</small>` : nothing}
       </span>
     </span>`;
@@ -57,10 +57,10 @@ export function renderAtmo(hass: HomeAssistant, config: WeatherCardConfig, now =
       ${config.show_atmo_details === false ? nothing : html`<details class="nw-atmo-breakdown"><summary>${isAir?'Détails des polluants':'Détails des pollens'}</summary>
         ${isAir&&pollution.length ? html`<div class="nw-atmo-kind">Sous-indices de pollution · échelle Atmo 1–6</div><div class="nw-atmo-row">${pollution.map(({ metric, r }) => badge(r!, atmoMetrics[metric].label.replace(' — sous-indice', ''), atmoMetrics[metric].icon, false))}</div>` : nothing}
         ${!isAir&&species.length ? html`<div class="nw-atmo-kind">Niveaux de pollens · échelle Atmo 1–6</div><div class="nw-atmo-row nw-atmo-species">${species.map(({ metric, r, c }) => html`<div class="nw-atmo-species-item">
-          ${r ? badge(r, atmoMetrics[metric].label, atmoMetrics[metric].icon, true) : nothing}
-          ${c ? html`<span class="nw-atmo-concentration" data-entity=${c.id} role="button" tabindex="0" aria-label=${`Concentration ${atmoMetrics[metric].label}`} title="Concentration déclarée par l’intégration Atmo France">
+          ${r ? badge(r, atmoMetrics[metric].label, atmoMetrics[metric].icon, true, !!c) : nothing}
+          ${c ? html`<div class="nw-atmo-values">${r?.value===undefined?nothing:html`<span class="nw-atmo-level" data-entity=${r.id} role="button" tabindex="0" aria-label=${`Niveau ${atmoMetrics[metric].label} : ${r.value} sur 6`}>${r.value}/6</span>`}<span class="nw-atmo-concentration" data-entity=${c.id} role="button" tabindex="0" aria-label=${`Concentration ${atmoMetrics[metric].label}`} title="Concentration déclarée par l’intégration Atmo France">
             ${!r || r.value !== undefined ? c.value === undefined ? 'Concentration indisponible' : `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(c.value)}${c.unit ? ' ' + c.unit : ' (unité non fournie)'}` : 'Concentration non confirmée'}
-            ${c.stale ? ' · données anciennes' : ''}</span>` : nothing}</div>`)}</div>` : nothing}
+            ${c.stale ? ' · données anciennes' : ''}</span></div>` : nothing}</div>`)}</div>` : nothing}
         ${dates ? html`<div class="nw-atmo-date">Publication Atmo : ${dates}. ${ownReadings.some(r => r.stale) ? 'Données anciennes : à vérifier dans l’intégration.' : ''}</div>` : nothing}</details>`}
       ${ownReadings.some(r => r.stale) ? html`<p class="nw-atmo-date">Certaines données sont anciennes : vérifier les sources.</p>` : nothing}`;
       return html`<section class=${`nw-atmo-day${next?' nw-atmo-next':''}`} data-kind=${kind} aria-label=${`${isAir?'Air extérieur':'Pollens'} Atmo France ${next?'demain':'aujourd’hui'}`}>
@@ -98,7 +98,13 @@ export const atmoStyles = css`
   .nw-atmo-caption { display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; }
   .nw-atmo-caption>span { font-size:11px; font-weight:600; }
   .nw-atmo-badge small { font-size:10px; color:var(--secondary-text-color); }
-  .nw-atmo-breakdown { margin-top:auto;padding-top:8px; }
+  .nw-atmo-breakdown { margin-top:12px;padding-top:8px; }
+  .nw-atmo-breakdown[open] { border-top:1px solid var(--divider-color,rgba(150,150,150,.2)); }
+  .nw-atmo-breakdown .nw-atmo-row { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,100px),1fr));gap:16px 10px;justify-items:center; }
+  .nw-atmo-breakdown .nw-atmo-species { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .nw-atmo-breakdown .nw-atmo-badge { width:100%;max-width:none; }
+  .nw-atmo-breakdown .nw-atmo-species-item { width:100%;align-items:center;text-align:center; }
+  .nw-atmo-breakdown .nw-atmo-kind,.nw-atmo-breakdown .nw-atmo-date { text-align:center; }
   .nw-atmo-breakdown>summary { cursor:pointer; color:var(--secondary-text-color); font-size:10px; padding:4px 0; }
   .nw-atmo-breakdown .nw-atmo-disc { width:42px; height:42px; }
   .nw-atmo-breakdown .nw-atmo-disc>span { width:20px; height:20px; }
@@ -106,6 +112,10 @@ export const atmoStyles = css`
   .nw-atmo-kind, .nw-atmo-date { color:var(--secondary-text-color); font-size:10px; margin-top:10px; }
   .nw-atmo-species-item { display:flex; flex-direction:column; gap:3px; max-width:100%; }
   .nw-atmo-concentration { cursor:pointer; font-size:10px; color:var(--secondary-text-color); }
+  .nw-atmo-values { display:flex;align-items:baseline;justify-content:center;flex-wrap:wrap;gap:3px 7px;max-width:100%;font-size:10px;color:var(--secondary-text-color); }
+  .nw-atmo-level { cursor:pointer;white-space:nowrap; }
+  .nw-atmo-values .nw-atmo-concentration { padding-left:7px;border-left:1px solid var(--divider-color,rgba(150,150,150,.2)); }
   .nw-atmo-stale { font-style:italic; }
   @container (max-width:650px) { .nw-atmo-grid { grid-template-columns:1fr; }.nw-atmo-day { padding:16px; }.nw-atmo-row { gap:12px 20px; } }
+  @container (max-width:450px) { .nw-atmo-breakdown .nw-atmo-row { grid-template-columns:repeat(2,minmax(0,1fr)); }.nw-atmo-breakdown .nw-atmo-row>.nw-atmo-badge:last-child:nth-child(odd) { grid-column:1/-1; } }
 `;

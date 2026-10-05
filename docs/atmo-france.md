@@ -41,6 +41,8 @@ L’air et les polluants ont une échelle de **1 (Bon) à 6 (Extrêmement mauvai
 
 Les concentrations reprennent les valeurs et unités des entités, sans conversion ni seuil inventé. L’intégration actuelle expose une unité de masse (`µg/m³`) : la carte la cite, elle ne la transforme pas en grains/m³. Si le niveau associé est indisponible, la concentration n’est pas confirmée afin de ne pas afficher comme certaine une valeur de repli.
 
+Les détails présentent les polluants et les espèces dans une grille centrée : chaque nom, cercle, niveau et concentration reste regroupé. Les détails ouverts commencent immédiatement après les valeurs principales, sans grand espace imposé pour aligner leur bas avec le cadre voisin.
+
 La date affichée est celle de **publication Atmo**, pas l’heure d’une mesure en temps réel ni la date de validité d’une prévision. Les publications âgées de plus de 48 h sont signalées. L’intégration n’expose pas la date de validité précise sur chaque capteur : la carte conserve donc les horizons J/J+1 déclarés par l’intégration. Les prévisions J+1 dépendent de la disponibilité des données.
 
 ## Migrer depuis Polleninformation

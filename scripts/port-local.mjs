@@ -30,6 +30,9 @@ for (const [name, original] of Object.entries(reference.fields)) {
     code = code.replace("pastille('mdi:water-percent', 'humidex',", "pastille('mdi:water-percent', V.dashboard ? 'base humidex' : 'humidex',");
   }
   if (name === 'bilan') code = code.replace("ligne('7 jours'", "ligne('Cette semaine'").replace("ligne('30 jours'", "ligne('Ce mois'");
+  if (name === 'courbe') code = code.replace(
+    `'<span class="me-jourl" style="left:' + xd.toFixed(2)\n             + '%;">DEMAIN</span>'`,
+    `'<span class="me-jourl" style="left:clamp(0px,' + xd.toFixed(2)\n             + '%,calc(100% - 48px));">DEMAIN</span>'`);
   if (name === 'jours') code = code.replace("+ lignes + '</div>';", `+ (V.dashboard ? '<div class="me-j nw-week-labels" role="group" aria-label="Colonnes : température minimale et maximale en degrés Celsius, pluie en millimètres"><span class="me-jn"></span><span class="me-ji"></span><span class="me-jmin">Min<small>°C</small></span><span class="me-jbar"></span><span class="me-jmax">Max<small>°C</small></span><span class="me-jp">Pluie<small>mm</small></span></div>' : '') + lignes + '</div>';`);
   // Indoor air belongs to another card; keep its removal reproducible when regenerating.
   code = code.replace(/  var ea = V\.ent_air[\s\S]*?\n  }\n/g, '');

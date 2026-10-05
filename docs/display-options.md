@@ -10,6 +10,8 @@ Le choix Accueil (compact) / Complet est supprimé. Une ancienne configuration `
 
 Quand le brief intelligent est désactivé, le bandeau devient **Météo actuelle** : le résumé de gauche disparaît pour éviter de répéter la condition déjà affichée à droite. Le ciel animé reste disponible.
 
+Lorsque le brief est activé, un petit **i** à côté du titre **Synthèse** ouvre les points à retenir, leurs sources et les limites des données. Il remplace le volet qui occupait le bas du bandeau. Fermé par défaut, il fonctionne à la souris et au clavier, comme l’aide du ressenti.
+
 Options YAML correspondantes : `show_synthesis`, `show_today` et `show_predictions` (valeurs `true` ou `false`).
 
 ## Utiliser la carte sans station
