@@ -92,6 +92,12 @@ try {
     if(width>850) assert.equal(forecastGeometry.aligned,true,`forecast columns fill the same height: ${JSON.stringify(forecastGeometry)}`);
     assert.ok(forecastGeometry.height>=190,'forecast graph has usable height');
     assert.equal(forecastGeometry.labels,true,'now/tomorrow labels inset from graph top');
+    const refinedLayout=await page.evaluate(()=>{
+      const root=window.card.shadowRoot,labels=root.querySelector('.nw-week-labels');
+      const row=root.querySelector('.me-j:not(.nw-week-labels)');
+      return {headers:['Min','Max','Pluie','°C','mm'].every(s=>labels.textContent.includes(s)),aligned:['.me-jmin','.me-jmax','.me-jp'].every(s=>Math.abs(labels.querySelector(s).getBoundingClientRect().left-row.querySelector(s).getBoundingClientRect().left)<1),alwaysVisible:!root.querySelector('#bilan').closest('details'),centered:['#comfort .me-decos','#pastilles .me-pas'].every(s=>getComputedStyle(root.querySelector(s)).justifyContent==='center'),noSeparator:getComputedStyle(root.querySelector('#pastilles .me-pas')).borderTopWidth==='0px',pills:[...root.querySelectorAll('#comfort .me-d,#pastilles .me-pa')].every(e=>getComputedStyle(e).borderRadius==='999px')};
+    });
+    for(const [key,value] of Object.entries(refinedLayout))assert.equal(value,true,`Refined layout ${width}px: ${key}`);
     const feelsLabel=await page.evaluate(()=>{
       const root=window.card.shadowRoot, label=root.querySelector('.nw-feels-value'), rail=root.querySelector('#comfort .me-rail'), cursor=root.querySelector('#comfort .me-cur i');
       const sections=root.querySelectorAll('#container>.nw-section');
@@ -214,8 +220,11 @@ try {
     const text=card.shadowRoot.textContent;
     const migration=!text.includes('Ancien pollen EU')&&!text.includes('air intérieur')&&text.includes('Air extérieur');
     const levels=text.includes('Extrêmement élevé')&&text.includes('1,4 µg/m³')&&text.includes('Dégradé');
-    const tomorrow=card.shadowRoot.querySelector('.nw-atmo-next');tomorrow.querySelector('summary').click();await sleep(10);
-    const nativeDetails=!tomorrow.open&&window.atmoInfo.length===0;
+    const tomorrow=card.shadowRoot.querySelector('.nw-atmo-next'),breakdown=tomorrow.querySelector('.nw-atmo-breakdown');
+    const initiallyCollapsed=!breakdown.open;
+    breakdown.querySelector('summary').click();await sleep(10);
+    const nativeDetails=tomorrow.tagName==='SECTION'&&initiallyCollapsed&&breakdown.open&&window.atmoInfo.length===0;
+    breakdown.open=false;
     const movedDays=!!card.shadowRoot.querySelector('#today .nw-atmo-day')&&!card.shadowRoot.querySelector('#today .nw-atmo-next')&&!!card.shadowRoot.querySelector('#predictions .nw-atmo-next');
     const rings=card.shadowRoot.querySelectorAll('.nw-atmo-ring').length>2;
     const sectors=[...card.shadowRoot.querySelectorAll('.nw-atmo-disc svg')].every(e=>e.querySelectorAll('path').length===6);
@@ -241,7 +250,6 @@ try {
       document.documentElement.style.setProperty('--secondary-text-color',dark?'#aaa':'#686878');
       document.documentElement.style.setProperty('--card-background-color',dark?'#242424':'#fff4f4');
       document.body.style.background=dark?'#171717':'#eee7e7';
-      window.atmoCard.shadowRoot.querySelector('.nw-atmo-next').open=true;
     },{dark});
     const overflow=await page.evaluate(()=>{
       const host=window.atmoCard.getBoundingClientRect();
@@ -282,6 +290,23 @@ try {
   for(const [test,passed] of Object.entries(briefBehavior))assert.equal(passed,true,`Brief: ${test}`);
   await page.locator('niak-weather-card .nw-brief-details button[data-entity="sensor.rafales"]').first().focus();await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(()=>window.briefInfo.at(-1)),'sensor.rafales','Brief source keyboard popup');
+  const noAtmoBrief=await page.evaluate(async()=>{
+    const card=document.createElement('niak-weather-card');card.id='no-atmo-card';window.noAtmoCard=card;
+    const e=(entity_id,state,unit)=>({entity_id,state:String(state),attributes:{unit_of_measurement:unit}});
+    const states={...window.fixture.states,'weather.test':{...window.fixture.states['weather.test'],state:'rainy'},'sensor.t_ext':e('sensor.t_ext',24.6,'°C'),'sensor.vent':e('sensor.vent',7,'km/h'),'sensor.rafales':e('sensor.rafales',11,'km/h'),'sensor.pluie_taux':e('sensor.pluie_taux',0,'mm/h')};
+    const hourly=Array.from({length:6},(_,i)=>({datetime:new Date(Date.now()+(i+1)*3600000).toISOString(),temperature:24.6-i*1.5,precipitation:0,condition:'cloudy'}));
+    card.setConfig({...window.fixture.config,smart_brief:true,pollen_source:'none',pollens:[]});
+    card.hass={states,language:'fr',callWS:async message=>message.type==='call_service'?{response:{'weather.test':{forecast:hourly}}}:{}};
+    document.querySelector('main').append(card);await new Promise(r=>setTimeout(r,60));
+    const root=card.shadowRoot,title=root.querySelector('.nw-summary-lead h3').textContent;
+    return {outlookInsteadOfSky:title.includes('Fraîcheur annoncée')&&!title.includes('Pluvieux'),localRainStillAuthoritative:root.querySelector('.nw-current-condition').textContent.includes('sans pluie mesurée'),outlookNotRepeated:root.querySelector('.nw-summary-lines').textContent.includes('Fraîcheur annoncée')===false,informationalNotAlert:root.querySelector('#heros').style.getPropertyValue('--vc').trim()==='61,155,233',explainable:root.querySelector('.nw-brief-details').textContent.includes('Fraîcheur annoncée')};
+  });
+  for(const [key,value] of Object.entries(noAtmoBrief))assert.equal(value,true,`No Atmo brief: ${key}`);
+  for(const width of [375,1440]){
+    await page.setViewportSize({width,height:1200});
+    await page.locator('#no-atmo-card #heros').screenshot({path:`${out}/brief-no-atmo-${width}.png`,animations:'disabled'});
+  }
+  await page.evaluate(()=>window.noAtmoCard.remove());
   await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-details').open=false;});
   await page.emulateMedia({reducedMotion:'no-preference'});
   const haloMotion=await page.evaluate(async()=>{
@@ -588,16 +613,19 @@ try {
     const rain=[];
     for(let i=8;i>=0;i--){const d=new Date(now-i*day);d.setUTCHours(0,0,0,0);rain.push({s:'0',lu:d.getTime()/1000});if(i>=3&&i<=5)rain.push({s:String([1.2,5.6,2][i-3]),lu:d.getTime()/1000+36000});}
     const gust=Array.from({length:37},(_,i)=>({s:String(i===12?30:i===36?14:10+(i%6)*2),lu:(now-21600_000+i*600_000)/1000}));
+    const mean=gust.map(p=>({...p,s:String(Number(p.s)*.55)}));
     let requests=0;const requested=[];
     const config={...window.fixture.config,show_synthesis:false,show_predictions:false,rain_24h_entity:'sensor.rain24',yearly_rain_entity:'sensor.year',max_daily_gust_entity:'sensor.maximum'};
     card.setConfig(config);card.hass={states,language:'fr',config:{time_zone:'Europe/Paris'},callWS:async msg=>{
       if(msg.type!=='history/history_during_period')return {};
       requests++;requested.push(msg);
-      return msg.entity_ids.includes('sensor.pluie_jour')?{'sensor.pluie_jour':rain}:{'sensor.rafales':gust};
+      return msg.entity_ids.includes('sensor.pluie_jour')?{'sensor.pluie_jour':rain}:{'sensor.rafales':gust,[config.wind_speed_entity]:mean};
     }};document.querySelector('main').append(card);await new Promise(r=>setTimeout(r,80));
     const root=card.shadowRoot;
     const twoCards=root.querySelectorAll('.nw-history-card').length===2;
     const charts=root.querySelectorAll('.nw-history-chart svg').length===2;
+    const complementaryWind=!!root.querySelector('.nw-wind-curve--gust')&&root.querySelector('.nw-wind-headline').textContent.includes('Vent moyen maintenant')&&root.querySelector('.nw-wind-headline').textContent.includes('Rafales maintenant');
+    const matchingBackground=getComputedStyle(root.querySelector('.nw-history-card')).backgroundColor===getComputedStyle(root.querySelector('#tuiles .me-tu')).backgroundColor;
     const noRelativeBars=!root.querySelector('#bilan .me-blb');
     const honestScale=root.querySelector('.nw-wind-scale').textContent.includes('80 km/h')&&root.querySelector('.nw-wind-marker--max').style.left==='37.5%';
     const noFakeZero=[...root.querySelectorAll('.nw-history-chart rect')].every(r=>Number(r.getAttribute('height'))>0)&&root.querySelectorAll('.nw-history-chart rect').length===3;
@@ -607,7 +635,7 @@ try {
     let clicked;card.addEventListener('hass-more-info',e=>clicked=e.detail.entityId);
     root.querySelector('.nw-rain-counters button').click();
     const sourceClick=clicked==='sensor.pluie_semaine';
-    return {twoCards,charts,noRelativeBars,honestScale,noFakeZero,splitRequests,cached,sourceClick};
+    return {twoCards,charts,complementaryWind,matchingBackground,noRelativeBars,honestScale,noFakeZero,splitRequests,cached,sourceClick};
   });
   for(const [key,value] of Object.entries(recentDetails))assert.equal(value,true,`Recent details: ${key}`);
   for(const dark of [false,true])for(const width of [375,768,1440]){

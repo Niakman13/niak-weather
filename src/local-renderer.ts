@@ -592,7 +592,7 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   return '<div class="me-jours"' + window.meGeste(src) + '>'
        + '<div class="me-ttl">La semaine'
        + (pmax >= 0.1 ? '<i>· cumuls attendus</i>' : '') + '</div>'
-       + lignes + '</div>';
+       + (V.dashboard ? '<div class="me-j nw-week-labels" role="group" aria-label="Colonnes : température minimale et maximale en degrés Celsius, pluie en millimètres"><span class="me-jn"></span><span class="me-ji"></span><span class="me-jmin">Min<small>°C</small></span><span class="me-jbar"></span><span class="me-jmax">Max<small>°C</small></span><span class="me-jp">Pluie<small>mm</small></span></div>' : '') + lignes + '</div>';
 
  }
  function tuiles() {

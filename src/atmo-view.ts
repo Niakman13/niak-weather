@@ -60,16 +60,15 @@ export function renderAtmo(hass: HomeAssistant, config: WeatherCardConfig, now =
         ${dates ? html`<div class="nw-atmo-date">Publication Atmo : ${dates}. ${readings.some(r => r.stale) ? 'Données anciennes : à vérifier dans l’intégration.' : ''}</div>` : nothing}</details>`}
       ${readings.some(r => r.stale) ? html`<p class="nw-atmo-date">Certaines données sont anciennes : vérifier les sources.</p>` : nothing}`;
     const title = html`${next ? 'Demain · Air et pollens' : 'Air et pollens'} <span>Atmo France${zone ? ' · ' + zone : ''}</span>`;
-    return next ? html`<details open class="nw-atmo-day nw-atmo-next"><summary>${title}</summary>${body}</details>`
+    return next ? html`<section class="nw-atmo-day nw-atmo-next" aria-label="Air extérieur et pollens Atmo France demain"><div class="nw-atmo-heading">${title}</div>${body}</section>`
       : html`<section class="nw-atmo-day" aria-label="Air extérieur et pollens Atmo France aujourd’hui"><div class="nw-atmo-heading">${title}</div>${body}</section>`;
   };
   return html`${scope === 'tomorrow' ? nothing : day(false)}${scope === 'today' || config.show_atmo_tomorrow === false ? nothing : day(true)}`;
 }
 export const atmoStyles = css`
   .nw-atmo-day { border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:12px; background:rgba(150,150,150,.035); margin-top:16px; padding:14px 16px; color:var(--primary-text-color); font-size:12px; }
-  .nw-atmo-heading, .nw-atmo-next>summary { font-size:11px; font-weight:650; }
-  .nw-atmo-heading span, .nw-atmo-next>summary span { color:var(--secondary-text-color); font-weight:400; margin-left:8px; }
-  .nw-atmo-next>summary { cursor:pointer; padding:2px 0; }
+  .nw-atmo-heading { font-size:11px; font-weight:650; }
+  .nw-atmo-heading span { color:var(--secondary-text-color); font-weight:400; margin-left:8px; }
   .nw-atmo-row { display:flex; flex-wrap:wrap; gap:16px 28px; margin-top:14px; min-width:0; }
   .nw-atmo-badge { display:inline-flex; flex-direction:column; align-items:center; gap:7px; cursor:pointer; padding:2px 0; min-width:80px; max-width:130px; text-align:center; }
   .nw-atmo-name { font-size:11px; font-weight:500; color:var(--primary-text-color); }

@@ -1,6 +1,6 @@
 # Lire les détails Pluie et Vent
 
-Les deux cadres sont des bilans **mesurés par la station**, pas des prévisions. Ils restent côte à côte sur desktop et s’empilent sur les écrans étroits. Le volet Détails pluie et vent est repliable.
+Les deux cadres sont des bilans **mesurés par la station**, pas des prévisions. Ils restent côte à côte sur desktop et s’empilent sur les écrans étroits. Ils sont directement visibles, sans volet à dérouler.
 
 ## Pluie : compteurs et jours enregistrés
 
@@ -14,11 +14,13 @@ Pour des jours cohérents, la remise à zéro du compteur quotidien doit corresp
 
 ## Vent : valeurs et échelle explicites
 
-Le chiffre principal présente `wind_gust_entity` (rafales actuelles), ou `wind_speed_entity` (vent moyen) si aucun capteur de rafales n’est configuré. Le maximum du jour utilise exclusivement `max_daily_gust_entity`, lorsqu’il est renseigné. Le maximum du jour n’est pas déduit de la courbe des six dernières heures.
+Le chiffre principal présente `wind_speed_entity` (vent moyen actuel). Les rafales actuelles (`wind_gust_entity`) sont affichées à côté : elles décrivent les pointes de vent, pas la même mesure. Sans capteur de vent moyen configuré, les rafales deviennent le chiffre principal. Le maximum du jour utilise exclusivement `max_daily_gust_entity`, lorsqu’il est renseigné ; il n’est pas déduit de la courbe des six dernières heures.
 
 Les deux repères utilisent une échelle graduée en km/h, allant au moins de 0 à 80 et étendue par pas de 20 si les valeurs dépassent cette plage. Il ne s’agit ni d’un pourcentage de danger ni d’une vigilance officielle. La couleur bleu/noir distingue les repères actuel et maximum, pas un niveau d’alerte.
 
-La courbe suit six heures du même capteur que le chiffre principal. Elle utilise des segments en escalier pour respecter les changements d’état enregistrés, sans fabriquer des valeurs intermédiaires. Les interruptions de disponibilité restent des coupures. Les séries denses sont réduites par fenêtres de trois minutes, en conservant les pics et les coupures. La tendance compare cette même mesure sur la dernière heure, ou la période effectivement disponible si elle est suffisante.
+Le graphique compare six heures de vent moyen (trait bleu avec un dégradé discret) et de rafales (trait bleu clair discontinu), si leurs historiques sont disponibles. Pour rester lisible, il regroupe les données par dix minutes : moyenne pondérée par la durée des états pour le vent moyen, maximum enregistré pour les rafales. Les chiffres au-dessus restent les lectures actuelles, sans ce regroupement. Le dernier point de chaque série représente cette lecture actuelle.
+
+Les courbes sont arrondies pour la lecture, sans dépasser les valeurs des points voisins : leur forme intermédiaire n’est ni une mesure supplémentaire ni une prévision. Les périodes inconnues ou incomplètes restent des coupures. La tendance compare le vent moyen sur la dernière heure, ou les rafales si seul ce capteur est configuré, sur la période effectivement disponible si elle est suffisante.
 
 ## Historique facultatif
 

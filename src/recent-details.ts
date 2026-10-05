@@ -49,6 +49,41 @@ export function windPoints(rows:History[string]|undefined,unit:unknown,now:Date,
 }
 export function windScale(current?:number,max?:number):number {return Math.max(80,Math.ceil(Math.max(current??0,max??0)/20)*20);}
 
+/** Ten-minute time-weighted means or gust peaks; unknown intervals remain gaps. */
+export function windChartSeries(rows:History[string]|undefined,unit:unknown,now:Date,current:number|undefined,mode:'mean'|'peak'):Point[] {
+  const end=now.getTime(),start=end-6*3600_000,step=600_000;
+  const events=points(rows,unit,'wind',end).map(p=>({...p,v:p.v!==undefined&&p.v>=0?p.v:undefined}));
+  if(!events.length)return [];
+  const buckets=Array.from({length:36},()=>({sum:0,duration:0,peak:0,missing:false}));
+  for(let i=0;i<events.length;i++){
+    const a=Math.max(start,events[i].t),b=Math.min(end,events[i+1]?.t??end);
+    if(b<=a)continue;
+    for(let j=Math.max(0,Math.floor((a-start)/step));j<36&&start+j*step<b;j++){
+      const duration=Math.min(b,start+(j+1)*step)-Math.max(a,start+j*step),bucket=buckets[j],v=events[i].v;
+      if(v===undefined)bucket.missing=true;
+      else {bucket.sum+=v*duration;bucket.duration+=duration;bucket.peak=Math.max(bucket.peak,v);}
+    }
+  }
+  return [...buckets.map((b,i)=>({t:start+(i+.5)*step,v:!b.missing&&b.duration===step?(mode==='mean'?b.sum/b.duration:b.peak):undefined})),{t:end,v:current}];
+}
+
+/** Shape-preserving cubic curves: no overshoot, and never join across unavailable data. */
+export function windCurvePaths(series:Point[],top:number,now:Date):Array<{line:string;area:string}> {
+  const segments:Point[][]=[];let segment:Point[]=[];
+  for(const p of series){if(p.v===undefined){if(segment.length>1)segments.push(segment);segment=[];}else segment.push(p);}
+  if(segment.length>1)segments.push(segment);
+  return segments.map(group=>{
+    const coords=group.map(p=>({x:42+(p.t-(now.getTime()-6*3600_000))/21600_000*420,y:126-p.v!/top*96}));
+    const slopes=coords.slice(1).map((p,i)=>(p.y-coords[i].y)/(p.x-coords[i].x));
+    const tangents=coords.map((_,i)=>i===0?slopes[0]:i===coords.length-1?slopes.at(-1)!:slopes[i-1]*slopes[i]<=0?0:2/(1/slopes[i-1]+1/slopes[i]));
+    slopes.forEach((s,i)=>{if(s===0){tangents[i]=0;tangents[i+1]=0;}else {const norm=Math.hypot(tangents[i]/s,tangents[i+1]/s);if(norm>3){tangents[i]*=3/norm;tangents[i+1]*=3/norm;}}});
+    const f=(v:number)=>v.toFixed(2);
+    let line=`M${f(coords[0].x)},${f(coords[0].y)}`;
+    for(let i=1;i<coords.length;i++){const a=coords[i-1],b=coords[i],dx=(b.x-a.x)/3;line+=` C${f(a.x+dx)},${f(a.y+tangents[i-1]*dx)} ${f(b.x-dx)},${f(b.y-tangents[i]*dx)} ${f(b.x)},${f(b.y)}`;}
+    return {line,area:`${line} L${f(coords.at(-1)!.x)},126 L${f(coords[0].x)},126 Z`};
+  });
+}
+
 export function renderRecentDetails(hass:HomeAssistant,config:WeatherCardConfig,history:History,rainHistory:History,now:Date){
   const read=(id:string|undefined,kind:string)=>{const e=hass.states[id??''];const v=valid(e)?measurement(e!.state,e!.attributes.unit_of_measurement,kind):undefined;return v!==undefined&&v>=0?v:undefined;};
   const fmt=(v:number|undefined,d=1)=>v===undefined?'—':new Intl.NumberFormat(hass.language||'fr',{maximumFractionDigits:d,minimumFractionDigits:d}).format(v);
@@ -63,22 +98,15 @@ export function renderRecentDetails(hass:HomeAssistant,config:WeatherCardConfig,
   const days=rainDays(dailyRows?.length?[...dailyRows,{s:valid(hass.states[config.daily_rain_entity??''])?hass.states[config.daily_rain_entity!].state:'unavailable',lu:now.getTime()/1000}]:[],hass.states[config.daily_rain_entity??'']?.attributes.unit_of_measurement,now,hass.config?.time_zone);
   const rainChart=days.some(d=>d.value!==undefined);
   const rainTop=Math.max(2,Math.ceil(Math.max(...days.map(d=>d.value??0))/2)*2);
-  const windId=config.wind_gust_entity||config.wind_speed_entity,windLabel=config.wind_gust_entity?'Rafales en ce moment':'Vent moyen en ce moment';
-  const wind=read(windId,'wind'),maximum=read(config.max_daily_gust_entity,'wind'),scale=windScale(wind,maximum);
+  const windId=config.wind_speed_entity||config.wind_gust_entity,windLabel=config.wind_speed_entity?'Vent moyen maintenant':'Rafales maintenant';
+  const wind=read(windId,'wind'),gust=read(config.wind_gust_entity,'wind'),maximum=read(config.max_daily_gust_entity,'wind'),scale=windScale(Math.max(wind??0,gust??0),maximum);
   const windUnit=hass.states[windId??'']?.attributes.unit_of_measurement;
-  const series=windPoints(history[windId??''],windUnit,now,wind);
-  const windChart=series.filter(p=>p.v!==undefined).length>=2;
-  const windTop=Math.max(20,Math.ceil(Math.max(...series.map(p=>p.v??0))/10)*10);
+  const series=windChartSeries(history[windId??''],windUnit,now,wind,config.wind_speed_entity?'mean':'peak');
+  const gustSeries=config.wind_speed_entity&&config.wind_gust_entity?windChartSeries(history[config.wind_gust_entity],hass.states[config.wind_gust_entity]?.attributes.unit_of_measurement,now,gust,'peak'):[];
+  const windTop=Math.max(20,Math.ceil(Math.max(...[...series,...gustSeries].map(p=>p.v??0))/10)*10);
+  const meanPaths=windCurvePaths(series,windTop,now),gustPaths=windCurvePaths(gustSeries,windTop,now);
+  const windChart=meanPaths.length>0||gustPaths.length>0;
   const windTrend=trend(history[windId??''],wind,now.getTime()/1000,'wind',String(windUnit??''));
-  const stepPaths:Array<{line:string;area:string}>=[];let path='',last:Point|undefined,firstX=0,lastX=0;
-  const finishPath=()=>{if(path)stepPaths.push({line:path,area:`${path} L${lastX.toFixed(1)},126 L${firstX.toFixed(1)},126 Z`});path='';last=undefined;};
-  for(const p of series){
-    if(p.v===undefined){finishPath();continue;}
-    const x=42+(p.t-(now.getTime()-6*3600_000))/(6*3600_000)*420,y=126-p.v/windTop*96;
-    if(!last)firstX=x;lastX=x;
-    path+=last?` H${x.toFixed(1)} V${y.toFixed(1)}`:`M${x.toFixed(1)},${y.toFixed(1)}`;last=p;
-  }
-  finishPath();
   const chartGrid=(top:number,unit:string)=>svg`<text x="8" y="15">${unit}</text>${[0,.5,1].map(f=>svg`<line x1="42" x2="462" y1=${126-f*96} y2=${126-f*96}/><text x="32" y=${130-f*96} text-anchor="end">${fmt(top*f,0)}</text>`)}`;
   return html`<div class="nw-history-grid me-bilan">
     ${hasRain?html`<section class="nw-history-card me-bl" style="--history-accent:27,171,175" aria-label="Bilan pluie">
@@ -94,17 +122,18 @@ export function renderRecentDetails(hass:HomeAssistant,config:WeatherCardConfig,
     </section>`:nothing}
     ${hasWind?html`<section class="nw-history-card me-bl" style="--history-accent:40,130,240" aria-label="Bilan vent">
       <header><h3><ha-icon icon="mdi:weather-windy"></ha-icon>Vent</h3><span class="nw-history-source">Station locale</span></header>
-      <div class="nw-history-headline nw-wind-headline">${metric(wind,'km/h',windLabel,windId,true)}${config.max_daily_gust_entity?metric(maximum,'km/h','Maximum du jour',config.max_daily_gust_entity):nothing}</div>
-      <div class="nw-wind-scale" aria-label=${`Échelle de 0 à ${scale} kilomètres par heure`}><div class="nw-wind-axis">${[0,.25,.5,.75,1].map(f=>html`<span style=${`left:${f*100}%`}>${fmt(scale*f,0)}${f===1?' km/h':''}</span>`)}${wind===undefined?nothing:html`<i class="nw-wind-marker" style=${`left:${wind/scale*100}%`} title=${`Maintenant : ${fmt(wind,0)} km/h`}></i>`}${maximum===undefined?nothing:html`<i class="nw-wind-marker nw-wind-marker--max" style=${`left:${maximum/scale*100}%`} title=${`Maximum du jour : ${fmt(maximum,0)} km/h`}></i>`}</div><div class="nw-wind-legend"><span>● Maintenant</span>${maximum===undefined?nothing:html`<span>│ Max. du jour</span>`}</div></div>
-      <div class="nw-history-chart"><h4>${config.wind_gust_entity?'Rafales':'Vent moyen'} des 6 dernières heures</h4>${windChart?svg`<svg viewBox="0 0 480 156" role="img" aria-label="Historique du vent ; les interruptions correspondent aux données indisponibles"><defs><linearGradient id="nw-wind-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgb(40,130,240)" stop-opacity=".18"/><stop offset="100%" stop-color="rgb(40,130,240)" stop-opacity=".015"/></linearGradient></defs>${chartGrid(windTop,'km/h')}${stepPaths.map(d=>svg`<path class="nw-history-area" d=${d.area} fill="url(#nw-wind-area)"/><path d=${d.line} fill="none"/>`)}${[0,2,4,6].map(h=>svg`<text x=${42+h/6*420} y="148" text-anchor="middle">${new Intl.DateTimeFormat('fr',{timeZone:hass.config?.time_zone,hour:'2-digit',minute:'2-digit'}).format(new Date(now.getTime()-(6-h)*3600_000))}</text>`)}</svg>`:html`<p class="nw-history-empty">Historique du vent indisponible ou insuffisant</p>`}</div>
-      <footer>${finite(windTrend.d)===undefined?'Tendance en cours de mesure':html`<span class="nw-history-trend">${windTrend.s==='baisse'?'En baisse':windTrend.s==='hausse'?'En hausse':'Stable'}</span> ${fmt(Math.abs(windTrend.d),0)} km/h ${windTrend.f<50?`sur ${windTrend.f} min`:'sur la dernière heure'}`}</footer>
+      <div class="nw-history-headline nw-wind-headline">${metric(wind,'km/h',windLabel,windId,true)}${config.wind_speed_entity&&config.wind_gust_entity?metric(gust,'km/h','Rafales maintenant',config.wind_gust_entity):nothing}${config.max_daily_gust_entity?metric(maximum,'km/h','Rafale max. du jour',config.max_daily_gust_entity):nothing}</div>
+      <div class="nw-wind-scale" aria-label=${`Échelle de 0 à ${scale} kilomètres par heure`}><div class="nw-wind-axis">${[0,.25,.5,.75,1].map(f=>html`<span style=${`left:${f*100}%`}>${fmt(scale*f,0)}${f===1?' km/h':''}</span>`)}${wind===undefined?nothing:html`<i class="nw-wind-marker" style=${`left:${wind/scale*100}%`} title=${`${windLabel} : ${fmt(wind,0)} km/h`}></i>`}${maximum===undefined?nothing:html`<i class="nw-wind-marker nw-wind-marker--max" style=${`left:${maximum/scale*100}%`} title=${`Maximum du jour : ${fmt(maximum,0)} km/h`}></i>`}</div><div class="nw-wind-legend"><span>● ${config.wind_speed_entity?'Vent moyen':'Rafales'} actuel${config.wind_speed_entity?'':'les'}</span>${maximum===undefined?nothing:html`<span>│ Rafale max. du jour</span>`}</div></div>
+      <div class="nw-history-chart"><h4>Vent des 6 dernières heures</h4>${windChart?svg`<svg viewBox="0 0 480 156" role="img" aria-label="Vent moyen et rafales regroupés par dix minutes ; les données indisponibles restent des coupures"><defs><linearGradient id="nw-wind-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgb(40,130,240)" stop-opacity=".18"/><stop offset="100%" stop-color="rgb(40,130,240)" stop-opacity=".015"/></linearGradient></defs>${chartGrid(windTop,'km/h')}${meanPaths.map(d=>svg`<path class="nw-history-area" d=${d.area} fill="url(#nw-wind-area)"/><path class="nw-wind-curve" d=${d.line} fill="none"/>`)}${gustPaths.map(d=>svg`<path class="nw-wind-curve nw-wind-curve--gust" d=${d.line} fill="none"/>`)}${[0,2,4,6].map(h=>svg`<text x=${42+h/6*420} y="148" text-anchor="middle">${new Intl.DateTimeFormat('fr',{timeZone:hass.config?.time_zone,hour:'2-digit',minute:'2-digit'}).format(new Date(now.getTime()-(6-h)*3600_000))}</text>`)}</svg>`:html`<p class="nw-history-empty">Historique du vent indisponible ou insuffisant</p>`}
+      ${windChart?html`<div class="nw-wind-chart-legend">${meanPaths.length?html`<span>${config.wind_speed_entity?'Vent moyen · moyenne 10 min':'Rafales · pics 10 min'}</span>`:nothing}${gustPaths.length?html`<span class="nw-wind-chart-legend--gust">Rafales · pics 10 min</span>`:nothing}</div>`:nothing}</div>
+      <footer>${config.wind_speed_entity?'Vent moyen : ':'Rafales : '}${finite(windTrend.d)===undefined?'tendance en cours de mesure':html`<span class="nw-history-trend">${windTrend.s==='baisse'?'En baisse':windTrend.s==='hausse'?'En hausse':'Stable'}</span> ${Math.round(Math.abs(windTrend.d))===0?'':windTrend.d>0?'+':'−'}${fmt(Math.abs(windTrend.d),0)} km/h ${windTrend.f<50?`sur ${windTrend.f} min`:'sur la dernière heure'}`}</footer>
     </section>`:nothing}
   </div>`;
 }
 
 export const recentDetailsStyles=css`
   .nw-history-grid.me-bilan { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:0;border:0; }
-  .nw-history-card.me-bl { min-width:0;display:flex;flex-direction:column;padding:20px;border:1px solid var(--divider-color,rgba(150,150,150,.2));border-radius:16px;background:rgba(150,150,150,.025); }
+  .nw-history-card.me-bl { min-width:0;display:flex;flex-direction:column;padding:20px;border:1px solid var(--divider-color,rgba(150,150,150,.2));border-radius:16px;background:rgba(150,150,150,.035); }
   .nw-history-card:only-child { grid-column:1 / -1; }
   .nw-history-card header { display:flex;align-items:center;justify-content:space-between;gap:8px; }
   .nw-history-card h3 { display:flex;align-items:center;gap:9px;margin:0;font-size:18px;color:var(--primary-text-color); }
@@ -122,7 +151,7 @@ export const recentDetailsStyles=css`
   .nw-rain-counters .nw-history-value+.nw-history-value { border-left:1px solid var(--divider-color,rgba(150,150,150,.2));padding-left:12px; }
   .nw-wind-headline { display:flex;justify-content:space-between;gap:12px;align-items:baseline; }
   .nw-wind-headline>.nw-history-value+.nw-history-value { border-left:1px solid var(--divider-color,rgba(150,150,150,.2));padding-left:16px; }
-  .nw-wind-headline>.nw-history-value+.nw-history-value strong { font-size:30px; }
+  .nw-wind-headline>.nw-history-value+.nw-history-value strong { font-size:24px; }
   .nw-wind-scale { padding:10px 24px 0 8px;min-height:58px; }
   .nw-wind-axis { position:relative;height:1px;background:var(--divider-color,#aaa);margin-top:8px; }
   .nw-wind-axis>span { position:absolute;top:9px;transform:translateX(-50%);font-size:10px;white-space:nowrap!important;color:var(--secondary-text-color); }
@@ -139,6 +168,11 @@ export const recentDetailsStyles=css`
   .nw-history-chart svg rect { fill:rgb(var(--history-accent));opacity:.85; }
   .nw-history-chart svg path { stroke:rgb(var(--history-accent));stroke-width:2.5;stroke-linejoin:round; }
   .nw-history-chart svg path.nw-history-area { stroke:none; }
+  .nw-history-chart svg path.nw-wind-curve { stroke-width:1.8;vector-effect:non-scaling-stroke;stroke-linecap:round; }
+  .nw-history-chart svg path.nw-wind-curve--gust { stroke:rgb(103,167,243);stroke-width:1.3;stroke-dasharray:4 4; }
+  .nw-wind-chart-legend { display:flex;flex-wrap:wrap;gap:8px 16px;font-size:10px;color:var(--secondary-text-color);margin-top:8px; }
+  .nw-wind-chart-legend span::before { content:'';display:inline-block;width:16px;border-top:2px solid rgb(40,130,240);margin-right:6px;vertical-align:middle; }
+  .nw-wind-chart-legend .nw-wind-chart-legend--gust::before { border-top:2px dashed rgb(103,167,243); }
   .nw-history-caption { font-size:10px;color:var(--secondary-text-color);margin:5px 0; }
   .nw-history-empty { display:flex;align-items:center;justify-content:center;min-height:45px;font-size:12px;text-align:center;color:var(--secondary-text-color); }
   .nw-history-card footer { font-size:11px;line-height:1.5;color:var(--secondary-text-color);margin-top:12px; }

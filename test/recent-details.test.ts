@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rainDays, windPoints, windScale } from '../src/recent-details';
+import { rainDays, windPoints, windScale, windChartSeries, windCurvePaths } from '../src/recent-details';
 const now=new Date('2026-10-05T16:00:00Z');
 const p=(date:string,s:string)=>({s,lu:Date.parse(date)/1000});
 describe('Recorded rain days',()=>{
@@ -33,6 +33,34 @@ describe('Recorded rain days',()=>{
   });
 });
 describe('Wind history and scale',()=>{
+  it('aggregates time-weighted wind separately from gust peaks',()=>{
+    const rows=[p('2026-10-05T10:00:00Z','10'),p('2026-10-05T10:09:00Z','30')];
+    expect(windChartSeries(rows,'km/h',now,14,'mean')[0].v).toBe(12);
+    expect(windChartSeries(rows,'km/h',now,14,'peak')[0].v).toBe(30);
+    expect(windChartSeries(rows,'km/h',now,14,'mean')).toHaveLength(37);
+    expect(windChartSeries([],'km/h',now,14,'mean')).toEqual([]);
+  });
+  it('keeps partial intervals and outages absent, with independent unit conversion',()=>{
+    const rows=[p('2026-10-05T10:05:00Z','2'),p('2026-10-05T10:25:00Z','unavailable'),p('2026-10-05T10:30:00Z','5')];
+    const series=windChartSeries(rows,'m/s',now,undefined,'mean');
+    expect(series[0].v).toBeUndefined();expect(series[1].v).toBeCloseTo(7.2);
+    expect(series[2].v).toBeUndefined();expect(series[3].v).toBe(18);
+    expect(series.at(-1)?.v).toBeUndefined();
+  });
+  it('smooths curves without connecting across gaps',()=>{
+    const start=now.getTime()-21600_000;
+    const series=[10,20,10,undefined,5,10].map((v,i)=>({t:start+i*600_000,v}));
+    const paths=windCurvePaths(series,30,now);
+    expect(paths).toHaveLength(2);expect(paths[0].line).toContain(' C');
+    expect(paths[0].line).not.toContain(' H');
+    expect(windCurvePaths([{t:start,v:10}],30,now)).toEqual([]);
+  });
+  it('keeps brief gust peaks while bounding dense history to 37 points',()=>{
+    const rows=Array.from({length:21600},(_,i)=>({s:i===5000?'150':'10',lu:now.getTime()/1000-21600+i}));
+    const result=windChartSeries(rows,'km/h',now,14,'peak');
+    expect(result).toHaveLength(37);
+    expect(Math.max(...result.map(p=>p.v??0))).toBe(150);
+  });
   it('does not create a historic curve from a current reading alone',()=>{
     expect(windPoints([],'km/h',now,14)).toEqual([]);
   });

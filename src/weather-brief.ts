@@ -67,7 +67,7 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   const validTemps = upcoming.filter(p => finite(p.temperature) !== undefined);
   if (temp !== undefined && validTemps.length && !cold) {
     const last = validTemps.at(-1)!; if (Math.abs(last.temperature! - temp) >= 3) add({ key: 'temperature-future', group: 'future', severity: 0,
-      text: `${last.temperature! > temp ? 'Réchauffement' : 'Fraîcheur'} annoncé, vers ${format(last.temperature!)} °C ${timing(last.hours)}`, explanation: 'Comparaison du thermomètre actuel et du dernier point disponible dans les 6 prochaines heures ; observation et prévision ont des sources distinctes.', entity: config.weather_entity, icon: 'mdi:thermometer' });
+      text: `${last.temperature! > temp ? 'Réchauffement annoncé' : 'Fraîcheur annoncée'}, vers ${format(last.temperature!)} °C ${timing(last.hours)}`, explanation: 'Comparaison du thermomètre actuel et du dernier point disponible dans les 6 prochaines heures ; observation et prévision ont des sources distinctes.', entity: config.weather_entity, icon: 'mdi:thermometer' });
   }
   if (!upcoming.length) caveats.push('Prévisions des 6 prochaines heures indisponibles.');
   else if (upcoming.some(p => finite(p.precipitation) === undefined)) caveats.push('Quantités de pluie partiellement disponibles : le cumul peut être incomplet.');

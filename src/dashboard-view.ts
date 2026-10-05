@@ -1,6 +1,6 @@
 import { css, html, nothing } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { briefPreview } from './brief-preview';
+import { briefPresentation } from './brief-preview';
 import { renderAtmo } from './atmo-view';
 import { finite, type History } from './local-model';
 import { renderRecentDetails } from './recent-details';
@@ -13,10 +13,9 @@ import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } fr
 
 export function renderDashboard(rendered: Record<string, string>, brief: WeatherBrief | undefined, model: HassEntity,
   hass: HomeAssistant, config: WeatherCardConfig, now: Date, location: string, hourly:WeatherForecast[] = [], history:History={}, rainHistory:History={}) {
-  const preview = brief ? briefPreview(brief) : undefined;
+  const preview = brief ? briefPresentation(brief) : undefined;
   const unavailable = ['unknown', 'unavailable'].includes(model.state);
-  const condition = unavailable ? 'Météo indisponible' : String(model.attributes.titre || 'Votre météo');
-  const headline = preview?.selected[0]?.group === 'official' ? brief!.title : preview?.selected[0]?.text ?? (brief && !brief.available ? 'Données insuffisantes' : condition);
+  const headline = preview?.headline;
   const current = unavailable ? 'Mesures indisponibles.' : brief?.summary.split('\n')[0].replace(/^Maintenant : /, '').split('. ')[0];
   const feels = finite(model.attributes.ressenti);
   const showComfort=meaningfulComfort(hass,config,model);
@@ -36,13 +35,13 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
         .animated=${config.weather_animations!==false} .quality=${config.weather_animation_quality ?? 'standard'} .wind=${weatherNow.wind ?? 0}></niak-weather-sky></div>
       <header class="nw-section-heading"><h2 id="nw-synthesis-title">${brief?'Synthèse':'Météo actuelle'}</h2><span>${location}</span></header>
       ${brief?html`<div class="nw-summary-emblem me-bulle" aria-hidden="true"><div class="me-halo"></div>
-        <div class="me-rond"><ha-icon icon=${brief?.icon ?? 'mdi:weather-partly-cloudy'}></ha-icon></div></div>
+        <div class="me-rond"><ha-icon icon=${preview?.icon ?? 'mdi:information-outline'}></ha-icon></div></div>
       <div class="nw-summary-lead"><h3>${headline}</h3>
         ${brief ? html`<span class="nw-attention"><i aria-hidden="true"></i>${brief.label}</span>` : nothing}</div>
       <div class="nw-summary-lines">
         ${preview?.selected.length ? preview.selected.slice(1).map(s => html`<p><span>${s.group === 'future' ? 'À venir' : s.group === 'environment' ? 'Environnement' : s.group === 'official' ? 'Vigilance' : 'Maintenant'}</span>${s.text}</p>`)
-          : html`<p>${current || String(model.attributes.sous_titre || 'Choisissez vos sources météo.')}</p>`}
-        ${brief && !preview?.selected.some(s => s.group === 'future') ? html`<p><span>À venir</span>${brief.signals.find(s => s.group === 'future')?.text ?? (brief.caveats.some(c => c.startsWith('Prévisions des')) ? 'Prévisions indisponibles.' : 'Pas de signal marqué dans les 6 h disponibles.')}</p>` : nothing}
+          : showComfort ? html`<p>${current}</p>` : html`<p>La synthèse se limite aux sources disponibles.</p>`}
+        ${brief && !preview?.outlookKey && !preview?.selected.some(s => s.group === 'future') ? html`<p><span>À venir</span>${brief.signals.find(s => s.group === 'future')?.text ?? (brief.caveats.some(c => c.startsWith('Prévisions des')) ? 'Prévisions indisponibles.' : 'Pas de signal marqué dans les 6 h disponibles.')}</p>` : nothing}
       </div>`:nothing}
       <aside class="nw-current-weather" aria-label="Météo actuelle">
         <div class="nw-current-content"><span class="nw-current-kicker">En ce moment</span>
@@ -54,7 +53,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
       </aside>
       ${brief ? html`<details class="nw-brief-details"><summary>Les points à retenir${preview?.remaining ? ` · ${preview.remaining} autre${preview.remaining > 1 ? 's' : ''} point${preview.remaining > 1 ? 's' : ''}` : ''}</summary>
         <div class="nw-brief-groups">${groups.map(group => {
-          const signals = brief.signals.filter(s=>s.group===group.key && s.severity>0);
+          const signals = brief.signals.filter(s=>s.group===group.key && (s.severity>0 || s.key===preview?.outlookKey));
           return signals.length ? html`<section class="nw-brief-group"><h4>${group.title}</h4><p class="nw-brief-context">${group.description}</p>
             <ul>${signals.map(s=>html`<li><ha-icon icon=${s.icon}></ha-icon><span>${s.text}</span>${s.entity ? html`<button data-entity=${s.entity} aria-label=${`Source : ${s.text}`}>Source</button>` : nothing}</li>`)}</ul></section>` : nothing;
         })}</div>
@@ -72,7 +71,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
         </details>
         ${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>`:nothing}
       <div id="tuiles">${renderCurrentMetrics(metrics,hass)}</div>
-      ${hasDetails ? html`<details open class="nw-measure-details"><summary>Détails pluie et vent</summary><div id="bilan">${renderRecentDetails(hass,config,history,rainHistory,now)}</div></details>` : nothing}
+      ${hasDetails ? html`<div id="bilan" aria-label="Détails pluie et vent">${renderRecentDetails(hass,config,history,rainHistory,now)}</div>` : nothing}
       <div id="pastilles">${unsafeHTML(rendered.pastilles)}</div>
       ${renderAtmo(hass, config, now, 'today')}
     </section>`}
@@ -150,7 +149,8 @@ export const dashboardStyles = css`
   #comfort .me-cur { z-index:2; }
   #comfort .me-cur i { width:16px; height:16px; top:-8px; left:-8px; border:2px solid var(--card-background-color,#fff); background:color-mix(in srgb,rgb(var(--vc)) 65%,var(--primary-text-color) 35%); box-shadow:0 0 0 1px rgba(var(--vc),.42),0 0 9px rgba(var(--vc),.4); animation:nwComfortPulse 4.8s ease-in-out infinite; }
   @keyframes nwComfortPulse { 0%,100% { box-shadow:0 0 0 1px rgba(var(--vc),.35),0 0 6px rgba(var(--vc),.28); } 50% { box-shadow:0 0 0 2px rgba(var(--vc),.45),0 0 13px rgba(var(--vc),.52); } }
-  #comfort .me-decos { border:0; padding:0; margin:0; gap:6px 14px; }
+  #comfort .me-decos { border:0; padding:0; margin:0; gap:8px; justify-content:center; }
+  #comfort .me-d, #pastilles .me-pa { padding:6px 10px; border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:999px; background:rgba(150,150,150,.045); box-sizing:border-box; max-width:100%; min-height:30px; align-items:center; }
   #comfort .me-d b { font-size:11px; font-weight:650; }
   #tuiles .me-tuiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr)); gap:10px; padding:0; border:0; }
   #tuiles .me-tu { padding:14px 12px; border-color:var(--divider-color,rgba(150,150,150,.18)); background:rgba(150,150,150,.035); border-radius:12px; gap:10px; }
@@ -164,9 +164,8 @@ export const dashboardStyles = css`
   #tuiles .me-tuv { font-size:23px; font-weight:650; line-height:1.2; }
   #tuiles .me-tul { font-size:11px; color:var(--primary-text-color); font-weight:500; margin-top:5px; }
   #tuiles .me-tus { font-size:10px; font-weight:400; margin-top:3px; }
-  .nw-measure-details { margin:12px 0 0; }
-  #bilan .me-bilan { padding:10px 0 0; gap:12px; }
-  #bilan .me-bl { background:transparent; border-color:var(--divider-color,rgba(150,150,150,.18)); }
+  #bilan .me-bilan { padding:18px 0 0; gap:12px; }
+  #bilan .me-bl { background:rgba(150,150,150,.035); border-color:var(--divider-color,rgba(150,150,150,.18)); }
   #bilan .me-bln { flex-basis:102px; }
   .nw-brief-groups { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 24px; margin:16px 0; }
   .nw-brief-group h4 { margin:0; font-size:12px; font-weight:650; }
@@ -177,8 +176,12 @@ export const dashboardStyles = css`
   .nw-brief-group ha-icon { --mdc-icon-size:15px; color:var(--secondary-text-color); margin-top:2px; }
   .nw-brief-group button { flex-shrink:0; font-size:10px; padding:2px 0; border:0; background:transparent; color:var(--secondary-text-color); text-decoration:underline; text-underline-offset:3px; }
   .nw-brief-limits li { padding:4px 0; line-height:1.5; }
-  #pastilles .me-pas { padding:16px 0 4px; margin-top:14px; gap:8px 18px; }
+  #pastilles .me-pas { padding:16px 0 4px; margin-top:0; gap:8px; border:0; justify-content:center; }
   #pastilles .me-pa b { font-size:11px; font-weight:650; }
+  #jours .nw-week-labels { min-height:22px; padding:4px 0 7px; }
+  #jours .nw-week-labels .me-jmin, #jours .nw-week-labels .me-jmax, #jours .nw-week-labels .me-jp { display:flex; flex-direction:column; align-items:center; font-size:9px; font-weight:600; color:var(--secondary-text-color); opacity:1; line-height:1.35; }
+  #jours .nw-week-labels small { font-size:8px; font-weight:400; }
+  #jours .nw-week-labels .me-jbar { background:none; }
   .nw-forecast-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:22px; }
   .nw-forecast-grid>div { min-width:0; }
   #courbe .me-courbe, #jours .me-jours { padding:0; border:0; }
