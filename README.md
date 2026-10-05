@@ -6,7 +6,7 @@ Une température seule ne raconte pas toute la météo : 25 °C à l’ombre, av
 
 **Version stable : v1.3.7.** La documentation principale et les textes de la carte sont en français. [Nouveautés et correctifs](docs/release-1.3.7.md).
 
-**Bêta disponible : v1.4.0-beta.1.** Nouveau parcours de configuration, réparation des références d’entités et optimisations de l’éditeur. Les réglages décrits ci-dessous correspondent à cette bêta. Pour la tester, activez les préversions dans HACS et choisissez **v1.4.0-beta.1** lors du téléchargement. La version stable reste **v1.3.7**. [Nouveautés et points à vérifier](docs/release-1.4.0-beta.1.md).
+**Bêta disponible : v1.4.0-beta.2.** Configuration par source, éditeur optimisé et affichage modulable, y compris sans station locale. Les réglages décrits ci-dessous correspondent à cette bêta. Pour la tester, activez les préversions dans HACS et choisissez **v1.4.0-beta.2** lors du téléchargement. La version stable reste **v1.3.7**. [Nouveautés et points à vérifier](docs/release-1.4.0-beta.2.md).
 
 La carte s’organise en **Synthèse, Aujourd’hui et Prévisions**. La synthèse intelligente est accompagnée de la météo actuelle et d’un ciel animé sur tout le bandeau : nuages, pluie, éclairs ou rafales. Le halo d’attention conserve sa signification, distincte de l’ambiance météo. Le ressenti expliqué, les indices air/pollens et les graphiques complètent cette lecture. [Nouveautés et mise à jour](docs/release-1.3.0.md) · [Météo actuelle et animations](docs/current-weather.md) · [Comprendre le brief et ses limites](docs/brief-intelligent.md).
 
@@ -27,6 +27,8 @@ Niak Weather organise la météo en trois lectures : **maintenant**, avec le res
 La jauge compare le ressenti au thermomètre et en explique les principales contributions. La boussole situe le vent, le baromètre donne son évolution et les courbes permettent de lire les variations plutôt que des valeurs isolées. Les indices Atmo ajoutent une lecture de l’environnement extérieur et des pollens.
 
 Le mode **Complet** convient à une page météo détaillée ; **Accueil (compact)** garde une synthèse pour votre tableau de bord principal. Le rendu s’adapte à la largeur disponible et au thème Home Assistant.
+
+Les trois sections peuvent être activées ou masquées dans Général. Sans brief intelligent, le bandeau affiche uniquement la météo actuelle, sans résumé en double. Sans station, les cadres utilisent les données du bulletin disponibles ; chaque cadre indique sa source. Les mesures locales restent prioritaires et un remplacement par le bulletin est signalé. La jauge de ressenti est masquée sans température locale ni humidex utilisable. [Affichage et priorité des sources](docs/display-options.md).
 
 Les prévisions affichent jusqu’à **18 heures et 7 jours**, selon les données réellement fournies. La carte distingue les conditions prévues pour la zone des mesures prises chez vous. Une mesure de station indisponible n’est pas remplacée par un zéro, et un orage prévu n’est pas présenté comme de la foudre détectée par la station.
 

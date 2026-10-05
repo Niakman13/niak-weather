@@ -50,15 +50,15 @@ export function buildCurrentWeather(hass:HomeAssistant, config:WeatherCardConfig
   if(condition==='clear-night' && phase==='day') condition='sunny';
   if(condition==='sunny' && phase==='night') condition='clear-night';
   const sensor=config.temperature_entity ? hass.states[config.temperature_entity] : undefined;
-  const temperature=config.temperature_entity ? (available(sensor) ? measurement(sensor!.state,sensor!.attributes.unit_of_measurement,'temperature') : undefined)
-    : available(weather) ? measurement(weather!.attributes.temperature,weather!.attributes.temperature_unit,'temperature') : undefined;
-  const temperatureEntity=config.temperature_entity ?? config.weather_entity;
+  const localTemperature=available(sensor) ? measurement(sensor!.state,sensor!.attributes.unit_of_measurement,'temperature') : undefined;
+  const temperature=localTemperature ?? (available(weather) ? measurement(weather!.attributes.temperature,weather!.attributes.temperature_unit,'temperature') : undefined);
+  const temperatureEntity=localTemperature!==undefined ? config.temperature_entity : config.weather_entity;
   const windSensor=config.wind_speed_entity ? hass.states[config.wind_speed_entity] : undefined;
   const wind=config.wind_speed_entity ? (available(windSensor) ? measurement(windSensor!.state,windSensor!.attributes.unit_of_measurement,'wind') : undefined)
     : modelAvailable ? finite(model.attributes.vent) : undefined;
   const [conditionLabel,icon]=conditions[condition] ?? ['Météo indisponible','mdi:weather-cloudy-alert'];
   const label=source==='Pas de pluie mesurée · ciel du bulletin' && condition==='cloudy' ? 'Nuageux, sans pluie mesurée' : conditionLabel;
   return {condition,label,icon,phase,temperature,temperatureEntity,conditionEntity,source,
-    temperatureSource:config.temperature_entity ? 'Thermomètre' : 'Température du bulletin',
+    temperatureSource:localTemperature!==undefined ? 'Thermomètre' : 'Température du bulletin',
     feels:modelAvailable ? finite(model.attributes.ressenti) : undefined,wind};
 }

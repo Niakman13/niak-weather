@@ -107,7 +107,7 @@ export class NiakWeatherCard extends LitElement {
     let model = calculated;
     const weather = hass.states[config.weather_entity];
     const briefPoints: BriefPoint[] = this.hourly.map(p => ({ hours: (Date.parse(p.datetime) - now.getTime()) / 3600_000, temperature: p.temperature, precipitation: p.precipitation, condition: p.condition }));
-    const brief = config.smart_brief === false ? undefined : buildWeatherBrief(hass, config, model, briefPoints, now);
+    const brief = config.smart_brief === false || config.show_synthesis === false ? undefined : buildWeatherBrief(hass, config, model, briefPoints, now);
     if (['unknown', 'unavailable'].includes(model.state)) model = { ...model, attributes:{} };
     const variables = { mode: 'complet', dashboard:true, adaptive:true, configured:config, ent: '__niak_model', ent_prev: '__niak_forecast',
       lieu: config.location ?? String(weather?.attributes.friendly_name ?? ''),
@@ -116,7 +116,7 @@ export class NiakWeatherCard extends LitElement {
     const states = { ...hass.states, __niak_model: model, __niak_forecast: { state: String(forecast.heures.length), attributes: forecast } };
     const rendered = renderLocal(variables, states, hass);
     return html`<ha-card><div id="container" ?data-smart-brief=${!!brief} @pointerdown=${this.down} @pointermove=${this.move} @pointercancel=${this.cancel} @pointerup=${this.up}
-      @click=${this.handleClick} @keydown=${this.keydown}>${renderDashboard(rendered, brief, model, hass, config, now, variables.lieu)}</div></ha-card>`;
+      @click=${this.handleClick} @keydown=${this.keydown}>${renderDashboard(rendered, brief, model, hass, config, now, variables.lieu, this.hourly)}</div></ha-card>`;
   }
   private down(event: PointerEvent): void {
     clearTimeout(this.holdTimer); if (event.button !== 0) return;

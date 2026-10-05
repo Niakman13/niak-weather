@@ -1,0 +1,27 @@
+# Affichage modulable et sources des conditions actuelles
+
+Ces réglages sont disponibles à partir de la version **1.4.0-beta.2**. La version stable reste **1.3.7**.
+
+## Choisir les sections
+
+Dans **Général**, trois interrupteurs permettent d’afficher ou de masquer indépendamment le bandeau **Synthèse / météo actuelle**, la section **Aujourd’hui** et la section **Prévisions**. Les trois sont activés par défaut. Le mode compact continue de masquer les prévisions.
+
+Quand le brief intelligent est désactivé, le bandeau devient **Météo actuelle** : le résumé de gauche disparaît pour éviter de répéter la condition déjà affichée à droite. Le ciel animé reste disponible.
+
+Options YAML correspondantes : `show_synthesis`, `show_today` et `show_predictions` (valeurs `true` ou `false`).
+
+## Utiliser la carte sans station
+
+Une entité météo suffit pour afficher les conditions du bulletin. Les cadres Température, Vent et Pression utilisent ses attributs lorsqu’ils sont disponibles. Une bulle indique leur source : **Météo-France**, ou le fournisseur du bulletin choisi.
+
+Les mesures locales renseignées et disponibles sont prioritaires, cadre par cadre, avec une bulle **Station locale**. Si un capteur local devient indisponible et qu’un attribut météo peut le remplacer, la bulle indique explicitement **repli**. Un clic ouvre l’entité qui fournit la valeur affichée.
+
+## Ne pas confondre pluie prévue et pluie mesurée
+
+Avec une station, le cadre Pluie présente le cumul depuis minuit ou l’intensité mesurée, selon les capteurs disponibles. Sans station, il présente l’état du bulletin (par exemple « Pluie » ou « Temps sec ») et, si disponible, le cumul prévu sur le prochain créneau horaire. Il ne transforme jamais une prévision en cumul mesuré ni un ciel sec en zéro millimètre mesuré.
+
+## Afficher un ressenti utile
+
+La jauge de ressenti est masquée en configuration minimale, sans température locale utilisable ni humidex Thermal Comfort utilisable. Elle n’affiche donc pas une simple copie de la température du bulletin. Thermal Comfort reste la source de l’humidex ; le capteur d’une station n’est pas choisi à sa place.
+
+La synthèse ne traite pas les données de remplacement du bulletin comme des observations de la station locale.

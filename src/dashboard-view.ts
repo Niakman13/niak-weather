@@ -5,12 +5,13 @@ import { renderAtmo } from './atmo-view';
 import { finite } from './local-model';
 import { comfortColor } from './comfort-color';
 import { buildCurrentWeather } from './current-weather';
+import { currentMetrics, meaningfulComfort, renderCurrentMetrics } from './current-measurements';
 import './weather-sky';
 import type { WeatherBrief } from './weather-brief';
-import type { HassEntity, HomeAssistant, WeatherCardConfig } from './types';
+import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
 
 export function renderDashboard(rendered: Record<string, string>, brief: WeatherBrief | undefined, model: HassEntity,
-  hass: HomeAssistant, config: WeatherCardConfig, now: Date, location: string) {
+  hass: HomeAssistant, config: WeatherCardConfig, now: Date, location: string, hourly:WeatherForecast[] = []) {
   const preview = brief ? briefPreview(brief) : undefined;
   const compact = config.mode === 'compact';
   const unavailable = ['unknown', 'unavailable'].includes(model.state);
@@ -18,6 +19,8 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   const headline = preview?.selected[0]?.group === 'official' ? brief!.title : preview?.selected[0]?.text ?? (brief && !brief.available ? 'Données insuffisantes' : condition);
   const current = unavailable ? 'Mesures indisponibles.' : brief?.summary.split('\n')[0].replace(/^Maintenant : /, '').split('. ')[0];
   const feels = finite(model.attributes.ressenti);
+  const showComfort=meaningfulComfort(hass,config,model);
+  const metrics=currentMetrics(hass,config,model,hourly,now);
   const weatherNow=buildCurrentWeather(hass,config,model);
   const degrees=(value:number)=>new Intl.NumberFormat(hass.language || 'fr',{maximumFractionDigits:1}).format(value);
   const groups = [
@@ -27,11 +30,11 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
     { key:'environment', title:'Air et pollens', description:'Indices de votre zone, pour aujourd’hui ou demain selon le libellé.' },
   ];
   return html`
-    <section id="heros" class="nw-section nw-synthesis" aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
+    ${config.show_synthesis===false?nothing:html`<section id="heros" class=${`nw-section nw-synthesis${brief?'':' nw-synthesis--weather-only'}`} aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
       <div class="nw-sky-backdrop" aria-hidden="true"><niak-weather-sky .condition=${weatherNow.condition} .phase=${weatherNow.phase}
         .animated=${config.weather_animations!==false} .quality=${config.weather_animation_quality ?? 'standard'} .wind=${weatherNow.wind ?? 0}></niak-weather-sky></div>
-      <header class="nw-section-heading"><h2 id="nw-synthesis-title">Synthèse</h2><span>${location}</span></header>
-      <div class="nw-summary-emblem me-bulle" aria-hidden="true"><div class="me-halo"></div>
+      <header class="nw-section-heading"><h2 id="nw-synthesis-title">${brief?'Synthèse':'Météo actuelle'}</h2><span>${location}</span></header>
+      ${brief?html`<div class="nw-summary-emblem me-bulle" aria-hidden="true"><div class="me-halo"></div>
         <div class="me-rond"><ha-icon icon=${brief?.icon ?? 'mdi:weather-partly-cloudy'}></ha-icon></div></div>
       <div class="nw-summary-lead"><h3>${headline}</h3>
         ${brief ? html`<span class="nw-attention"><i aria-hidden="true"></i>${brief.label}</span>` : nothing}</div>
@@ -39,7 +42,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
         ${preview?.selected.length ? preview.selected.slice(1).map(s => html`<p><span>${s.group === 'future' ? 'À venir' : s.group === 'environment' ? 'Environnement' : s.group === 'official' ? 'Vigilance' : 'Maintenant'}</span>${s.text}</p>`)
           : html`<p>${current || String(model.attributes.sous_titre || 'Choisissez vos sources météo.')}</p>`}
         ${brief && !preview?.selected.some(s => s.group === 'future') ? html`<p><span>À venir</span>${brief.signals.find(s => s.group === 'future')?.text ?? (brief.caveats.some(c => c.startsWith('Prévisions des')) ? 'Prévisions indisponibles.' : 'Pas de signal marqué dans les 6 h disponibles.')}</p>` : nothing}
-      </div>
+      </div>`:nothing}
       <aside class="nw-current-weather" aria-label="Météo actuelle">
         <div class="nw-current-content"><span class="nw-current-kicker">En ce moment</span>
           <button class="nw-current-condition" data-entity=${weatherNow.conditionEntity ?? config.weather_entity} title=${weatherNow.source}><ha-icon icon=${weatherNow.icon}></ha-icon>${weatherNow.label}</button>
@@ -58,16 +61,16 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
         <p class="nw-brief-context">La couleur suit le point le plus préoccupant. Seule une vigilance rouge Météo-France donne le rouge au bandeau.</p>
         ${brief.caveats.length ? html`<details class="nw-brief-limits"><summary>Données à vérifier · ${brief.caveats.length}</summary>
           <ul>${brief.caveats.map(c=>html`<li>${c}</li>`)}</ul></details>` : nothing}</details>` : nothing}
-    </section>
-    <section id="today" class="nw-section" aria-labelledby="nw-today-title" style="--vc:61,155,233">
-      <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>${config.temperature_entity ? 'Mesures et ressenti' : 'Météo du bulletin et ressenti estimé'}</span></header>
-      <div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}><h3 class="nw-panel-title">Ressenti</h3>${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>
-      <div id="tuiles">${unsafeHTML(rendered.tuiles)}</div>
+    </section>`}
+    ${config.show_today===false?nothing:html`<section id="today" class="nw-section" aria-labelledby="nw-today-title" style="--vc:61,155,233">
+      <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>${showComfort ? 'Mesures et ressenti' : 'Conditions actuelles'}</span></header>
+      ${showComfort?html`<div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}><h3 class="nw-panel-title">Ressenti</h3>${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>`:nothing}
+      <div id="tuiles">${renderCurrentMetrics(metrics,hass)}</div>
       ${!compact && rendered.bilan ? html`<details open class="nw-measure-details"><summary>Détails pluie et vent</summary><div id="bilan">${unsafeHTML(rendered.bilan)}</div></details>` : nothing}
       ${!compact ? html`<div id="pastilles">${unsafeHTML(rendered.pastilles)}</div>` : nothing}
       ${renderAtmo(hass, config, now, 'today')}
-    </section>
-    ${compact ? nothing : html`<section id="predictions" class="nw-section" aria-labelledby="nw-predictions-title">
+    </section>`}
+    ${compact || config.show_predictions===false ? nothing : html`<section id="predictions" class="nw-section" aria-labelledby="nw-predictions-title">
       <header class="nw-section-heading"><h2 id="nw-predictions-title">Prévisions</h2><span>${config.forecast_source ?? (/france/i.test(String(hass.states[config.weather_entity]?.attributes.attribution)) ? 'Météo-France' : 'Prévisions météo')}</span></header>
       <div class="nw-forecast-grid"><div id="courbe">${unsafeHTML(rendered.courbe)}</div><div id="jours">${unsafeHTML(rendered.jours)}</div></div>
       ${renderAtmo(hass, config, now, 'tomorrow')}
@@ -113,6 +116,9 @@ export const dashboardStyles = css`
   .nw-current-temperature small { font-size:20px; font-weight:400; margin-left:3px; vertical-align:super; letter-spacing:0; }
   .nw-current-temperature-source { font-size:10px; opacity:.8; }
   .nw-current-missing { font-size:13px; margin-top:8px; }
+  .nw-synthesis.nw-synthesis--weather-only { grid-template-columns:minmax(0,1fr); }
+  .nw-synthesis--weather-only>.nw-section-heading { grid-column:1; grid-row:1; }
+  .nw-synthesis--weather-only .nw-current-weather { grid-column:1; grid-row:2; min-height:150px; margin-top:0; }
   @container (max-width:650px) {
     .nw-synthesis { grid-template-columns:60px minmax(0,1fr); column-gap:12px; }
     .nw-current-weather { grid-column:1 / -1; grid-row:4; min-height:172px; margin-top:18px; }
@@ -134,6 +140,10 @@ export const dashboardStyles = css`
   #comfort .me-d b { font-size:11px; font-weight:650; }
   #tuiles .me-tuiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr)); gap:10px; padding:0; border:0; }
   #tuiles .me-tu { padding:14px 12px; border-color:var(--divider-color,rgba(150,150,150,.18)); background:rgba(150,150,150,.035); border-radius:12px; gap:10px; }
+  #tuiles .nw-current-metric { display:flex; flex-direction:column; align-items:flex-start; }
+  .nw-metric-source { display:inline-flex; padding:3px 8px; border-radius:999px; border:1px solid var(--divider-color,rgba(150,150,150,.18)); background:color-mix(in srgb,var(--primary-color,#3d9be9) 7%,transparent); color:var(--secondary-text-color); font-size:10px; font-weight:600; line-height:1.4; }
+  .nw-metric-body { display:flex; align-items:center; gap:10px; min-width:0; }
+  .nw-current-metric .me-tuv { white-space:normal; overflow-wrap:anywhere; }
   #tuiles .me-tuic { background:transparent; width:30px; height:30px; flex-basis:30px; }
   #tuiles .me-rose { width:30px; height:30px; flex-basis:30px; animation:none; }
   .nw-metric-name { display:block; color:var(--secondary-text-color); font-size:10px; margin-bottom:7px; }

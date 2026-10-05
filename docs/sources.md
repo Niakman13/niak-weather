@@ -38,7 +38,7 @@ Dans **Sources de la station météo locale**, choisissez votre station et utili
 | Rayonnement solaire, UV, luminosité | Contribution solaire au ressenti et indicateurs complémentaires. |
 | Point de rosée | Pastille rosée et règles de brouillard. |
 
-Chaque mesure est facultative individuellement. Sans capteur, elle reste absente ou indisponible ; un thermomètre configuré mais indisponible n’est pas remplacé silencieusement par la température du bulletin. Les compteurs **semaine et mois de la station** ne sont pas des sommes glissantes calculées par la carte. Depuis la v1.2.0-beta.3, ils sont nommés « Cette semaine » et « Ce mois », à la place de « 7 jours » et « 30 jours ». Leur date de remise à zéro dépend des réglages de la station.
+Chaque mesure est facultative individuellement. Les cadres Température, Vent et Pression utilisent les attributs du bulletin lorsqu’une mesure locale n’est pas disponible. La bulle précise la source et signale explicitement un repli si un capteur configuré devient indisponible. Sans mesure locale de pluie, le cadre décrit l’état du bulletin et éventuellement le prochain cumul prévu, jamais un cumul mesuré inventé. [Détails de l’affichage](display-options.md). Les compteurs **semaine et mois de la station** ne sont pas des sommes glissantes calculées par la carte. Depuis la v1.2.0-beta.3, ils sont nommés « Cette semaine » et « Ce mois », à la place de « 7 jours » et « 30 jours ». Leur date de remise à zéro dépend des réglages de la station.
 
 ## Thermal Comfort — humidex et ressenti
 

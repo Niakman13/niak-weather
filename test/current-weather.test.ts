@@ -46,8 +46,8 @@ describe('Current weather, never the future brief',()=>{
   it('uses the configured thermometer and converts Fahrenheit',()=>{
     expect(buildCurrentWeather(hass('sunny',{'sensor.temp':entity('sensor.temp','68',{unit_of_measurement:'°F'})}),{...config,temperature_entity:'sensor.temp'},model)).toMatchObject({temperature:20,temperatureEntity:'sensor.temp',temperatureSource:'Thermomètre'});
   });
-  it('does not fall back silently when configured temperature is missing',()=>{
-    expect(buildCurrentWeather(hass(),{...config,temperature_entity:'sensor.missing'},model).temperature).toBeUndefined();
+  it('labels the bulletin fallback explicitly when configured temperature is missing',()=>{
+    expect(buildCurrentWeather(hass(),{...config,temperature_entity:'sensor.missing'},model)).toMatchObject({temperature:20,temperatureEntity:'weather.home',temperatureSource:'Température du bulletin'});
   });
   it('keeps actual zero and negative temperature values',()=>{
     for(const t of [0,-15]) expect(buildCurrentWeather(hass('cloudy',{'weather.home':entity('weather.home','cloudy',{temperature:t})}),config,model).temperature).toBe(t);

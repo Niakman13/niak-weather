@@ -14,6 +14,7 @@ export function cleanConfig(config: WeatherCardConfig): WeatherCardConfig {
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   weather_entity: 'Entité météo', mode: 'Affichage', location: 'Lieu', forecast_source: 'Fournisseur des prévisions',
   smart_brief: 'Activer le brief intelligent', vigilance_entity: 'Vigilance officielle Météo-France (département)',
+  show_synthesis:'Afficher la section Synthèse / météo actuelle',show_today:'Afficher la section Aujourd’hui',show_predictions:'Afficher la section Prévisions (mode complet)',
   weather_animations: 'Animer le ciel de la météo actuelle', weather_animation_quality: 'Qualité des animations météo',
   temperature_entity: 'Température extérieure', humidity_entity: 'Humidité extérieure',
   wind_speed_entity: 'Vitesse du vent (moyenne si disponible)', wind_gust_entity: 'Rafales', wind_bearing_entity: 'Direction du vent',
@@ -75,7 +76,7 @@ export class NiakWeatherCardEditor extends LitElement {
   private valueChanged(event: CustomEvent<{ value: Partial<WeatherCardConfig> }>, category: SourceCategory): void {
     event.stopPropagation(); if (!this.config) return;
     const extras: Record<SourceCategory, string[]> = {
-      general:['location','mode','smart_brief','weather_animations','weather_animation_quality','weather_path'],
+      general:['location','mode','smart_brief','weather_animations','weather_animation_quality','weather_path','show_synthesis','show_today','show_predictions'],
       weather:['forecast_source'],station:['station_device_id'],thermal:['thermal_device_id'],
       atmo:['atmo_area','pollen_source','show_atmo_details','show_atmo_tomorrow'],
     };
@@ -124,6 +125,7 @@ export class NiakWeatherCardEditor extends LitElement {
     const schemas: Record<SourceCategory, unknown[]> = {
       general: [{ name: 'location', selector: { text: {} } },
       { name: 'mode', selector: { select: { options: [{ value: 'compact', label: 'Accueil (compact)' }, { value: 'detailed', label: 'Complet' }] } } },
+      ...['show_synthesis','show_today','show_predictions'].map(name=>({name,selector:{boolean:{}}})),
       {name:'smart_brief',selector:{boolean:{}}}, {name:'weather_animations',selector:{boolean:{}}},
       {name:'weather_animation_quality',selector:{select:{options:[{value:'standard',label:'Standard'},{value:'low',label:'Allégée (tablette)'}]}}},
       {name:'weather_path',selector:{text:{}}}],
@@ -160,7 +162,7 @@ export class NiakWeatherCardEditor extends LitElement {
       }}><summary><strong>${s.title}</strong><span>${sourceStatus(this.hass!,this.config!,s.key)}</span></summary>
         ${this.opened.has(s.key) ? html`<div class="category-body"><p>${s.description}</p>
           <button type="button" data-fill=${s.key} ?disabled=${this.detecting} @click=${()=>this.detect(s.key)}>${this.detecting ? 'Recherche en cours…' : s.key === 'general' ? 'Compléter les réglages' : 'Remplir automatiquement'}</button>
-          <ha-form data-category=${s.key} .hass=${this.hass} .data=${{smart_brief:true,weather_animations:true,weather_animation_quality:'standard',show_atmo_details:true,show_atmo_tomorrow:true,...this.config}} .schema=${schemas[s.key]} .computeLabel=${this.computeLabel} @value-changed=${(event:CustomEvent<{value:Partial<WeatherCardConfig>}>)=>this.valueChanged(event,s.key)}></ha-form>
+          <ha-form data-category=${s.key} .hass=${this.hass} .data=${{show_synthesis:true,show_today:true,show_predictions:true,smart_brief:true,weather_animations:true,weather_animation_quality:'standard',show_atmo_details:true,show_atmo_tomorrow:true,...this.config}} .schema=${schemas[s.key]} .computeLabel=${this.computeLabel} @value-changed=${(event:CustomEvent<{value:Partial<WeatherCardConfig>}>)=>this.valueChanged(event,s.key)}></ha-form>
         </div>` : html``}</details>`)}`;
   }
   static styles = css`details { border:1px solid var(--divider-color,#ddd); border-radius:14px; margin:14px 0; overflow:hidden; } summary { cursor:pointer; padding:16px; display:flex; flex-direction:column; gap:5px; } summary strong { font-size:16px; } summary span { color:var(--secondary-text-color); font-size:12px; } .category-body { padding:0 16px 16px; } button { margin:4px 0 16px; padding:10px 16px; border:0; border-radius:999px; background:var(--primary-color,#03a9f4); color:var(--text-primary-color,#fff); font:inherit; cursor:pointer; } button:disabled { opacity:.6; cursor:wait; } p { color:var(--secondary-text-color); font-size:13px; line-height:1.6; } [role=status]:empty { display:none; }`;

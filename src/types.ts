@@ -47,6 +47,9 @@ export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   type: "custom:niak-weather-card";
   weather_entity: string;
   smart_brief?: boolean;
+  show_synthesis?: boolean;
+  show_today?: boolean;
+  show_predictions?: boolean;
   weather_animations?: boolean;
   weather_animation_quality?: 'low' | 'standard';
   vigilance_entity?: string;

@@ -81,7 +81,7 @@ try {
       const overflow=[...root.querySelectorAll('.nw-section,.me-tu,.me-bl,.me-graph,.me-j')].some(e=>{const r=e.getBoundingClientRect();return r.width&&(r.left<host.left-1||r.right>host.right+1)});
       return {sections,tiles,order,overflow};
     });
-    assert.deepEqual(layout.sections,['Synthèse','Aujourd’hui','Prévisions']);
+    assert.deepEqual(layout.sections,['Météo actuelle','Aujourd’hui','Prévisions']);
     assert.deepEqual(layout.tiles,['Température','Vent','Pluie','Pression']);
     assert.equal(layout.order,true);assert.equal(layout.overflow,false);
     const forecastGeometry=await page.evaluate(()=>{
@@ -367,6 +367,40 @@ try {
   assert.equal(editorPerformance.editorRenders,0,'No selector rebuilding on unrelated state updates');
   assert.equal(editorPerformance.cardRenders,0,'No preview rebuilding on unrelated state updates');
   assert.equal(editorPerformance.registryReads,3,'Registry refreshed on each category fill');
+  const displayOptions=await page.evaluate(async()=>{
+    const root=document.querySelector('main');root.replaceChildren();
+    const card=document.createElement('niak-weather-card');window.minimalCard=card;
+    const config={type:'custom:niak-weather-card',weather_entity:'weather.test',smart_brief:false};window.minimalConfig=config;
+    const weather={entity_id:'weather.test',state:'partlycloudy',attributes:{friendly_name:'Gardanne',attribution:'Météo-France',temperature:26.4,temperature_unit:'°C',wind_speed:12,wind_speed_unit:'km/h',pressure:1011,pressure_unit:'hPa'}};
+    card.setConfig(config);card.hass={states:{'weather.test':weather},language:'fr',callWS:async()=>({})};root.append(card);await card.updateComplete;
+    const shadow=card.shadowRoot;
+    const noDuplicate=!shadow.querySelector('.nw-summary-emblem,.nw-summary-lead,.nw-summary-lines,.nw-brief-details') && shadow.querySelectorAll('.nw-current-condition').length===1;
+    const noFakeComfort=!shadow.querySelector('#comfort') && !shadow.querySelector('#today').textContent.includes('Ressenti');
+    const providerFrames=shadow.querySelectorAll('.nw-metric-source').length===4 && [...shadow.querySelectorAll('.nw-metric-source')].every(e=>e.textContent==='Météo-France');
+    const truthfulRain=shadow.querySelector('[data-metric="rain"]').textContent.includes('Temps sec') && !shadow.querySelector('[data-metric="rain"]').textContent.includes('depuis minuit');
+    let switches=true;
+    for(let mask=0;mask<8;mask++){
+      card.setConfig({...config,show_synthesis:!!(mask&1),show_today:!!(mask&2),show_predictions:!!(mask&4)});await card.updateComplete;
+      switches &&= !!shadow.querySelector('#heros')===!!(mask&1) && !!shadow.querySelector('#today')===!!(mask&2) && !!shadow.querySelector('#predictions')===!!(mask&4);
+    }
+    const editor=document.createElement('niak-weather-card-editor');editor.setConfig({...config,show_today:false});editor.hass=card.hass;root.append(editor);await editor.updateComplete;
+    const form=editor.shadowRoot.querySelector('ha-form[data-category="general"]');
+    const controls=['show_synthesis','show_today','show_predictions'].every(name=>form.schema.some(s=>s.name===name&&s.selector.boolean));
+    const persisted=form.data.show_today===false;editor.remove();
+    card.setConfig({...config,mode:'compact'});await card.updateComplete;
+    return {noDuplicate,noFakeComfort,providerFrames,truthfulRain,switches,controls,persisted};
+  });
+  for(const [key,value] of Object.entries(displayOptions))assert.equal(value,true,`Display options: ${key}`);
+  for(const dark of [false,true])for(const width of [375,1440]){
+    await page.setViewportSize({width,height:1100});
+    await page.evaluate(dark=>{
+      document.documentElement.style.setProperty('--primary-text-color',dark?'#e4e4e4':'#20203f');
+      document.documentElement.style.setProperty('--secondary-text-color',dark?'#aaa':'#686878');
+      document.documentElement.style.setProperty('--card-background-color',dark?'#242424':'#fff4f4');
+    },dark);
+    const overflow=await page.evaluate(()=>window.minimalCard.scrollWidth>window.minimalCard.clientWidth+1);assert.equal(overflow,false,'Minimal card overflow');
+    await page.locator('niak-weather-card').screenshot({path:`${out}/weather-only-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+  }
   const compactAndMissing=await page.evaluate(async()=>{
     const root=document.querySelector('main');root.replaceChildren();
     const card=document.createElement('niak-weather-card');
@@ -377,7 +411,7 @@ try {
     const twoSections=shadow.querySelectorAll('#container>.nw-section').length===2&&!shadow.querySelector('#predictions');
     const fourTiles=shadow.querySelectorAll('.me-tu').length===4;
     const noStale=!shadow.querySelector('#today').textContent.includes('48')&&!shadow.querySelector('#today').textContent.includes('40');
-    const missing=shadow.querySelector('#today').textContent.includes('intensité indisponible');
+    const missing=shadow.querySelector('#today').textContent.includes('Donnée indisponible');
     return {twoSections,fourTiles,noStale,missing};
   });
   for(const [test,passed] of Object.entries(compactAndMissing))assert.equal(passed,true,`Compact/missing: ${test}`);
@@ -505,6 +539,6 @@ try {
   await page.evaluate(async()=>{await new Promise(r=>setTimeout(r,200));});
   skyMotion.offscreen=await page.evaluate(()=>getComputedStyle(window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelector('.cloud')).animationPlayState==='paused');assert.equal(skyMotion.offscreen,true);
   assert.deepEqual(errors,[],'Current sky browser console/network');
-  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,errors},null,2));
-  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,errors},null,2));
+  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,displayOptions,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,errors},null,2));
+  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,displayOptions,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,errors},null,2));
 } finally { await browser.close();server.close(); }

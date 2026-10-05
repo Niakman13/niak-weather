@@ -42,6 +42,7 @@ Niak Weather **ne génère pas son propre bulletin météo**, ne corrige pas les
 | `atmo_<mesure>_tomorrow_entity` | Même mesure prévue à J+1, filtrée séparément |
 | `pollen_source` | `atmo` (Atmo France), `legacy` (Polleninformation), ou `none` (masquer les pollens) |
 | `show_atmo_details`, `show_atmo_tomorrow` | Détails et prévisions facultatifs (activés par défaut en complet) |
+| `show_synthesis`, `show_today`, `show_predictions` | Afficher les trois sections indépendamment (activées par défaut ; prévisions masquées en mode compact) |
 
 Les autres choix Thermal Comfort (`thermal_dew_point_entity`, `heat_index_entity`, `absolute_humidity_entity`, `thermal_perception_entity`) sont filtrés et préremplis par appareil. Le point de rosée Thermal Comfort sert de repli si celui de la station n’est pas choisi/disponible. **Indice de chaleur et humidité absolue ne sont pas additionnés à l’humidex** : ce serait compter plusieurs fois le même effet. Ces mesures ne sont pas affichées en pastilles supplémentaires.
 
