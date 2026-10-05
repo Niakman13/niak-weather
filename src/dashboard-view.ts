@@ -2,7 +2,8 @@ import { css, html, nothing } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { briefPreview } from './brief-preview';
 import { renderAtmo } from './atmo-view';
-import { finite } from './local-model';
+import { finite, type History } from './local-model';
+import { renderRecentDetails } from './recent-details';
 import { comfortColor } from './comfort-color';
 import { buildCurrentWeather } from './current-weather';
 import { currentMetrics, meaningfulComfort, renderCurrentMetrics } from './current-measurements';
@@ -11,7 +12,7 @@ import type { WeatherBrief } from './weather-brief';
 import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
 
 export function renderDashboard(rendered: Record<string, string>, brief: WeatherBrief | undefined, model: HassEntity,
-  hass: HomeAssistant, config: WeatherCardConfig, now: Date, location: string, hourly:WeatherForecast[] = []) {
+  hass: HomeAssistant, config: WeatherCardConfig, now: Date, location: string, hourly:WeatherForecast[] = [], history:History={}, rainHistory:History={}) {
   const preview = brief ? briefPreview(brief) : undefined;
   const unavailable = ['unknown', 'unavailable'].includes(model.state);
   const condition = unavailable ? 'Météo indisponible' : String(model.attributes.titre || 'Votre météo');
@@ -21,6 +22,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   const showComfort=meaningfulComfort(hass,config,model);
   const metrics=currentMetrics(hass,config,model,hourly,now);
   const weatherNow=buildCurrentWeather(hass,config,model);
+  const hasDetails=!!(config.rain_24h_entity||config.daily_rain_entity||config.weekly_rain_entity||config.monthly_rain_entity||config.yearly_rain_entity||config.wind_gust_entity||config.wind_speed_entity||config.max_daily_gust_entity);
   const degrees=(value:number)=>new Intl.NumberFormat(hass.language || 'fr',{maximumFractionDigits:1}).format(value);
   const groups = [
     { key:'official', title:'Vigilance officielle', description:'Bulletin du département choisi dans les réglages.' },
@@ -70,7 +72,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
         </details>
         ${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>`:nothing}
       <div id="tuiles">${renderCurrentMetrics(metrics,hass)}</div>
-      ${rendered.bilan ? html`<details open class="nw-measure-details"><summary>Détails pluie et vent</summary><div id="bilan">${unsafeHTML(rendered.bilan)}</div></details>` : nothing}
+      ${hasDetails ? html`<details open class="nw-measure-details"><summary>Détails pluie et vent</summary><div id="bilan">${renderRecentDetails(hass,config,history,rainHistory,now)}</div></details>` : nothing}
       <div id="pastilles">${unsafeHTML(rendered.pastilles)}</div>
       ${renderAtmo(hass, config, now, 'today')}
     </section>`}

@@ -4,7 +4,7 @@
 
 Une température seule ne raconte pas toute la météo : 25 °C à l’ombre, avec de l’humidité ou sous un vent soutenu, ne se vivent pas de la même façon. La carte donne du contexte aux chiffres et rapproche les observations de votre maison des prévisions de votre zone, sans les confondre.
 
-**Version stable : v1.4.1.** Une aide « i » à côté de Ressenti explique son principe et renvoie aux détails ci-dessous. La configuration par source et les sections indépendantes de la v1.4.0 sont conservées. La documentation principale et les textes de la carte sont en français. [Nouveautés et mise à jour](docs/release-1.4.1.md).
+**Version stable : v1.5.0.** Les cadres Pluie et Vent associent désormais chiffres clés et historiques, sans barres de progression ambiguës. L’aide du ressenti, la configuration par source et les sections indépendantes sont conservées. La documentation principale et les textes de la carte sont en français. [Nouveautés et mise à jour](docs/release-1.5.0.md).
 
 La carte s’organise en **Synthèse, Aujourd’hui et Prévisions**. La synthèse intelligente est accompagnée de la météo actuelle et d’un ciel animé sur tout le bandeau : nuages, pluie, éclairs ou rafales. Le halo d’attention conserve sa signification, distincte de l’ambiance météo. Le ressenti expliqué, les indices air/pollens et les graphiques complètent cette lecture. [Nouveautés et mise à jour](docs/release-1.3.0.md) · [Météo actuelle et animations](docs/current-weather.md) · [Comprendre le brief et ses limites](docs/brief-intelligent.md).
 
@@ -23,6 +23,10 @@ Aperçu avec des données de démonstration ; le volet de demain est ouvert. La 
 Niak Weather organise la météo en trois lectures : **maintenant**, avec le ressenti et les mesures de la station ; **ce qui arrive**, avec l’évolution horaire et les prochains jours ; **ce qui s’est passé**, avec les cumuls de pluie et le bilan du vent. Vous pouvez ainsi repérer une hausse de température, l’arrivée d’une pluie ou une rafale marquante sans ouvrir plusieurs cartes.
 
 La jauge compare le ressenti au thermomètre et en explique les principales contributions. La boussole situe le vent, le baromètre donne son évolution et les courbes permettent de lire les variations plutôt que des valeurs isolées. Les indices Atmo ajoutent une lecture de l’environnement extérieur et des pollens.
+
+Les détails **Pluie et Vent** gardent deux colonnes sur desktop et s’empilent sur mobile. La pluie met en avant les dernières 24 h (ou le cumul depuis minuit), avec les compteurs semaine, mois et année, puis les maxima journaliers enregistrés sur sept jours. Le vent compare sa lecture actuelle et la rafale maximale du jour sur une échelle graduée, puis affiche six heures de rafales, ou de vent moyen si aucun capteur de rafales n’est configuré. Les courbes sont des observations, pas des prévisions. [Sources des graphiques et limites](docs/recent-details.md).
+
+![Détails Pluie et Vent — données de démonstration](docs/images/niak-weather-details.png)
 
 Le rendu s’adapte à la largeur disponible et au thème Home Assistant. Les interrupteurs des sections permettent de choisir les informations utiles sur chaque tableau de bord, sans mode d’affichage distinct.
 
@@ -89,7 +93,7 @@ Le [guide des sources](docs/sources.md) explique pour chacune sa configuration, 
 
 1. Ouvrez le bouton HACS en haut de cette page. Il ouvre le dépôt, sans installer automatiquement la carte.
 2. Si le dépôt n’est pas trouvé, ajoutez `https://github.com/Niakman13/niak-weather` dans **HACS → ⋮ → Dépôts personnalisés**, catégorie **Tableau de bord / Dashboard**. Il s’agit d’un dépôt personnalisé, pas d’un référencement dans le catalogue HACS par défaut.
-3. Téléchargez **Niak Weather v1.4.1**, puis rechargez le navigateur.
+3. Téléchargez **Niak Weather v1.5.0**, puis rechargez le navigateur.
 4. Dans votre tableau de bord, choisissez **Ajouter une carte → Niak Weather** et sélectionnez votre entité météo.
 5. Ajoutez si souhaité les sources **Station météo locale**, **Thermal Comfort** et **Atmo France**. Utilisez **Remplir automatiquement** dans chaque catégorie, puis vérifiez les propositions avant d’enregistrer. Sans station, les cadres utilisent les attributs du bulletin disponibles, avec une bulle de source ; la pluie prévue reste distinguée de la pluie mesurée.
 
@@ -115,9 +119,9 @@ daily_rain_entity: sensor.station_daily_rain
 
 Ces identifiants sont des **exemples**, pas des noms imposés. Privilégiez vos entités réelles dans l’éditeur. Le [tutoriel d’installation](docs/installation.md) détaille les ressources, les réglages et le dépannage.
 
-## Mettre à jour vers v1.4.1
+## Mettre à jour vers v1.5.0
 
-Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.4.1**. Il n’est pas nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
+Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.5.0**. Il n’est pas nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
 
 Les mises à jour utilisent la même ressource et conservent vos entités. Les anciens modes sont convertis en réglages de sections : les prévisions d’une ancienne configuration compacte restent masquées sauf choix explicite contraire. Vous pouvez enrichir la configuration progressivement, sans recommencer l’installation. [Notes de version](docs/release-1.4.0.md).
 

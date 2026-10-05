@@ -411,7 +411,7 @@ try {
     const shadow=card.shadowRoot;
     const twoSections=shadow.querySelectorAll('#container>.nw-section').length===2&&!shadow.querySelector('#predictions');
     const fourTiles=shadow.querySelectorAll('.me-tu').length===4;
-    const noStale=!shadow.querySelector('#today').textContent.includes('48')&&!shadow.querySelector('#today').textContent.includes('40');
+    const noStale=![...shadow.querySelectorAll('#today .me-tuv,#today .nw-feels-value,#today .nw-history-value strong')].some(e=>/^(48|40)(?:\D|$)/.test(e.textContent.trim()));
     const missing=shadow.querySelector('#today').textContent.includes('Donnée indisponible');
     const migrated=!('mode' in card.config)&&card.config.show_predictions===false;
     card.setConfig({...card.config,show_predictions:true});await card.updateComplete;
@@ -578,7 +578,70 @@ try {
   await page.evaluate(()=>{window.skyCard.style.marginTop='2200px';});
   await page.evaluate(async()=>{await new Promise(r=>setTimeout(r,200));});
   skyMotion.offscreen=await page.evaluate(()=>getComputedStyle(window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelector('.cloud')).animationPlayState==='paused');assert.equal(skyMotion.offscreen,true);
+  const recentDetails=await page.evaluate(async()=>{
+    document.querySelector('main').replaceChildren();
+    const card=document.createElement('niak-weather-card');window.detailsCard=card;
+    const now=Date.now(), day=86400_000;
+    const e=(entity_id,state,unit)=>({entity_id,state:String(state),attributes:{unit_of_measurement:unit}});
+    const states={...window.fixture.states,'sensor.rain24':e('sensor.rain24',0,'mm'),'sensor.year':e('sensor.year',536.9,'mm'),'sensor.maximum':e('sensor.maximum',30,'km/h')};
+    states['sensor.pluie_jour']=e('sensor.pluie_jour',0,'mm');states['sensor.pluie_semaine']=e('sensor.pluie_semaine',0,'mm');states['sensor.pluie_mois']=e('sensor.pluie_mois',20.8,'mm');states['sensor.rafales']=e('sensor.rafales',14,'km/h');
+    const rain=[];
+    for(let i=8;i>=0;i--){const d=new Date(now-i*day);d.setUTCHours(0,0,0,0);rain.push({s:'0',lu:d.getTime()/1000});if(i>=3&&i<=5)rain.push({s:String([1.2,5.6,2][i-3]),lu:d.getTime()/1000+36000});}
+    const gust=Array.from({length:37},(_,i)=>({s:String(i===12?30:i===36?14:10+(i%6)*2),lu:(now-21600_000+i*600_000)/1000}));
+    let requests=0;const requested=[];
+    const config={...window.fixture.config,show_synthesis:false,show_predictions:false,rain_24h_entity:'sensor.rain24',yearly_rain_entity:'sensor.year',max_daily_gust_entity:'sensor.maximum'};
+    card.setConfig(config);card.hass={states,language:'fr',config:{time_zone:'Europe/Paris'},callWS:async msg=>{
+      if(msg.type!=='history/history_during_period')return {};
+      requests++;requested.push(msg);
+      return msg.entity_ids.includes('sensor.pluie_jour')?{'sensor.pluie_jour':rain}:{'sensor.rafales':gust};
+    }};document.querySelector('main').append(card);await new Promise(r=>setTimeout(r,80));
+    const root=card.shadowRoot;
+    const twoCards=root.querySelectorAll('.nw-history-card').length===2;
+    const charts=root.querySelectorAll('.nw-history-chart svg').length===2;
+    const noRelativeBars=!root.querySelector('#bilan .me-blb');
+    const honestScale=root.querySelector('.nw-wind-scale').textContent.includes('80 km/h')&&root.querySelector('.nw-wind-marker--max').style.left==='37.5%';
+    const noFakeZero=[...root.querySelectorAll('.nw-history-chart rect')].every(r=>Number(r.getAttribute('height'))>0)&&root.querySelectorAll('.nw-history-chart rect').length===3;
+    const splitRequests=requested.length===2&&requested.some(m=>m.entity_ids.length===1&&m.entity_ids[0]==='sensor.pluie_jour')&&requested.some(m=>m.entity_ids.includes('sensor.rafales'));
+    const before=requests;card.setConfig({...config,location:'Nouveau lieu'});await card.updateComplete;await new Promise(r=>setTimeout(r,20));
+    const cached=requests===before;
+    let clicked;card.addEventListener('hass-more-info',e=>clicked=e.detail.entityId);
+    root.querySelector('.nw-rain-counters button').click();
+    const sourceClick=clicked==='sensor.pluie_semaine';
+    return {twoCards,charts,noRelativeBars,honestScale,noFakeZero,splitRequests,cached,sourceClick};
+  });
+  for(const [key,value] of Object.entries(recentDetails))assert.equal(value,true,`Recent details: ${key}`);
+  for(const dark of [false,true])for(const width of [375,768,1440]){
+    await page.setViewportSize({width,height:1600});
+    await page.evaluate(dark=>{
+      document.documentElement.style.setProperty('--primary-text-color',dark?'#e4e4e4':'#20203f');
+      document.documentElement.style.setProperty('--secondary-text-color',dark?'#aaa':'#686878');
+      document.documentElement.style.setProperty('--card-background-color',dark?'#303744':'#fff');
+    },dark);
+    const layout=await page.evaluate(()=>{const root=window.detailsCard.shadowRoot,host=window.detailsCard.getBoundingClientRect(),cards=[...root.querySelectorAll('.nw-history-card')];return {overflow:cards.some(e=>e.scrollWidth>e.clientWidth+1||e.getBoundingClientRect().right>host.right+1),columns:getComputedStyle(root.querySelector('.nw-history-grid')).gridTemplateColumns.split(' ').length};});
+    assert.equal(layout.overflow,false,`History details fit ${width}px`);
+    assert.equal(layout.columns,width===375?1:2,`History detail columns ${width}px`);
+    await page.locator('#bilan').screenshot({path:`${out}/recent-details-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+  }
+  const missingDetails=await page.evaluate(async()=>{
+    const card=window.detailsCard;
+    card.setConfig({...card.config,daily_rain_entity:'sensor.no_history',wind_gust_entity:'sensor.no_gust_history'});
+    card.hass={...card.hass,callWS:async()=>{throw new Error('Recorder excluded');}};await new Promise(r=>setTimeout(r,60));
+    return card.shadowRoot.querySelectorAll('.nw-history-chart svg').length===0&&card.shadowRoot.querySelectorAll('.nw-history-empty').length===2;
+  });assert.equal(missingDetails,true,'Missing histories never create artificial charts');
+  const rainHistoryRace=await page.evaluate(async()=>{
+    const card=document.createElement('niak-weather-card');let resolveOld;
+    const e=id=>({entity_id:id,state:'0',attributes:{unit_of_measurement:'mm'}});
+    card.setConfig({type:'custom:niak-weather-card',weather_entity:'weather.test',daily_rain_entity:'sensor.old_rain'});
+    card.hass={states:{'weather.test':window.fixture.states['weather.test'],'sensor.old_rain':e('sensor.old_rain'),'sensor.new_rain':e('sensor.new_rain')},callWS:async msg=>{
+      if(msg.type!=='history/history_during_period')return {};
+      if(msg.entity_ids[0]==='sensor.old_rain')return new Promise(resolve=>{resolveOld=resolve;});
+      return {'sensor.new_rain':[{s:'0',lu:Date.now()/1000}]};
+    }};document.querySelector('main').append(card);await new Promise(r=>setTimeout(r,20));
+    card.setConfig({...card.config,daily_rain_entity:'sensor.new_rain'});await new Promise(r=>setTimeout(r,20));
+    resolveOld({'sensor.old_rain':[{s:'123',lu:Date.now()/1000}]});await new Promise(r=>setTimeout(r,20));
+    const safe=!card.rainHistory['sensor.old_rain']&&!!card.rainHistory['sensor.new_rain'];card.remove();return safe;
+  });assert.equal(rainHistoryRace,true,'A stale response cannot overwrite another rain source');
   assert.deepEqual(errors,[],'Current sky browser console/network');
-  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,displayOptions,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,errors},null,2));
-  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,displayOptions,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,errors},null,2));
+  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,displayOptions,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,recentDetails,missingDetails,errors},null,2));
+  console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,displayOptions,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,recentDetails,missingDetails,errors},null,2));
 } finally { await browser.close();server.close(); }
