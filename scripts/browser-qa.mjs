@@ -390,11 +390,17 @@ try {
     assert.equal(geometry.overflow,false);assert.equal(geometry.distinct,true);assert.equal(geometry.rightAligned,true);
     const background=await page.evaluate(()=>{
       const root=window.skyCard.shadowRoot, header=root.querySelector('#heros'), sky=root.querySelector('niak-weather-sky'), details=root.querySelector('.nw-brief-details');
+      const mobile=header.getBoundingClientRect().width<=650;
+      const scene=sky.shadowRoot;
+      const artwork=()=>[...scene.querySelectorAll('.weather-art,.orb,.cloud,.bolt,.particle,.gust,.stars')].map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height];});
+      const before=mobile?artwork():[];
       const matches=()=>{const h=header.getBoundingClientRect(),s=sky.getBoundingClientRect();return Math.abs(h.right-s.right)<1&&Math.abs(h.top-s.top)<1&&Math.abs(h.bottom-s.bottom)<1&&Math.abs(h.left-s.left)<1;};
       const closed=matches();details.open=true;const expanded=matches();
-      return {closed,expanded,clean:!root.querySelector('.nw-current-feels,.nw-current-source')};
+      const stable=!mobile||JSON.stringify(before)===JSON.stringify(artwork());
+      const lines=root.querySelector('.nw-summary-lines').getBoundingClientRect(),emblem=root.querySelector('.nw-summary-emblem').getBoundingClientRect();
+      return {closed,expanded,clean:!root.querySelector('.nw-current-feels,.nw-current-source'),stable,leftAligned:Math.abs(lines.left-emblem.left)<1&&lines.top>=emblem.bottom};
     });
-    assert.deepEqual(background,{closed:true,expanded:true,clean:true},'Full banner sky, including expanded details, and no duplicate text');
+    assert.deepEqual(background,{closed:true,expanded:true,clean:true,stable:true,leftAligned:true},'Full banner sky, stationary mobile artwork and synthesis lines below the emblem');
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/current-expanded-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     await page.evaluate(()=>{window.skyCard.shadowRoot.querySelector('.nw-brief-details').open=false;});
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/current-weather-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
