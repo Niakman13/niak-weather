@@ -60,7 +60,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
           <ul>${brief.caveats.map(c=>html`<li>${c}</li>`)}</ul></details>` : nothing}</details>` : nothing}
     </section>
     <section id="today" class="nw-section" aria-labelledby="nw-today-title" style="--vc:61,155,233">
-      <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>Mesures et ressenti</span></header>
+      <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>${config.temperature_entity ? 'Mesures et ressenti' : 'Météo du bulletin et ressenti estimé'}</span></header>
       <div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}><h3 class="nw-panel-title">Ressenti</h3>${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>
       <div id="tuiles">${unsafeHTML(rendered.tuiles)}</div>
       ${!compact && rendered.bilan ? html`<details open class="nw-measure-details"><summary>Détails pluie et vent</summary><div id="bilan">${unsafeHTML(rendered.bilan)}</div></details>` : nothing}
@@ -132,7 +132,7 @@ export const dashboardStyles = css`
   @keyframes nwComfortPulse { 0%,100% { box-shadow:0 0 0 1px rgba(var(--vc),.35),0 0 6px rgba(var(--vc),.28); } 50% { box-shadow:0 0 0 2px rgba(var(--vc),.45),0 0 13px rgba(var(--vc),.52); } }
   #comfort .me-decos { border:0; padding:0; margin:0; gap:6px 14px; }
   #comfort .me-d b { font-size:11px; font-weight:650; }
-  #tuiles .me-tuiles { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:0; border:0; }
+  #tuiles .me-tuiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr)); gap:10px; padding:0; border:0; }
   #tuiles .me-tu { padding:14px 12px; border-color:var(--divider-color,rgba(150,150,150,.18)); background:rgba(150,150,150,.035); border-radius:12px; gap:10px; }
   #tuiles .me-tuic { background:transparent; width:30px; height:30px; flex-basis:30px; }
   #tuiles .me-rose { width:30px; height:30px; flex-basis:30px; animation:none; }
@@ -171,7 +171,7 @@ export const dashboardStyles = css`
   #jours .me-j { padding:4px 0; }
   .nw-empty { color:var(--secondary-text-color); font-size:12px; }
   @container (max-width:850px) {
-    #tuiles .me-tuiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    #tuiles .me-tuiles { grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr)); }
     .nw-forecast-grid { grid-template-columns:minmax(0,1fr); gap:20px; }
     #courbe .me-courbe { height:auto; }
     #courbe .me-graph { flex:none; height:200px; min-height:200px; }

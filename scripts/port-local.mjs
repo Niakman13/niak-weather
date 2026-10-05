@@ -30,16 +30,22 @@ for (const [name, original] of Object.entries(reference.fields)) {
     code = code.replace("pastille('mdi:water-percent', 'humidex',", "pastille('mdi:water-percent', V.dashboard ? 'base humidex' : 'humidex',");
   }
   if (name === 'bilan') code = code.replace("ligne('7 jours'", "ligne('Cette semaine'").replace("ligne('30 jours'", "ligne('Ce mois'");
+  // Indoor air belongs to another card; keep its removal reproducible when regenerating.
+  code = code.replace(/  var ea = V\.ent_air[\s\S]*?\n  }\n/g, '');
   code = code.replace(/var ec = V\.ent_confort[^;]+;/g, '').replace(/var poids = \(ec[^;]+;/g, "var poids = ea.attributes.air_poids || 'neutre';");
   code = code.replace(/var geste = V\.page_air[\s\S]*?: '';/, "var geste = V.page_air ? ' data-nav=\"' + esc(V.page_air) + '\" role=\"link\" tabindex=\"0\"' : window.meGeste(V.ent_air);");
   code = code.replace("(p.ico || 'mdi:flower-pollen')", "esc(p.ico || 'mdi:flower-pollen')");
   if (name === 'tuiles') {
     code = code.replace("var out = '';", `var out = V.dashboard ? '<div class="me-tu" style="--tc:var(--mush-rgb-blue,61,155,233)"' + window.meGeste(SRC.t_ext) + '><div class="me-tuic"><ha-icon icon="mdi:thermometer"></ha-icon></div><div class="me-tut"><span class="nw-metric-name">Température</span><span class="me-tuv">' + esc(fr(nb(A.t_ext), 1)) + '<i>°C</i></span><span class="me-tul">' + (nb(A.ressenti) === null ? 'ressenti indisponible' : 'ressenti ' + esc(fr(nb(A.ressenti), 1)) + ' °C') + '</span><span class="me-tus">' + (nb(A.t_ext) === null ? 'température indisponible' : esc(A.perception || 'au thermomètre')) + '</span></div></div>' : '';`);
-    code = code.replace('if (vv !== null) {', 'if (vv !== null || V.dashboard) {');
+    code = code.replace("esc(A.perception || 'au thermomètre')", "esc(A.perception || (V.adaptive && !V.configured?.temperature_entity ? 'température du bulletin' : 'au thermomètre'))");
+    code = code.replace('var vv = nb(A.vent), vg = nb(A.rafales), vd = nb(A.vent_deg);', `var vv = nb(A.vent), vg = nb(A.rafales), vd = nb(A.vent_deg);
+  var configured = V.configured || {};
+  var showMetric = function (keys) { return !V.adaptive || keys.some(function (key) { return !!configured[key]; }); };`);
+    code = code.replace('if (vv !== null) {', "if (vv !== null || vg !== null || (V.dashboard && showMetric(['wind_speed_entity', 'wind_gust_entity']))) {");
     code = code.replace("esc(A.beaufort_tx || 'vent moyen')", "esc(vv === null ? 'vent indisponible' : A.beaufort_tx || 'vent moyen')");
-    code = code.replace('if (pj !== null || pt !== null) {', 'if (pj !== null || pt !== null || V.dashboard) {');
+    code = code.replace('if (pj !== null || pt !== null) {', "if (pj !== null || pt !== null || (V.dashboard && showMetric(['daily_rain_entity', 'rain_rate_entity']))) {");
     code = code.replace(": 'pas de pluie en ce moment';", ": pt === null ? 'intensité indisponible' : 'pas de pluie en ce moment';");
-    code = code.replace('if (pr !== null) {', 'if (pr !== null || V.dashboard) {');
+    code = code.replace('if (pr !== null) {', "if (pr !== null || (V.dashboard && showMetric(['pressure_entity']))) {");
     code = code.replace("esc(B.tx || 'baromètre')", "esc(pr === null ? 'pression indisponible' : B.tx || 'baromètre')");
     let metric = 0;
     code = code.replaceAll("'<div class=\"me-tut\">'", () => `'<div class="me-tut">' + (V.dashboard ? '<span class="nw-metric-name">${['Vent', 'Pluie', 'Pression'][metric++]}</span>' : '')`);

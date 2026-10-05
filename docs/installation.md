@@ -40,12 +40,11 @@ La version stable est **v1.2.0**. Consulte les [notes de mise à jour](release-1
 ## Ajouter la carte
 
 Dans un tableau de bord, clique **Ajouter une carte** puis recherche **Niak
-Weather**. L’éditeur permet de choisir l’entité météo et les capteurs
-Ecowitt que tu souhaites afficher. Dès qu’une entité météo est choisie,
-Niak Weather tente de préremplir les capteurs extérieurs de la même station.
-Le bloc **Entités de la station** regroupe ces choix. Le bouton **Préremplir les entités manquantes** relance cette recherche sans écraser les choix existants. Vérifie les
-résultats et modifie librement un champ si ton installation emploie un nom ou
-une unité inhabituels.
+Weather**. Commence par **Sources météo, soleil et vigilance** : seule l’entité météo est requise. Les trois catégories **Station météo locale**, **Thermal Comfort** et **Atmo France** sont facultatives. **Général** regroupe l’affichage et les animations.
+
+Chaque catégorie possède son bouton **Remplir automatiquement**. Il recherche les correspondances de cette catégorie seulement et consulte à nouveau les registres Home Assistant. Les listes manuelles proposent des mesures compatibles : températures pour la température, vitesses pour le vent, pression pour le baromètre. Choisis l’appareil de la station pour réduire les listes ; la sélection n’est pas limitée à l’intégration Ecowitt.
+
+Après une réinstallation, clique le bouton de la catégorie concernée pour réparer les références introuvables. Une correspondance ambiguë n’est pas choisie arbitrairement. Les choix valides, les entités `unavailable`/`unknown` et les champs volontairement vidés ne sont pas remplacés. Vérifie toujours les propositions avant d’enregistrer : notamment température/humidité extérieures et période des cumuls de pluie.
 
 Voici l’équivalent YAML minimal :
 
@@ -96,7 +95,7 @@ La version stable réunit les mesures de la station, le ressenti expliqué, les 
 1. Ouvre **Niak Weather** dans HACS et utilise **Mettre à jour** si proposé, sinon **⋮ → Retélécharger / Redownload**.
 2. Sélectionne **v1.2.0** si le choix d’une version est demandé. Il n’est plus nécessaire d’activer les préversions.
 3. Télécharge, puis recharge le navigateur avec **Ctrl+F5**. Sur l’application mobile, ferme puis rouvre le tableau de bord et, si nécessaire, vide son cache frontend.
-4. Les choix enregistrés sont conservés. Pour ajouter des mesures, ouvre l’éditeur et clique **Préremplir les entités manquantes** ; vérifie les nouvelles propositions avant d’enregistrer.
+4. Les choix enregistrés sont conservés. Pour ajouter des mesures ou réparer des références introuvables, ouvre la catégorie concernée et clique **Remplir automatiquement** ; vérifie les propositions avant d’enregistrer.
 
 ### Atmo France : air extérieur et pollens
 
@@ -106,7 +105,7 @@ Dans **Atmo France — air extérieur et pollens**, sélectionne la commune/zone
 
 Installe [Thermal Comfort](https://github.com/dolezsa/thermal_comfort) via HACS si ce n’est pas déjà fait, puis configure un appareil avec la température et l’humidité **extérieures** de la station. Active les capteurs Humidex et Perception de l’humidex dans Home Assistant s’ils sont désactivés.
 
-Dans **Entités Thermal Comfort**, sélectionne cet appareil. Les listes sont filtrées par type de mesure et appareil. La recherche automatique compare aussi ses lectures d’entrée à celles de la station pour éviter de prendre les capteurs d’une pièce intérieure. Si plusieurs choix sont équivalents, elle laisse le champ vide : il faut choisir manuellement. Sans humidex, la carte indique que l’humidité n’est pas comptée dans son estimation.
+Dans **Sources Thermal Comfort**, sélectionne cet appareil et utilise **Remplir automatiquement**. Les listes sont filtrées par type de mesure et appareil. La recherche automatique compare aussi ses lectures d’entrée à celles de la station pour éviter de prendre les capteurs d’une pièce intérieure. Si plusieurs choix sont équivalents, elle laisse le champ vide : il faut choisir manuellement. Sans humidex, la carte indique que l’humidité n’est pas comptée dans son estimation.
 
 ### Comprendre ce que tu vois
 

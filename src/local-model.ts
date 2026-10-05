@@ -22,14 +22,15 @@ export function measurement(value: unknown, unit: unknown = '', kind = ''): numb
   const n = finite(value); if (n === undefined) return;
   const u = String(unit).toLowerCase().trim();
   if (kind === 'temperature') return u.includes('f') ? (n - 32) * 5 / 9 : u === 'k' ? n - 273.15 : n;
+  if (kind === 'temperature_delta') return u.includes('f') ? n * 5 / 9 : n;
   if (kind === 'wind') return u === 'm/s' ? n * 3.6 : u === 'mph' ? n * 1.609344 : /^(kn|kt|kts|knots?)$/.test(u) ? n * 1.852 : n;
   if (kind === 'rain') return u.includes('in') ? n * 25.4 : n;
-  if (kind === 'pressure') return u === 'pa' ? n / 100 : u === 'kpa' ? n * 10 : u === 'inhg' ? n * 33.86389 : n;
+  if (kind === 'pressure') return u === 'pa' ? n / 100 : u === 'kpa' ? n * 10 : u === 'inhg' ? n * 33.86389 : u === 'mmhg' ? n * 1.333224 : n;
   if (kind === 'solar') return u.includes('kw') ? n * 1000 : n;
   return n;
 }
 export function kindFor(key: string): string {
-  return /^(t_ext|humidex|rosee)$/.test(key) ? 'temperature' : /^(vent|rafales|rafale_max_jour)$/.test(key) ? 'wind'
+  return key === 'tend_temp' ? 'temperature_delta' : /^(t_ext|humidex|rosee)$/.test(key) ? 'temperature' : /^(vent|rafales|rafale_max_jour)$/.test(key) ? 'wind'
     : key.startsWith('pluie_') ? 'rain' : key === 'pression' ? 'pressure' : key === 'solaire' ? 'solar' : '';
 }
 
@@ -96,6 +97,7 @@ export function buildLocalModel(hass: HomeAssistant, config: WeatherCardConfig, 
   // A configured unavailable station sensor must not be replaced silently by a forecast measurement.
   const temperature = snapshot || config.temperature_entity ? metric('t_ext') : measurement(weather?.attributes.temperature, weather?.attributes.temperature_unit, 'temperature');
   a.t_ext = temperature ?? -999;
+  if (!config.temperature_entity) sources.t_ext = config.weather_entity;
   const sun = hass.states[config.sun_entity ?? 'sun.sun'];
   a.elevation = metric('elevation') ?? finite(sun?.attributes.elevation) ?? 0;
   const solarTime = (field: string, fallback: number) => {
@@ -138,6 +140,7 @@ export function buildLocalModel(hass: HomeAssistant, config: WeatherCardConfig, 
   a.pluie_recit = rainNarrative(metric('pluie_jour'), metric('pluie_semaine'), metric('pluie_mois'));
   a.sous_titre = subtitle(a, hourly);
   a.phrase_ressenti = apparentPhrase(a);
+  if (!config.temperature_entity) a.phrase_ressenti = String(a.phrase_ressenti).replace(/thermomètre/g, 'température du bulletin');
   return { entity_id: '__niak_model', state: temperature === undefined ? 'unavailable' : String(a.ressenti), attributes: a };
 }
 

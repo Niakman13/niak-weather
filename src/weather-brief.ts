@@ -24,7 +24,7 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   const temp = finite(a.t_ext), feels = finite(a.ressenti), wind = finite(a.vent), gust = finite(a.rafales), rain = finite(a.pluie_taux);
   let current = feels === undefined ? 'Ressenti indisponible.' : `${format(feels)} °C ressentis`;
   if (feels !== undefined && temp !== undefined) {
-    const thermometer = source('t_ext') || config.temperature_entity ? 'thermomètre' : 'température météo';
+    const thermometer = config.temperature_entity ? 'thermomètre' : 'température météo';
     const delta = feels - temp;
     current += Math.abs(delta) < .6 ? `, proche ${thermometer === 'thermomètre' ? 'du thermomètre' : 'de la température météo'}.` : `, ${format(Math.abs(delta))} °C ${delta > 0 ? 'de plus' : 'de moins'} que ${thermometer === 'thermomètre' ? 'le thermomètre' : 'la température météo'}.`;
     const effects = [['effet_vent', 'le vent'], ['effet_soleil', 'le soleil'], ['effet_pluie', 'la pluie'], ['effet_nuit', 'le ciel nocturne']] as const;

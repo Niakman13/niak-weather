@@ -6,6 +6,8 @@ Une température seule ne raconte pas toute la météo : 25 °C à l’ombre, av
 
 **Version stable : v1.3.7.** La documentation principale et les textes de la carte sont en français. [Nouveautés et correctifs](docs/release-1.3.7.md).
 
+**Bêta disponible : v1.4.0-beta.1.** Nouveau parcours de configuration, réparation des références d’entités et optimisations de l’éditeur. Les réglages décrits ci-dessous correspondent à cette bêta. Pour la tester, activez les préversions dans HACS et choisissez **v1.4.0-beta.1** lors du téléchargement. La version stable reste **v1.3.7**. [Nouveautés et points à vérifier](docs/release-1.4.0-beta.1.md).
+
 La carte s’organise en **Synthèse, Aujourd’hui et Prévisions**. La synthèse intelligente est accompagnée de la météo actuelle et d’un ciel animé sur tout le bandeau : nuages, pluie, éclairs ou rafales. Le halo d’attention conserve sa signification, distincte de l’ambiance météo. Le ressenti expliqué, les indices air/pollens et les graphiques complètent cette lecture. [Nouveautés et mise à jour](docs/release-1.3.0.md) · [Météo actuelle et animations](docs/current-weather.md) · [Comprendre le brief et ses limites](docs/brief-intelligent.md).
 
 [![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
@@ -28,7 +30,7 @@ Le mode **Complet** convient à une page météo détaillée ; **Accueil (compac
 
 Les prévisions affichent jusqu’à **18 heures et 7 jours**, selon les données réellement fournies. La carte distingue les conditions prévues pour la zone des mesures prises chez vous. Une mesure de station indisponible n’est pas remplacée par un zéro, et un orage prévu n’est pas présenté comme de la foudre détectée par la station.
 
-L’éditeur peut préremplir les entités Ecowitt, Thermal Comfort et Atmo France. Il filtre les choix par station/appareil et par mesure ; Atmo est aussi filtré par commune et par jour. Les choix existants sont conservés et les correspondances ambiguës restent à choisir manuellement.
+L’éditeur organise les réglages en cinq catégories : **Général**, **Météo, soleil et vigilance**, **Station météo locale**, **Thermal Comfort** et **Atmo France**. Chaque catégorie dispose de son propre remplissage automatique. Les choix manuels sont filtrés par type de mesure ; Atmo est aussi filtré par commune et par jour. Les références introuvables peuvent être réparées après une réinstallation. Les choix valides, les entités momentanément indisponibles et les champs volontairement vidés sont conservés ; les correspondances ambiguës restent à choisir manuellement.
 
 ## Comment la carte interprète la météo
 
@@ -57,7 +59,7 @@ Le minimum est **Home Assistant 2025.1.0 ou plus récent** et une **entité `wea
 | Source ou composant | Statut | Ce qu’il apporte à la carte |
 | --- | --- | --- |
 | Entité météo, de préférence **Météo-France** | **Obligatoire** | Conditions de la zone, température de repli et prévisions disponibles. Météo-France est le fournisseur de référence. |
-| **Ecowitt** | Facultatif pour démarrer ; nécessaire pour les mesures locales | Température et humidité extérieures, vent, pluie, pression et capteurs complémentaires. Pas de limitation à la GW2000 : station/passerelle prise en charge par l’intégration Home Assistant. |
+| **Station météo locale** | Facultatif | Température et humidité extérieures, vent, pluie, pression et capteurs complémentaires. Ecowitt et WS90 via MQTT sont reconnus ; d’autres appareils peuvent être associés manuellement selon leurs types de mesure. |
 | **Thermal Comfort** | Facultatif ; recommandé pour le ressenti complet | Humidex extérieur, perception et point de rosée de repli. Demande une température et une humidité extérieures. |
 | **Soleil / `sun.sun`** | Facultatif ; recommandé, généralement déjà présent | Élévation solaire et lever/coucher pour les corrections de ressenti et les repères jour/nuit. |
 | **Atmo France** | Facultatif | Air extérieur, sous-indices de polluants, niveaux et concentrations de pollens, aujourd’hui et demain. |
@@ -74,7 +76,7 @@ Le [guide des sources](docs/sources.md) explique pour chacune sa configuration, 
 2. Si le dépôt n’est pas trouvé, ajoutez `https://github.com/Niakman13/niak-weather` dans **HACS → ⋮ → Dépôts personnalisés**, catégorie **Tableau de bord / Dashboard**. Il s’agit d’un dépôt personnalisé, pas d’un référencement dans le catalogue HACS par défaut.
 3. Téléchargez **Niak Weather v1.3.7**, puis rechargez le navigateur.
 4. Dans votre tableau de bord, choisissez **Ajouter une carte → Niak Weather** et sélectionnez votre entité météo.
-5. Complétez **Entités de la station**, **Entités Thermal Comfort** et, si souhaité, **Atmo France — air extérieur et pollens**. Utilisez **Préremplir les entités manquantes**, puis vérifiez les propositions avant d’enregistrer.
+5. Ajoutez si souhaité les sources **Station météo locale**, **Thermal Comfort** et **Atmo France**. Utilisez **Remplir automatiquement** dans chaque catégorie, puis vérifiez les propositions avant d’enregistrer. Sans station, les cadres de vent, pluie et pression non configurés ne sont pas affichés ; la température du bulletin reste explicitement identifiée.
 
 Configuration minimale, sans station :
 

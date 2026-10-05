@@ -57,7 +57,10 @@ export function candidates(hass: Pick<HomeAssistant, 'states'>, field: SensorFie
     const device = thermal ? config.thermal_device_id : config.station_device_id;
     if (device && r?.device_id !== device && field !== 'temperature_trend_entity') return false;
     if (!rule.test(t)) return false;
-    if (field === 'temperature_entity' && /dew|rosee|humidex|heat_?index|wind_?chill/.test(t)) return false;
+    if (field === 'temperature_entity' && /dew|rosee|humidex|heat_?index|wind_?chill|apparent|ressenti|indoor|interieur|trend|tendance/.test(t)) return false;
+    if (field === 'humidity_entity' && /humidex|absolute|absolue|indoor|interieur/.test(t)) return false;
+    if (field === 'pressure_entity' && /trend|tendance/.test(t)) return false;
+    if (field === 'wind_speed_entity' && /gust|rafale|max/.test(t)) return false;
     if (field === 'humidex_entity' && /perception|sensation/.test(t)) return false;
     if (field === 'thermal_dew_point_entity' && /perception/.test(t)) return false;
     if (field === 'wind_gust_entity' && /max|daily/.test(t)) return false;
@@ -84,7 +87,8 @@ export function detectEcowittStation(hass: Pick<HomeAssistant, 'states'>, contex
   const prefix = temp?.split('.').pop()?.replace(/_(outdoor|outside|exterieur|external).*$/, '');
   for (const field of Object.keys(stationRules) as SensorField[]) {
     if (config[field] !== undefined) continue;
-    const ids = candidates(hass, field, context, { ...config, station_device_id: stationDevice || undefined });
+    let ids = candidates(hass, field, context, { ...config, station_device_id: stationDevice || undefined });
+    if (field === 'humidity_entity' && !stationDevice) ids = ids.filter(id => isEcowitt(id) || /outdoor|outside|exterieur|external/.test(text(hass.states[id], regs.get(id))));
     const best = uniqueBest(ids, id => (isEcowitt(id) ? 100 : 0) + (prefix && id.includes(prefix) ? 40 : 0)
       + (/average|avg|moyenne/.test(text(hass.states[id], regs.get(id))) && /wind_speed|wind_bearing/.test(field) ? 20 : 0)
       + (field === 'pressure_entity' && /relative/.test(text(hass.states[id], regs.get(id))) ? 20 : 0));
@@ -92,19 +96,20 @@ export function detectEcowittStation(hass: Pick<HomeAssistant, 'states'>, contex
   }
   const chosen = { ...config, ...selected };
   let thermalDevice = config.thermal_device_id;
-  const humidexId = config.humidex_entity || uniqueBest(candidates(hass, 'humidex_entity', context, chosen), id => {
+  const humidexIds = candidates(hass, 'humidex_entity', context, chosen).filter(id => thermalDevice || !/indoor|inside|interieur|salon|chambre|bedroom|living/.test(text(hass.states[id], regs.get(id))));
+  const humidexId = config.humidex_entity || uniqueBest(humidexIds, id => {
     const e = hass.states[id], targetT = hass.states[chosen.temperature_entity ?? ''], targetH = hass.states[chosen.humidity_entity ?? ''];
     const n = (v: unknown) => v === undefined ? NaN : Number(v);
     return (Math.abs(n(e.attributes.temperature) - n(targetT?.state)) < .15 ? 100 : 0)
       + (Math.abs(n(e.attributes.humidity) - n(targetH?.state)) < 1 ? 100 : 0)
-      + (/outdoor|exterieur/.test(text(e, regs.get(id))) ? 20 : 0);
+      + (/outdoor|outside|exterieur|external/.test(text(e, regs.get(id))) ? 20 : 0);
   });
   if (!thermalDevice && humidexId) thermalDevice = regs.get(humidexId)?.device_id;
   if (thermalDevice) selected.thermal_device_id = thermalDevice;
   if (config.humidex_entity === undefined && humidexId) selected.humidex_entity = humidexId;
   for (const field of thermalFields.filter(f => f !== 'humidex_entity')) {
     if (config[field] !== undefined) continue;
-    const ids = candidates(hass, field, context, { ...chosen, thermal_device_id: thermalDevice });
+    const ids = candidates(hass, field, context, { ...chosen, thermal_device_id: thermalDevice }).filter(id => thermalDevice || !/indoor|inside|interieur|salon|chambre|bedroom|living/.test(text(hass.states[id], regs.get(id))));
     const best = uniqueBest(ids, id => regs.get(id)?.device_id === thermalDevice && thermalDevice ? 100 : 0);
     if (best && (thermalDevice || candidates(hass, 'humidex_entity', context).length <= 1)) selected[field] = best;
   }

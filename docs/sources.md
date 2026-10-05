@@ -8,7 +8,7 @@ Niak Weather assemble des données déjà présentes dans Home Assistant. La car
 
 Pour démarrer, il suffit de Home Assistant **2025.1.0 ou plus récent**, d’une entité `weather.*` et de la carte installée. HACS est nécessaire pour le parcours recommandé et ses mises à jour, pas pour un téléchargement manuel. Météo-France est la source de référence ; une autre entité météo peut être sélectionnée, mais ses prévisions horaires/quotidiennes doivent être prises en charge par son fournisseur. Tous les fournisseurs ne sont pas validés.
 
-Pour la météo **mesurée chez vous**, ajoutez Ecowitt. Pour le **ressenti tenant compte de l’humidité**, ajoutez Thermal Comfort avec les mesures extérieures. Pour **l’air extérieur et les allergies**, ajoutez Atmo France. Aucun de ces ajouts n’est nécessaire pour installer la carte de base.
+Pour la météo **mesurée chez vous**, ajoutez une station locale. Pour le **ressenti tenant compte de l’humidité**, ajoutez Thermal Comfort avec les mesures extérieures. Pour **l’air extérieur et les allergies**, ajoutez Atmo France. Aucun de ces ajouts n’est nécessaire pour installer la carte de base. La synthèse interprète les sources réellement disponibles ; Thermal Comfort et Atmo ne sont pas nécessaires pour l’activer.
 
 ## Météo-France — conditions et prévisions
 
@@ -18,15 +18,15 @@ Pour la météo **mesurée chez vous**, ajoutez Ecowitt. Pour le **ressenti tena
 
 **Apport à la carte :** condition de la zone, couverture nuageuse lorsqu’elle est exposée, prévisions horaires et quotidiennes. La température météo sert de repli seulement si aucun thermomètre local n’est configuré. La courbe montre jusqu’à 18 heures et la semaine jusqu’à 7 jours, selon les points réellement disponibles ; 7 jours ne sont pas garantis par chaque fournisseur.
 
-Sans les prévisions d’un horizon donné, cet horizon n’est pas inventé. Les conditions Ecowitt peuvent contredire le bulletin, par exemple si de la pluie est réellement mesurée. Les orages affichés à partir du bulletin restent des **prévisions**, pas une détection de foudre. La carte n’ajoute pas automatiquement les autres capteurs de l’intégration, tels que la vigilance officielle.
+Sans les prévisions d’un horizon donné, cet horizon n’est pas inventé. Les conditions mesurées par la station peuvent contredire le bulletin, par exemple si de la pluie est réellement mesurée. Les orages affichés à partir du bulletin restent des **prévisions**, pas une détection de foudre. La vigilance officielle peut être proposée par le bouton de la catégorie météo si une correspondance certaine avec la source choisie existe.
 
-## Ecowitt — mesures de la station
+## Station météo locale — Ecowitt, MQTT et choix manuels
 
 **Statut :** facultatif pour installer la carte ; nécessaire pour afficher les mesures de votre station et leurs bilans.
 
-**Prérequis :** une station/passerelle prise en charge par [l’intégration Ecowitt de Home Assistant](https://www.home-assistant.io/integrations/ecowitt/), configurée pour transmettre ses mesures à Home Assistant. La carte n’est **pas réservée à la GW2000** : elle utilise les entités, pas un nom de modèle imposé. Les capteurs disponibles varient avec le matériel ; cela ne signifie pas que tout matériel portant la marque est compatible avec l’intégration.
+**Prérequis :** des capteurs de station disponibles dans Home Assistant. Ils peuvent provenir de [l’intégration Ecowitt](https://www.home-assistant.io/integrations/ecowitt/), d’une WS90 via MQTT/Zigbee2MQTT, ou d’un autre appareil sélectionné manuellement. La sélection d’appareil n’impose pas une intégration. La carte ne réalise pas l’appairage du matériel ; les capteurs disponibles varient avec le matériel et son intégration. Une compatibilité manuelle par type de mesure ne garantit pas une détection automatique de tous les modèles.
 
-Dans **Entités de la station**, choisissez votre station et utilisez **Préremplir les entités manquantes**. Vérifiez notamment que température et humidité sont celles de l’**extérieur**, et privilégiez la pression relative.
+Dans **Sources de la station météo locale**, choisissez votre station et utilisez **Remplir automatiquement**. Vérifiez notamment que température et humidité sont celles de l’**extérieur**, et privilégiez la pression relative. Les listes manuelles sont filtrées par type et unité ; le remplissage automatique utilise en plus les noms et métadonnées pour distinguer température réelle, température dérivée et période des cumuls de pluie.
 
 | Mesures disponibles | Utilité dans la carte |
 | --- | --- |
@@ -46,7 +46,7 @@ Chaque mesure est facultative individuellement. Sans capteur, elle reste absente
 
 **Prérequis :** installer [Thermal Comfort](https://github.com/dolezsa/thermal_comfort) dans les intégrations HACS, suivre ses instructions de redémarrage, puis créer un appareil utilisant la **température extérieure et l’humidité extérieure**. Ne pas sélectionner l’appareil d’une chambre ou d’un salon. Activer les entités Humidex et Perception de l’humidex si elles sont désactivées.
 
-Dans **Entités Thermal Comfort**, choisissez cet appareil et préremplissez les champs. Les listes sont filtrées par appareil et mesure ; la recherche compare aussi les entrées à celles de la station. En cas d’ambiguïté, choisissez manuellement.
+Dans **Sources Thermal Comfort**, choisissez cet appareil et utilisez **Remplir automatiquement**. Les listes sont filtrées par appareil et mesure ; la recherche compare aussi les entrées à celles de la station. En cas d’ambiguïté, choisissez manuellement. L’humidex de la station n’est pas substitué à celui de Thermal Comfort.
 
 **Apport à la carte :** l’humidex devient la base du ressenti, auquel la carte applique ses contributions de vent, soleil, pluie et ciel nocturne lorsque les données nécessaires existent. La perception qualifie l’humidex. Le point de rosée Thermal Comfort sert de repli si celui de la station est absent.
 

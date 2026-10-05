@@ -613,10 +613,12 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   var CYAN = 'var(--mush-rgb-cyan, 77,182,172)';
   var ORANGE = 'var(--mush-rgb-orange, 244,180,86)';
   var GRIS = 'var(--mush-rgb-grey, 150,150,150)';
-  var out = V.dashboard ? '<div class="me-tu" style="--tc:var(--mush-rgb-blue,61,155,233)"' + window.meGeste(SRC.t_ext) + '><div class="me-tuic"><ha-icon icon="mdi:thermometer"></ha-icon></div><div class="me-tut"><span class="nw-metric-name">Température</span><span class="me-tuv">' + esc(fr(nb(A.t_ext), 1)) + '<i>°C</i></span><span class="me-tul">' + (nb(A.ressenti) === null ? 'ressenti indisponible' : 'ressenti ' + esc(fr(nb(A.ressenti), 1)) + ' °C') + '</span><span class="me-tus">' + (nb(A.t_ext) === null ? 'température indisponible' : esc(A.perception || 'au thermomètre')) + '</span></div></div>' : '';
+  var out = V.dashboard ? '<div class="me-tu" style="--tc:var(--mush-rgb-blue,61,155,233)"' + window.meGeste(SRC.t_ext) + '><div class="me-tuic"><ha-icon icon="mdi:thermometer"></ha-icon></div><div class="me-tut"><span class="nw-metric-name">Température</span><span class="me-tuv">' + esc(fr(nb(A.t_ext), 1)) + '<i>°C</i></span><span class="me-tul">' + (nb(A.ressenti) === null ? 'ressenti indisponible' : 'ressenti ' + esc(fr(nb(A.ressenti), 1)) + ' °C') + '</span><span class="me-tus">' + (nb(A.t_ext) === null ? 'température indisponible' : esc(A.perception || (V.adaptive && !V.configured?.temperature_entity ? 'température du bulletin' : 'au thermomètre'))) + '</span></div></div>' : '';
   var vv = nb(A.vent), vg = nb(A.rafales), vd = nb(A.vent_deg);
+  var configured = V.configured || {};
+  var showMetric = function (keys) { return !V.adaptive || keys.some(function (key) { return !!configured[key]; }); };
   var rose = String(A.vent_secteur || A.vent_rose || '');
-  if (vv !== null || V.dashboard) {
+  if (vv !== null || vg !== null || (V.dashboard && showMetric(['wind_speed_entity', 'wind_gust_entity']))) {
     var bf = nb(A.beaufort);
     var wc = (vg !== null && vg >= 60) ? ORANGE
            : (vg !== null && vg >= 40) ? BLEU : GRIS;
@@ -652,7 +654,7 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   }
   var pj = nb(A.pluie_jour), pt = nb(A.pluie_taux);
   var pdans = nb(A.pluie_dans), pmm = nb(A.pluie_mm);
-  if (pj !== null || pt !== null || V.dashboard) {
+  if (pj !== null || pt !== null || (V.dashboard && showMetric(['daily_rain_entity', 'rain_rate_entity']))) {
     var pleut = (pt !== null && pt > 0.05);
     var pc2 = (pleut || (pdans !== null && pdans >= 0)) ? CYAN : GRIS;
     var gouttes = '';
@@ -681,7 +683,7 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   var B = (A.baro && typeof A.baro === 'object') ? A.baro : {};
   var pr = nb(A.pression), bd = nb(B.d);
   var bs = String(B.s || ''), bfen = nb(B.f);
-  if (pr !== null || V.dashboard) {
+  if (pr !== null || (V.dashboard && showMetric(['pressure_entity']))) {
     var ang = 0, bc = GRIS;
     if (bs === 'hausse') { ang = -42; bc = BLEU; }
     else if (bs === 'baisse') { ang = 42; bc = ORANGE; }

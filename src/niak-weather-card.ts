@@ -26,17 +26,24 @@ export class NiakWeatherCard extends LitElement {
   private timer?: ReturnType<typeof setInterval>;
   private holdTimer?: ReturnType<typeof setTimeout>;
   private gesture?: { x: number; y: number; at: number; moved: boolean; held?: boolean };
+  private hassSnapshot = '';
 
   public setConfig(config: WeatherCardConfig): void {
     if (!config.weather_entity?.startsWith('weather.')) throw new Error('Choisis une entité weather pour Niak Weather.');
-    this.config = cleanConfig(config); this.generation++;
-    this.hourly = []; this.daily = []; this.history = {}; this.forecastAt = 0; this.historyAt = 0;
-    this.forecastPending = false; this.historyPending = false;
+    const next = cleanConfig(config), old = this.config;
+    if (old && JSON.stringify(old) === JSON.stringify(next)) return;
+    this.config = next;
+    // Cosmetic edits must not clear graphs and launch new forecast/history requests.
+    if (!old || old.weather_entity !== next.weather_entity || old.pressure_entity !== next.pressure_entity || old.wind_speed_entity !== next.wind_speed_entity) {
+      this.generation++;
+      this.hourly = []; this.daily = []; this.history = {}; this.forecastAt = 0; this.historyAt = 0;
+      this.forecastPending = false; this.historyPending = false;
+    }
     this.requestUpdate();
   }
   public static getStubConfig(hass?: HomeAssistant): WeatherCardConfig {
     const weather = Object.keys(hass?.states ?? {}).find(id => id.startsWith('weather.')) ?? '';
-    return { type: 'custom:niak-weather-card', weather_entity: weather, mode: 'detailed', ...(hass ? detectEcowittStation(hass) : {}) };
+    return { type: 'custom:niak-weather-card', weather_entity: weather, mode: 'detailed' };
   }
   public static getConfigElement(): HTMLElement { return document.createElement('niak-weather-card-editor'); }
   public getCardSize(): number { return this.config?.mode === 'compact' ? 3 : 10; }
@@ -51,6 +58,14 @@ export class NiakWeatherCard extends LitElement {
     this.forecastPending = false; this.historyPending = false;
   }
   protected updated(): void { if (this.isConnected) { void this.loadForecasts(); void this.loadHistory(); } }
+  protected shouldUpdate(changed: Map<PropertyKey, unknown>): boolean {
+    if (!this.hass || !this.config) return true;
+    const ids = Object.values(this.config).filter((v): v is string => typeof v === 'string' && /^(sensor|weather|sun|binary_sensor)\./.test(v));
+    ids.push(this.config.sun_entity || 'sun.sun', ...(this.config.pollens ?? []).map(p=>p.id));
+    const snapshot = JSON.stringify([this.hass.language,this.hass.config?.time_zone,...ids.map(id=>this.hass!.states[id])]);
+    const different = snapshot !== this.hassSnapshot; this.hassSnapshot = snapshot;
+    return changed.size !== 1 || !changed.has('hass') || different;
+  }
 
   private async loadForecasts(): Promise<void> {
     if (!this.hass || !this.config || this.forecastPending || Date.now() - this.forecastAt < 900_000) return;
@@ -94,7 +109,7 @@ export class NiakWeatherCard extends LitElement {
     const briefPoints: BriefPoint[] = this.hourly.map(p => ({ hours: (Date.parse(p.datetime) - now.getTime()) / 3600_000, temperature: p.temperature, precipitation: p.precipitation, condition: p.condition }));
     const brief = config.smart_brief === false ? undefined : buildWeatherBrief(hass, config, model, briefPoints, now);
     if (['unknown', 'unavailable'].includes(model.state)) model = { ...model, attributes:{} };
-    const variables = { mode: 'complet', dashboard:true, ent: '__niak_model', ent_prev: '__niak_forecast',
+    const variables = { mode: 'complet', dashboard:true, adaptive:true, configured:config, ent: '__niak_model', ent_prev: '__niak_forecast',
       lieu: config.location ?? String(weather?.attributes.friendly_name ?? ''),
       source_prev: config.forecast_source ?? (/france/i.test(String(weather?.attributes.attribution)) ? 'Météo-France' : 'prévisions'),
       jauge_min: -5, jauge_max: 45, jours_max: 7, brief, pollens: usesAtmoPollens(config) || config.pollen_source === 'none' ? [] : config.pollens ?? [] };
