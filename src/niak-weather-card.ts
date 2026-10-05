@@ -125,6 +125,7 @@ export class NiakWeatherCard extends LitElement {
   }
   private down(event: PointerEvent): void {
     clearTimeout(this.holdTimer); if (event.button !== 0) return;
+    if (event.composedPath().some(e => e instanceof HTMLElement && e.classList.contains('nw-comfort-info'))) return;
     if (event.composedPath().some(e => e instanceof HTMLElement && e.tagName === 'SUMMARY')) return;
     this.gesture = { x:event.clientX, y:event.clientY, at:Date.now(), moved:false };
     if (this.config?.weather_path) this.holdTimer = setTimeout(() => {
@@ -143,6 +144,7 @@ export class NiakWeatherCard extends LitElement {
   }
   private handleClick(event: MouseEvent): void {
     event.stopPropagation(); const gesture = this.gesture; this.gesture = undefined;
+    if (event.composedPath().some(e => e instanceof HTMLElement && e.classList.contains('nw-comfort-info'))) return;
     if (event.composedPath().some(e => e instanceof HTMLElement && e.tagName === 'SUMMARY')) return;
     if (gesture?.moved || gesture?.held) return;
     const path = this.config?.weather_path;

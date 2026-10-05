@@ -4,7 +4,7 @@
 
 Une température seule ne raconte pas toute la météo : 25 °C à l’ombre, avec de l’humidité ou sous un vent soutenu, ne se vivent pas de la même façon. La carte donne du contexte aux chiffres et rapproche les observations de votre maison des prévisions de votre zone, sans les confondre.
 
-**Version stable : v1.4.0.** Configuration par source, éditeur optimisé et affichage modulable, y compris sans station locale. La documentation principale et les textes de la carte sont en français. Cette version intègre les deux bêtas 1.4.0 et supprime le choix Accueil / Complet au profit des interrupteurs de sections. [Nouveautés et mise à jour](docs/release-1.4.0.md).
+**Version stable : v1.4.1.** Une aide « i » à côté de Ressenti explique son principe et renvoie aux détails ci-dessous. La configuration par source et les sections indépendantes de la v1.4.0 sont conservées. La documentation principale et les textes de la carte sont en français. [Nouveautés et mise à jour](docs/release-1.4.1.md).
 
 La carte s’organise en **Synthèse, Aujourd’hui et Prévisions**. La synthèse intelligente est accompagnée de la météo actuelle et d’un ciel animé sur tout le bandeau : nuages, pluie, éclairs ou rafales. Le halo d’attention conserve sa signification, distincte de l’ambiance météo. Le ressenti expliqué, les indices air/pollens et les graphiques complètent cette lecture. [Nouveautés et mise à jour](docs/release-1.3.0.md) · [Météo actuelle et animations](docs/current-weather.md) · [Comprendre le brief et ses limites](docs/brief-intelligent.md).
 
@@ -42,6 +42,21 @@ Météo-France fournit les conditions et prévisions de votre commune. Ecowitt a
 
 Le calcul part de l’**humidex extérieur** de Thermal Comfort, ou du thermomètre si l’humidex manque. Il ajoute les contributions estimées du vent, du rayonnement solaire, de la pluie et du ciel nocturne lorsque leurs données sont disponibles. La carte affiche le résultat, l’écart avec le thermomètre et les contributions, pour comprendre pourquoi l’atmosphère paraît plus chaude ou plus froide. Sans humidex, elle précise que l’humidité n’est pas comptée.
 
+> **Comment lire le ressenti ?** C’est une estimation de l’ambiance extérieure propre à Niak Weather, pas un indice météorologique officiel ni une mesure physiologique. La base est l’humidex fourni par Thermal Comfort (température et humidité déjà combinées), ou la température réelle si cet humidex manque. La carte y ajoute les effets estimés du vent, du soleil, de la pluie et d’une nuit claire. Le petit « i » à côté de Ressenti rappelle ce principe et renvoie à cette explication.
+
+**Formule : ressenti = humidex (ou température) + vent + soleil + pluie + nuit.** L’humidité n’est pas ajoutée une seconde fois à l’humidex. Les corrections dont les données nécessaires manquent restent nulles. Chaque correction et le résultat final sont arrondis au dixième.
+
+| Effet | Règle utilisée |
+| --- | --- |
+| Vent | Vent effectif = maximum entre zéro et 75 % du vent moyen + 25 % du maximum entre vent moyen et rafale − 3 km/h, arrondi au dixième. Correction de −0,25 °C par km/h, ou −0,15 lorsque la base dépasse 27 °C. Au-dessus de 32 °C réels, transition progressive sur 3 °C vers un coefficient dépendant de l’humidité, compris entre −0,08 et +0,06. Correction totale limitée entre −6 et +1,5 °C. |
+| Soleil | Si l’élévation solaire dépasse 5° et le rayonnement mesuré dépasse 50 W/m² : rayonnement ÷ 300, arrondi au dixième, jusqu’à +3,5 °C. Les UV et la luminosité ne remplacent pas le rayonnement. |
+| Pluie | À partir de 0,3 mm/h mesurés : −1,5 × min(intensité ÷ 2, 1) × (1 + min(vent effectif, 30) ÷ 60), jusqu’à −2,25 °C avant arrondi. |
+| Nuit | Si l’élévation solaire est au plus −3° et la couverture nuageuse inférieure à 40 % : −1 × (1 − couverture ÷ 40), jusqu’à −1 °C. |
+
+Par exemple : un humidex de **29 °C**, un effet du vent de **−0,4 °C** et du soleil de **+1 °C**, sans autre correction, donnent **29,6 °C ressentis**. La pression, les UV, la pollution et les pollens ne sont pas additionnés à ce chiffre ; ils peuvent en revanche enrichir la synthèse.
+
+Ces coefficients sont des règles d’estimation de la carte, pas une formule standard validée. La carte ne connaît pas vos vêtements, votre activité ni votre exposition réelle : l’effet solaire représente une ambiance exposée, pas forcément le ressenti à l’ombre. En configuration météo seule, sans température locale ni humidex utilisable, la jauge est masquée. [Calcul détaillé dans le code](src/weather-model.ts).
+
 ### Anticiper les prochaines heures et les prochains jours
 
 La carte demande séparément les prévisions horaires et quotidiennes à votre entité météo, avec un renouvellement toutes les 15 minutes pendant qu’elle est affichée. Elle montre jusqu’à 18 points horaires et 7 jours, selon le fournisseur. La courbe représente les **températures prévues**, et non le ressenti calculé de la station ; elle comporte les extrema, les repères horaires, les périodes nocturnes et les précipitations annoncées. Les plages quotidiennes utilisent une échelle commune pour comparer les minimums et maximums d’un jour à l’autre.
@@ -74,7 +89,7 @@ Le [guide des sources](docs/sources.md) explique pour chacune sa configuration, 
 
 1. Ouvrez le bouton HACS en haut de cette page. Il ouvre le dépôt, sans installer automatiquement la carte.
 2. Si le dépôt n’est pas trouvé, ajoutez `https://github.com/Niakman13/niak-weather` dans **HACS → ⋮ → Dépôts personnalisés**, catégorie **Tableau de bord / Dashboard**. Il s’agit d’un dépôt personnalisé, pas d’un référencement dans le catalogue HACS par défaut.
-3. Téléchargez **Niak Weather v1.4.0**, puis rechargez le navigateur.
+3. Téléchargez **Niak Weather v1.4.1**, puis rechargez le navigateur.
 4. Dans votre tableau de bord, choisissez **Ajouter une carte → Niak Weather** et sélectionnez votre entité météo.
 5. Ajoutez si souhaité les sources **Station météo locale**, **Thermal Comfort** et **Atmo France**. Utilisez **Remplir automatiquement** dans chaque catégorie, puis vérifiez les propositions avant d’enregistrer. Sans station, les cadres utilisent les attributs du bulletin disponibles, avec une bulle de source ; la pluie prévue reste distinguée de la pluie mesurée.
 
@@ -100,9 +115,9 @@ daily_rain_entity: sensor.station_daily_rain
 
 Ces identifiants sont des **exemples**, pas des noms imposés. Privilégiez vos entités réelles dans l’éditeur. Le [tutoriel d’installation](docs/installation.md) détaille les ressources, les réglages et le dépannage.
 
-## Mettre à jour vers v1.4.0
+## Mettre à jour vers v1.4.1
 
-Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.4.0**. Il n’est pas nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
+Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.4.1**. Il n’est pas nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
 
 Les mises à jour utilisent la même ressource et conservent vos entités. Les anciens modes sont convertis en réglages de sections : les prévisions d’une ancienne configuration compacte restent masquées sauf choix explicite contraire. Vous pouvez enrichir la configuration progressivement, sans recommencer l’installation. [Notes de version](docs/release-1.4.0.md).
 

@@ -63,7 +63,12 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
     </section>`}
     ${config.show_today===false?nothing:html`<section id="today" class="nw-section" aria-labelledby="nw-today-title" style="--vc:61,155,233">
       <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>${showComfort ? 'Mesures et ressenti' : 'Conditions actuelles'}</span></header>
-      ${showComfort?html`<div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}><h3 class="nw-panel-title">Ressenti</h3>${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>`:nothing}
+      ${showComfort?html`<div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}>
+        <details class="nw-comfort-info"><summary aria-label="Comprendre le ressenti"><h3 class="nw-panel-title">Ressenti <span class="nw-info-icon" aria-hidden="true">i</span></h3></summary>
+          <p>Une estimation de l’ambiance extérieure : l’humidex Thermal Comfort, ou la température si l’humidex manque, est ajusté selon le vent, le soleil, la pluie et la nuit lorsque les données sont disponibles. Ce n’est pas un indice météo officiel.
+            <a href="https://github.com/Niakman13/niak-weather#expliquer-le-ressenti" target="_blank" rel="noopener noreferrer">En savoir plus sur GitHub</a>.</p>
+        </details>
+        ${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>`:nothing}
       <div id="tuiles">${renderCurrentMetrics(metrics,hass)}</div>
       ${rendered.bilan ? html`<details open class="nw-measure-details"><summary>Détails pluie et vent</summary><div id="bilan">${unsafeHTML(rendered.bilan)}</div></details>` : nothing}
       <div id="pastilles">${unsafeHTML(rendered.pastilles)}</div>
@@ -127,6 +132,14 @@ export const dashboardStyles = css`
   .nw-brief-details summary, .nw-measure-details summary { cursor:pointer; color:var(--secondary-text-color); font-size:11px; padding:6px 0; }
   #comfort { border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:12px; background:rgba(150,150,150,.035); padding:14px 16px; margin-bottom:14px; }
   .nw-panel-title { margin:0; font-size:12px; font-weight:650; color:var(--secondary-text-color); }
+  .nw-comfort-info>summary { cursor:pointer; list-style:none; width:fit-content; border-radius:6px; }
+  .nw-comfort-info>summary::-webkit-details-marker { display:none; }
+  .nw-comfort-info>summary:focus-visible { outline:2px solid var(--primary-color); outline-offset:3px; }
+  .nw-comfort-info .nw-panel-title { display:flex; align-items:center; gap:7px; }
+  .nw-info-icon { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; box-sizing:border-box; border:1px solid var(--secondary-text-color); border-radius:50%; font:italic 650 13px Georgia,serif; color:var(--secondary-text-color); }
+  .nw-comfort-info[open] .nw-info-icon { color:var(--primary-color); border-color:currentColor; }
+  .nw-comfort-info p { margin:10px 0 14px; padding:10px 12px; border:1px solid var(--divider-color,rgba(150,150,150,.2)); border-radius:10px; background:rgba(150,150,150,.04); color:var(--primary-text-color); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+  .nw-comfort-info a { color:var(--primary-color); text-decoration:underline; }
   #comfort .me-jauge { margin:43px 0 16px; }
   #comfort .nw-feels-value { position:absolute; top:-37px; transform:translateX(-50%); font-size:27px; font-weight:750; line-height:1; white-space:nowrap; color:rgb(var(--vc)); color:color-mix(in srgb,rgb(var(--vc)) 65%,var(--primary-text-color) 35%); }
   #comfort .nw-feels-value small { font-size:12px; font-weight:500; margin-left:3px; }

@@ -442,6 +442,32 @@ try {
     return true;
   });
   assert.equal(gaugeEdges,true,'Extreme feel values stay within frame on mobile');
+  await page.evaluate(()=>{
+    window.comfortInfoPopups=0;
+    document.querySelector('niak-weather-card').addEventListener('hass-more-info',()=>window.comfortInfoPopups++);
+  });
+  const comfortSummary=page.locator('.nw-comfort-info>summary');
+  await comfortSummary.click();
+  assert.equal(await page.evaluate(()=>document.querySelector('niak-weather-card').shadowRoot.querySelector('.nw-comfort-info').open),true,'Comfort help opens on click');
+  const comfortHelp=await page.evaluate(()=>{
+    const info=document.querySelector('niak-weather-card').shadowRoot.querySelector('.nw-comfort-info');
+    const link=info.querySelector('a');
+    link.addEventListener('click',e=>e.preventDefault(),{once:true});link.click();
+    return {brief:info.textContent.includes('Ce n’est pas un indice météo officiel'),
+      link:link.href==='https://github.com/Niakman13/niak-weather#expliquer-le-ressenti'&&link.target==='_blank'&&link.rel.includes('noopener'),
+      noPopup:window.comfortInfoPopups===0};
+  });
+  for(const [key,value] of Object.entries(comfortHelp))assert.equal(value,true,`Comfort help: ${key}`);
+  for(const width of [375,1440]){
+    await page.setViewportSize({width,height:1300});
+    assert.equal(await page.evaluate(()=>{const c=document.querySelector('niak-weather-card');return c.scrollWidth>c.clientWidth+1;}),false,'Comfort help fits the card');
+    await page.locator('#comfort').screenshot({path:`${out}/comfort-info-${width}.png`,animations:'disabled'});
+  }
+  await comfortSummary.focus();await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>document.querySelector('niak-weather-card').shadowRoot.querySelector('.nw-comfort-info').open),false,'Comfort help closes with keyboard');
+  await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>document.querySelector('niak-weather-card').shadowRoot.querySelector('.nw-comfort-info').open),true,'Comfort help reopens with keyboard');
+  assert.equal(await page.evaluate(()=>window.comfortInfoPopups),0,'Comfort help never opens weather more-info');
   // Current-weather scenes are independent of the future brief. Real bundled element, nested shadow DOM.
   const skyBehavior=await page.evaluate(async()=>{
     const root=document.querySelector('main');root.replaceChildren();
