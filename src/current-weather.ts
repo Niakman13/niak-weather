@@ -1,4 +1,5 @@
 import { finite, measurement } from './local-model';
+import { weatherSourceLabel } from './current-measurements';
 import type { HassEntity, HomeAssistant, WeatherCardConfig } from './types';
 
 const conditions: Record<string, [string, string]> = {
@@ -59,6 +60,6 @@ export function buildCurrentWeather(hass:HomeAssistant, config:WeatherCardConfig
   const [conditionLabel,icon]=conditions[condition] ?? ['Météo indisponible','mdi:weather-cloudy-alert'];
   const label=source==='Pas de pluie mesurée · ciel du bulletin' && condition==='cloudy' ? 'Nuageux, sans pluie mesurée' : conditionLabel;
   return {condition,label,icon,phase,temperature,temperatureEntity,conditionEntity,source,
-    temperatureSource:localTemperature!==undefined ? 'Thermomètre' : 'Température du bulletin',
+    temperatureSource:localTemperature!==undefined ? 'Station locale' : weatherSourceLabel(hass,config),
     feels:modelAvailable ? finite(model.attributes.ressenti) : undefined,wind};
 }

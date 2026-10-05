@@ -6,7 +6,7 @@ import { finite, type History } from './local-model';
 import { renderRecentDetails } from './recent-details';
 import { comfortColor } from './comfort-color';
 import { buildCurrentWeather } from './current-weather';
-import { currentMetrics, meaningfulComfort, renderCurrentMetrics } from './current-measurements';
+import { currentMetrics, meaningfulComfort } from './current-measurements';
 import './weather-sky';
 import type { WeatherBrief } from './weather-brief';
 import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
@@ -21,7 +21,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   const showComfort=meaningfulComfort(hass,config,model);
   const metrics=currentMetrics(hass,config,model,hourly,now);
   const weatherNow=buildCurrentWeather(hass,config,model);
-  const hasDetails=!!(config.rain_24h_entity||config.daily_rain_entity||config.weekly_rain_entity||config.monthly_rain_entity||config.yearly_rain_entity||config.wind_gust_entity||config.wind_speed_entity||config.max_daily_gust_entity);
+  const hasDetails=metrics.some(m=>m.key!=='temperature')||!!(config.rain_24h_entity||config.daily_rain_entity||config.weekly_rain_entity||config.monthly_rain_entity||config.yearly_rain_entity||config.max_daily_gust_entity);
   const degrees=(value:number)=>new Intl.NumberFormat(hass.language || 'fr',{maximumFractionDigits:1}).format(value);
   const groups = [
     { key:'official', title:'Vigilance officielle', description:'Bulletin du département choisi dans les réglages.' },
@@ -48,7 +48,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
           <button class="nw-current-condition" data-entity=${weatherNow.conditionEntity ?? config.weather_entity} title=${weatherNow.source}><ha-icon icon=${weatherNow.icon}></ha-icon>${weatherNow.label}</button>
           ${weatherNow.temperature===undefined ? html`<span class="nw-current-missing">Température indisponible</span>` : html`
             <button class="nw-current-temperature" data-entity=${weatherNow.temperatureEntity} aria-label=${`${weatherNow.temperatureSource} : ${degrees(weatherNow.temperature)} degrés Celsius`}>${degrees(weatherNow.temperature)}<small>°C</small></button>`}
-          <span class="nw-current-temperature-source">${weatherNow.temperatureSource}</span>
+          <span class="nw-current-temperature-source nw-metric-source">${weatherNow.temperatureSource}</span>
         </div>
       </aside>
       ${brief ? html`<details class="nw-brief-details"><summary>Les points à retenir${preview?.remaining ? ` · ${preview.remaining} autre${preview.remaining > 1 ? 's' : ''} point${preview.remaining > 1 ? 's' : ''}` : ''}</summary>
@@ -70,8 +70,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
             <a href="https://github.com/Niakman13/niak-weather#expliquer-le-ressenti" target="_blank" rel="noopener noreferrer">En savoir plus sur GitHub</a>.</p>
         </details>
         ${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>`:nothing}
-      <div id="tuiles">${renderCurrentMetrics(metrics,hass)}</div>
-      ${hasDetails ? html`<div id="bilan" aria-label="Détails pluie et vent">${renderRecentDetails(hass,config,history,rainHistory,now)}</div>` : nothing}
+      ${hasDetails ? html`<div id="bilan" aria-label="Pluie, vent et pression">${renderRecentDetails(hass,config,history,rainHistory,now,metrics)}</div>` : nothing}
       <div id="pastilles">${unsafeHTML(rendered.pastilles)}</div>
       ${renderAtmo(hass, config, now, 'today')}
     </section>`}
@@ -156,6 +155,7 @@ export const dashboardStyles = css`
   #tuiles .me-tu { padding:14px 12px; border-color:var(--divider-color,rgba(150,150,150,.18)); background:rgba(150,150,150,.035); border-radius:12px; gap:10px; }
   #tuiles .nw-current-metric { display:flex; flex-direction:column; align-items:flex-start; }
   .nw-metric-source { display:inline-flex; padding:3px 8px; border-radius:999px; border:1px solid var(--divider-color,rgba(150,150,150,.18)); background:color-mix(in srgb,var(--primary-color,#3d9be9) 7%,transparent); color:var(--secondary-text-color); font-size:10px; font-weight:600; line-height:1.4; }
+  .nw-current-temperature-source.nw-metric-source { color:white; background:rgba(15,40,65,.18); border-color:rgba(255,255,255,.28); opacity:1; margin-top:5px; }
   .nw-metric-body { display:flex; align-items:center; gap:10px; min-width:0; }
   .nw-current-metric .me-tuv { white-space:normal; overflow-wrap:anywhere; }
   #tuiles .me-tuic { background:transparent; width:30px; height:30px; flex-basis:30px; }

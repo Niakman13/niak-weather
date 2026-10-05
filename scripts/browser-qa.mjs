@@ -76,13 +76,13 @@ try {
     const layout=await page.evaluate(()=>{
       const root=window.card.shadowRoot, host=window.card.getBoundingClientRect();
       const sections=[...root.querySelectorAll('#container>.nw-section')].map(s=>s.querySelector('h2').textContent);
-      const tiles=[...root.querySelectorAll('.me-tu')].map(s=>s.querySelector('.nw-metric-name').textContent);
-      const order=root.querySelector('#comfort').getBoundingClientRect().top<root.querySelector('#tuiles').getBoundingClientRect().top;
+      const tiles=[...root.querySelectorAll('.nw-history-card')].map(s=>s.querySelector('h3').textContent);
+      const order=root.querySelector('#comfort').getBoundingClientRect().top<root.querySelector('#bilan').getBoundingClientRect().top;
       const overflow=[...root.querySelectorAll('.nw-section,.me-tu,.me-bl,.me-graph,.me-j')].some(e=>{const r=e.getBoundingClientRect();return r.width&&(r.left<host.left-1||r.right>host.right+1)});
       return {sections,tiles,order,overflow};
     });
     assert.deepEqual(layout.sections,['Météo actuelle','Aujourd’hui','Prévisions']);
-    assert.deepEqual(layout.tiles,['Température','Vent','Pluie','Pression']);
+    assert.deepEqual(layout.tiles,['Pluie','Vent','Pression']);
     assert.equal(layout.order,true);assert.equal(layout.overflow,false);
     const forecastGeometry=await page.evaluate(()=>{
       const root=window.card.shadowRoot, curve=root.querySelector('.me-courbe'), days=root.querySelector('.me-jours'), graph=root.querySelector('.me-graph');
@@ -107,9 +107,9 @@ try {
     });
     assert.deepEqual(feelsLabel,{above:true,large:true,sameColor:true,framed:true,sectionGap:true,headingLarge:true});
     const events=[]; await page.evaluate(()=>{window.info=[];window.card.addEventListener('hass-more-info',e=>window.info.push(e.detail.entityId));});
-    await page.locator('niak-weather-card .me-tu').nth(1).click();
+    await page.locator('niak-weather-card [aria-label="Bilan vent"] .nw-history-value').first().click();
     assert.equal(await page.evaluate(()=>window.info[0]),'sensor.vent');
-    await page.locator('niak-weather-card .me-tu').first().focus(); await page.keyboard.press('Enter');
+    await page.locator('niak-weather-card .nw-current-temperature').focus(); await page.keyboard.press('Enter');
     assert.equal(await page.evaluate(()=>window.info[1]),'sensor.t_ext');
     const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();
     assert.deepEqual(axe.violations.map(v=>v.id),[], 'automated structural accessibility');
@@ -173,7 +173,7 @@ try {
     const preserved=events.at(-1).humidex_entity==='';
     editor.remove();root.append(window.card);
     window.card.setConfig({...window.fixture.config,weather_path:'/test-weather'});await sleep(30);
-    window.info=[];const tile=window.card.shadowRoot.querySelector('.me-tu');
+    window.info=[];const tile=window.card.shadowRoot.querySelector('[aria-label="Bilan vent"] .nw-history-value');
     tile.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:10,clientY:10}));
     tile.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,clientX:50,clientY:10}));
     tile.dispatchEvent(new MouseEvent('click',{bubbles:true}));
@@ -396,13 +396,14 @@ try {
     const root=document.querySelector('main');root.replaceChildren();
     const card=document.createElement('niak-weather-card');window.minimalCard=card;
     const config={type:'custom:niak-weather-card',weather_entity:'weather.test',smart_brief:false};window.minimalConfig=config;
-    const weather={entity_id:'weather.test',state:'partlycloudy',attributes:{friendly_name:'Gardanne',attribution:'Météo-France',temperature:26.4,temperature_unit:'°C',wind_speed:12,wind_speed_unit:'km/h',pressure:1011,pressure_unit:'hPa'}};
+    const weather={entity_id:'weather.test',state:'partlycloudy',attributes:{friendly_name:'Gardanne',attribution:'Météo-France',temperature:26.4,temperature_unit:'°C',wind_speed:12,wind_gust_speed:22,wind_bearing:90,wind_speed_unit:'km/h',pressure:1011,pressure_unit:'hPa'}};
     card.setConfig(config);card.hass={states:{'weather.test':weather},language:'fr',callWS:async()=>({})};root.append(card);await card.updateComplete;
     const shadow=card.shadowRoot;
     const noDuplicate=!shadow.querySelector('.nw-summary-emblem,.nw-summary-lead,.nw-summary-lines,.nw-brief-details') && shadow.querySelectorAll('.nw-current-condition').length===1;
     const noFakeComfort=!shadow.querySelector('#comfort') && !shadow.querySelector('#today').textContent.includes('Ressenti');
-    const providerFrames=shadow.querySelectorAll('.nw-metric-source').length===4 && [...shadow.querySelectorAll('.nw-metric-source')].every(e=>e.textContent==='Météo-France');
-    const truthfulRain=shadow.querySelector('[data-metric="rain"]').textContent.includes('Temps sec') && !shadow.querySelector('[data-metric="rain"]').textContent.includes('depuis minuit');
+    const providerFrames=shadow.querySelectorAll('.nw-history-source').length===3 && [...shadow.querySelectorAll('.nw-history-source,.nw-current-temperature-source')].every(e=>e.textContent==='Météo-France');
+    const truthfulRain=shadow.querySelector('[aria-label="Bilan pluie"]').textContent.includes('Temps sec') && !shadow.querySelector('[aria-label="Bilan pluie"]').textContent.includes('Depuis minuit');
+    const separateProviderWind=shadow.querySelector('[aria-label="Bilan vent"]').textContent.includes('Vent moyen maintenant')&&shadow.querySelector('[aria-label="Bilan vent"]').textContent.includes('Rafales maintenant')&&shadow.querySelector('.nw-wind-direction').textContent.includes('E · 90°');
     let switches=true;
     for(let mask=0;mask<8;mask++){
       card.setConfig({...config,show_synthesis:!!(mask&1),show_today:!!(mask&2),show_predictions:!!(mask&4)});await card.updateComplete;
@@ -414,7 +415,7 @@ try {
     const persisted=form.data.show_today===false;editor.remove();
     const noModeControl=!form.schema.some(s=>s.name==='mode');
     card.setConfig({...config,show_predictions:false});await card.updateComplete;
-    return {noDuplicate,noFakeComfort,providerFrames,truthfulRain,switches,controls,persisted,noModeControl};
+    return {noDuplicate,noFakeComfort,providerFrames,truthfulRain,separateProviderWind,switches,controls,persisted,noModeControl};
   });
   for(const [key,value] of Object.entries(displayOptions))assert.equal(value,true,`Display options: ${key}`);
   for(const dark of [false,true])for(const width of [375,1440]){
@@ -435,9 +436,9 @@ try {
     card.hass={states,callWS:async()=>({})};root.append(card);await new Promise(r=>setTimeout(r,30));
     const shadow=card.shadowRoot;
     const twoSections=shadow.querySelectorAll('#container>.nw-section').length===2&&!shadow.querySelector('#predictions');
-    const fourTiles=shadow.querySelectorAll('.me-tu').length===4;
+    const fourTiles=!shadow.querySelector('.me-tu')&&shadow.querySelectorAll('.nw-history-card').length===3;
     const noStale=![...shadow.querySelectorAll('#today .me-tuv,#today .nw-feels-value,#today .nw-history-value strong')].some(e=>/^(48|40)(?:\D|$)/.test(e.textContent.trim()));
-    const missing=shadow.querySelector('#today').textContent.includes('Donnée indisponible');
+    const missing=shadow.querySelector('#today').textContent.includes('indisponible');
     const migrated=!('mode' in card.config)&&card.config.show_predictions===false;
     card.setConfig({...card.config,show_predictions:true});await card.updateComplete;
     const reenabled=!!shadow.querySelector('#predictions');
@@ -608,24 +609,32 @@ try {
     const card=document.createElement('niak-weather-card');window.detailsCard=card;
     const now=Date.now(), day=86400_000;
     const e=(entity_id,state,unit)=>({entity_id,state:String(state),attributes:{unit_of_measurement:unit}});
-    const states={...window.fixture.states,'sensor.rain24':e('sensor.rain24',0,'mm'),'sensor.year':e('sensor.year',536.9,'mm'),'sensor.maximum':e('sensor.maximum',30,'km/h')};
+    const states={...window.fixture.states,'sensor.rain24':e('sensor.rain24',0,'mm'),'sensor.year':e('sensor.year',536.9,'mm'),'sensor.maximum':e('sensor.maximum',30,'km/h'),'sensor.direction':e('sensor.direction',225,'°'),'sensor.pression':e('sensor.pression',1010.4,'hPa')};
     states['sensor.pluie_jour']=e('sensor.pluie_jour',0,'mm');states['sensor.pluie_semaine']=e('sensor.pluie_semaine',0,'mm');states['sensor.pluie_mois']=e('sensor.pluie_mois',20.8,'mm');states['sensor.rafales']=e('sensor.rafales',14,'km/h');
     const rain=[];
     for(let i=8;i>=0;i--){const d=new Date(now-i*day);d.setUTCHours(0,0,0,0);rain.push({s:'0',lu:d.getTime()/1000});if(i>=3&&i<=5)rain.push({s:String([1.2,5.6,2][i-3]),lu:d.getTime()/1000+36000});}
     const gust=Array.from({length:37},(_,i)=>({s:String(i===12?30:i===36?14:10+(i%6)*2),lu:(now-21600_000+i*600_000)/1000}));
     const mean=gust.map(p=>({...p,s:String(Number(p.s)*.55)}));
+    const pressure=gust.map((p,i)=>({...p,s:String(1014-i*.1)}));
     let requests=0;const requested=[];
-    const config={...window.fixture.config,show_synthesis:false,show_predictions:false,rain_24h_entity:'sensor.rain24',yearly_rain_entity:'sensor.year',max_daily_gust_entity:'sensor.maximum'};
+    const config={...window.fixture.config,show_synthesis:false,show_predictions:false,rain_24h_entity:'sensor.rain24',yearly_rain_entity:'sensor.year',max_daily_gust_entity:'sensor.maximum',wind_bearing_entity:'sensor.direction'};
     card.setConfig(config);card.hass={states,language:'fr',config:{time_zone:'Europe/Paris'},callWS:async msg=>{
       if(msg.type!=='history/history_during_period')return {};
       requests++;requested.push(msg);
-      return msg.entity_ids.includes('sensor.pluie_jour')?{'sensor.pluie_jour':rain}:{'sensor.rafales':gust,[config.wind_speed_entity]:mean};
+      return msg.entity_ids.includes('sensor.pluie_jour')?{'sensor.pluie_jour':rain}:{'sensor.rafales':gust,[config.wind_speed_entity]:mean,[config.pressure_entity]:pressure};
     }};document.querySelector('main').append(card);await new Promise(r=>setTimeout(r,80));
     const root=card.shadowRoot;
-    const twoCards=root.querySelectorAll('.nw-history-card').length===2;
-    const charts=root.querySelectorAll('.nw-history-chart svg').length===2;
+    const twoCards=root.querySelectorAll('.nw-history-card').length===3&&!root.querySelector('.me-tu');
+    const charts=root.querySelectorAll('.nw-history-chart svg').length===3;
+    const collapsedByDefault=[...root.querySelectorAll('.nw-statistics')].length===3&&[...root.querySelectorAll('.nw-statistics')].every(e=>!e.open);
+    root.querySelector('.nw-statistics summary').click();
+    const independentStatistics=root.querySelector('.nw-statistics').open&&[...root.querySelectorAll('.nw-statistics')].slice(1).every(e=>!e.open);
+    const heights=[...root.querySelectorAll('.nw-history-card')].map(e=>e.getBoundingClientRect());
+    const equalHeightWithOneExpanded=heights.every(a=>heights.every(b=>Math.abs(a.top-b.top)>1||Math.abs(a.height-b.height)<1));
+    root.querySelector('.nw-statistics').open=false;
+    const windDirection=!!root.querySelector('.nw-wind-direction .me-rose')&&!root.querySelector('.nw-wind-direction').closest('details')&&getComputedStyle(root.querySelector('.nw-wind-direction .me-aigp')).fill==='rgb(40, 130, 240)'&&root.querySelector('.nw-wind-direction').textContent.includes('SO · 225°');
     const complementaryWind=!!root.querySelector('.nw-wind-curve--gust')&&root.querySelector('.nw-wind-headline').textContent.includes('Vent moyen maintenant')&&root.querySelector('.nw-wind-headline').textContent.includes('Rafales maintenant');
-    const matchingBackground=getComputedStyle(root.querySelector('.nw-history-card')).backgroundColor===getComputedStyle(root.querySelector('#tuiles .me-tu')).backgroundColor;
+    const matchingBackground=getComputedStyle(root.querySelector('.nw-history-card')).backgroundColor===getComputedStyle(root.querySelector('#comfort')).backgroundColor;
     const noRelativeBars=!root.querySelector('#bilan .me-blb');
     const honestScale=root.querySelector('.nw-wind-scale').textContent.includes('80 km/h')&&root.querySelector('.nw-wind-marker--max').style.left==='37.5%';
     const noFakeZero=[...root.querySelectorAll('.nw-history-chart rect')].every(r=>Number(r.getAttribute('height'))>0)&&root.querySelectorAll('.nw-history-chart rect').length===3;
@@ -635,7 +644,7 @@ try {
     let clicked;card.addEventListener('hass-more-info',e=>clicked=e.detail.entityId);
     root.querySelector('.nw-rain-counters button').click();
     const sourceClick=clicked==='sensor.pluie_semaine';
-    return {twoCards,charts,complementaryWind,matchingBackground,noRelativeBars,honestScale,noFakeZero,splitRequests,cached,sourceClick};
+    return {twoCards,charts,collapsedByDefault,independentStatistics,equalHeightWithOneExpanded,windDirection,complementaryWind,matchingBackground,noRelativeBars,honestScale,noFakeZero,splitRequests,cached,sourceClick};
   });
   for(const [key,value] of Object.entries(recentDetails))assert.equal(value,true,`Recent details: ${key}`);
   for(const dark of [false,true])for(const width of [375,768,1440]){
@@ -647,14 +656,20 @@ try {
     },dark);
     const layout=await page.evaluate(()=>{const root=window.detailsCard.shadowRoot,host=window.detailsCard.getBoundingClientRect(),cards=[...root.querySelectorAll('.nw-history-card')];return {overflow:cards.some(e=>e.scrollWidth>e.clientWidth+1||e.getBoundingClientRect().right>host.right+1),columns:getComputedStyle(root.querySelector('.nw-history-grid')).gridTemplateColumns.split(' ').length};});
     assert.equal(layout.overflow,false,`History details fit ${width}px`);
-    assert.equal(layout.columns,width===375?1:2,`History detail columns ${width}px`);
+    assert.equal(layout.columns,width===375?1:width===1440?3:2,`History detail columns ${width}px`);
+    const alignedHeight=()=>page.evaluate(()=>{const rows=[...window.detailsCard.shadowRoot.querySelectorAll('.nw-history-card')].map(e=>e.getBoundingClientRect());return rows.every(a=>rows.every(b=>Math.abs(a.top-b.top)>1||Math.abs(a.height-b.height)<1));});
+    assert.equal(await alignedHeight(),true,`Collapsed detail cards have equal row heights at ${width}px`);
+    await page.locator('#bilan').screenshot({path:`${out}/recent-details-collapsed-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    await page.evaluate(()=>window.detailsCard.shadowRoot.querySelectorAll('.nw-statistics').forEach(e=>e.open=true));
+    assert.equal(await alignedHeight(),true,`Expanded detail cards have equal row heights at ${width}px`);
     await page.locator('#bilan').screenshot({path:`${out}/recent-details-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    await page.evaluate(()=>window.detailsCard.shadowRoot.querySelectorAll('.nw-statistics').forEach(e=>e.open=false));
   }
   const missingDetails=await page.evaluate(async()=>{
     const card=window.detailsCard;
     card.setConfig({...card.config,daily_rain_entity:'sensor.no_history',wind_gust_entity:'sensor.no_gust_history'});
     card.hass={...card.hass,callWS:async()=>{throw new Error('Recorder excluded');}};await new Promise(r=>setTimeout(r,60));
-    return card.shadowRoot.querySelectorAll('.nw-history-chart svg').length===0&&card.shadowRoot.querySelectorAll('.nw-history-empty').length===2;
+    return card.shadowRoot.querySelectorAll('.nw-history-chart svg').length===0&&card.shadowRoot.querySelectorAll('.nw-history-empty').length===3;
   });assert.equal(missingDetails,true,'Missing histories never create artificial charts');
   const rainHistoryRace=await page.evaluate(async()=>{
     const card=document.createElement('niak-weather-card');let resolveOld;

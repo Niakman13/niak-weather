@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rainDays, windPoints, windScale, windChartSeries, windCurvePaths } from '../src/recent-details';
+import { rainDays, windPoints, windScale, windChartSeries, windCurvePaths, pressureChartSeries } from '../src/recent-details';
 const now=new Date('2026-10-05T16:00:00Z');
 const p=(date:string,s:string)=>({s,lu:Date.parse(date)/1000});
 describe('Recorded rain days',()=>{
@@ -33,6 +33,12 @@ describe('Recorded rain days',()=>{
   });
 });
 describe('Wind history and scale',()=>{
+  it('converts recorded pressure, preserves gaps and cannot fabricate history',()=>{
+    const rows=[p('2026-10-05T10:00:00Z','100000'),p('2026-10-05T12:00:00Z','unavailable'),p('2026-10-05T13:00:00Z','99600')];
+    const result=pressureChartSeries(rows,'Pa',now,996);
+    expect(result[0].v).toBe(1000);expect(result[12].v).toBeUndefined();expect(result[18].v).toBe(996);
+    expect(pressureChartSeries([],'hPa',now,996)).toEqual([]);
+  });
   it('aggregates time-weighted wind separately from gust peaks',()=>{
     const rows=[p('2026-10-05T10:00:00Z','10'),p('2026-10-05T10:09:00Z','30')];
     expect(windChartSeries(rows,'km/h',now,14,'mean')[0].v).toBe(12);

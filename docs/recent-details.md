@@ -1,6 +1,10 @@
-# Lire les détails Pluie et Vent
+# Lire les cadres Pluie, Vent et Pression
 
-Les deux cadres sont des bilans **mesurés par la station**, pas des prévisions. Ils restent côte à côte sur desktop et s’empilent sur les écrans étroits. Ils sont directement visibles, sans volet à dérouler.
+Les trois cadres remplacent la rangée de petits cadres en double. Ils utilisent les mesures locales en priorité et les attributs du bulletin météo disponibles en complément, avec une source explicite. Les historiques restent exclusivement des données enregistrées de capteurs : ils ne sont jamais reconstitués à partir des prévisions. Les cadres sont disposés en trois colonnes sur grand écran, deux sur tablette et une sur mobile. Les chiffres restent visibles ; la partie graphique de chaque cadre se déplie indépendamment avec **Statistiques**, fermé par défaut.
+
+Les cadres d’une même rangée gardent la même hauteur et leurs notes sont alignées en bas, même si un seul volet Statistiques est ouvert. Sur mobile, ils s’empilent sans imposer une hauteur commune artificielle.
+
+La température actuelle reste dans le bandeau supérieur, avec une bulle **Station locale** ou le nom du fournisseur météo, par exemple **Météo-France**. La jauge du ressenti est conservée lorsqu’elle est pertinente.
 
 ## Pluie : compteurs et jours enregistrés
 
@@ -14,7 +18,9 @@ Pour des jours cohérents, la remise à zéro du compteur quotidien doit corresp
 
 ## Vent : valeurs et échelle explicites
 
-Le chiffre principal présente `wind_speed_entity` (vent moyen actuel). Les rafales actuelles (`wind_gust_entity`) sont affichées à côté : elles décrivent les pointes de vent, pas la même mesure. Sans capteur de vent moyen configuré, les rafales deviennent le chiffre principal. Le maximum du jour utilise exclusivement `max_daily_gust_entity`, lorsqu’il est renseigné ; il n’est pas déduit de la courbe des six dernières heures.
+Le chiffre principal présente le vent moyen actuel, local ou fourni par le bulletin. Les rafales actuelles sont affichées à côté : elles décrivent les pointes de vent, pas la même mesure. Si aucun vent moyen utilisable n’est disponible ni configuré, les rafales locales deviennent le chiffre principal. Le maximum du jour utilise exclusivement `max_daily_gust_entity`, lorsqu’il est renseigné ; il n’est pas déduit de la courbe des six dernières heures.
+
+Le vent moyen et les rafales du bulletin peuvent compléter les capteurs manquants, sans devenir des mesures locales. La petite rose des vents et la direction restent visibles hors des statistiques. Le nord est repéré et la flèche montre l’orientation fournie par l’entité de direction ; une direction absente n’est pas remplacée par zéro degré.
 
 Les deux repères utilisent une échelle graduée en km/h, allant au moins de 0 à 80 et étendue par pas de 20 si les valeurs dépassent cette plage. Il ne s’agit ni d’un pourcentage de danger ni d’une vigilance officielle. La couleur bleu/noir distingue les repères actuel et maximum, pas un niveau d’alerte.
 
@@ -22,8 +28,14 @@ Le graphique compare six heures de vent moyen (trait bleu avec un dégradé disc
 
 Les courbes sont arrondies pour la lecture, sans dépasser les valeurs des points voisins : leur forme intermédiaire n’est ni une mesure supplémentaire ni une prévision. Les périodes inconnues ou incomplètes restent des coupures. La tendance compare le vent moyen sur la dernière heure, ou les rafales si seul ce capteur est configuré, sur la période effectivement disponible si elle est suffisante.
 
+## Pression : lecture actuelle et variation
+
+Le cadre Pression affiche la mesure en hPa et sa source. La variation compare la dernière lecture aux états enregistrés sur les trois dernières heures, ou la période effectivement disponible si elle est suffisante. Le libellé décrit une hausse, une baisse ou une stabilité de pression, sans annoncer une pluie ou une amélioration certaine.
+
+Le graphique couvre six heures de pression locale, regroupée en moyennes de dix minutes pondérées par la durée des états. Son échelle verticale est ajustée aux valeurs de la période, avec les valeurs absolues en hPa sur l’axe. Les interruptions restent des coupures. Sans historique accessible, aucune variation ni courbe n’est inventée ; la valeur actuelle reste disponible.
+
 ## Historique facultatif
 
-Le graphique demande que les capteurs concernés soient enregistrés dans Recorder. Sans historique accessible, les chiffres restent affichés et un message discret remplace le graphique. Aucune courbe n’est créée à partir de la seule lecture actuelle. Les conversions en mm et km/h supposent une unité de capteur cohérente sur la période.
+Le graphique demande que les capteurs concernés soient enregistrés dans Recorder. Sans historique accessible, les chiffres restent affichés et un message discret remplace le graphique dans Statistiques. Aucune courbe n’est créée à partir de la seule lecture actuelle. Les conversions en mm, km/h et hPa supposent une unité de capteur cohérente sur la période.
 
 La lecture du compteur quotidien porte sur huit jours pour disposer d’un état antérieur aux sept jours affichés ; elle est renouvelée au plus toutes les quinze minutes. La lecture vent/pression porte sur six heures et est renouvelée au plus toutes les cinq minutes. Les changements purement visuels ne relancent pas ces lectures.

@@ -7,6 +7,8 @@ export interface CurrentMetric {
   value?:number; unit:string; text?:string; description:string; detail?:string;
   source:string; entity:string; fallback?:boolean;
   bearing?:number;
+  bearingSource?:string; bearingEntity?:string;
+  gust?:{value?:number;source:string;entity:string;fallback?:boolean};
 }
 const available=(e?:HassEntity)=>!!e && !['unknown','unavailable'].includes(e.state);
 export function weatherSourceLabel(hass:HomeAssistant,config:WeatherCardConfig):string {
@@ -39,8 +41,8 @@ export function currentMetrics(hass:HomeAssistant,config:WeatherCardConfig,model
   if(wind.value!==undefined || gust.value!==undefined || config.wind_speed_entity || config.wind_gust_entity){
     const parts:string[]=[];
     if(gust.value!==undefined) parts.push(`Rafales ${new Intl.NumberFormat(hass.language || 'fr',{maximumFractionDigits:0}).format(gust.value)} km/h${gust.source!==wind.source ? ` · ${gust.source}`:''}`);
-    const bearing=local(config.wind_bearing_entity)??finite(w.wind_bearing);
-    result.push({key:'wind',title:'Vent',icon:'mdi:weather-windy',...wind,bearing,unit:'km/h',description:wind.source==='Station locale'?String(model.attributes.beaufort_tx || 'Mesuré chez vous'):'Vent du bulletin',detail:parts.join(' · ')});
+    const localBearing=local(config.wind_bearing_entity),bearing=localBearing??finite(w.wind_bearing);
+    result.push({key:'wind',title:'Vent',icon:'mdi:weather-windy',...wind,bearing,bearingSource:localBearing!==undefined?'Station locale':provider,bearingEntity:localBearing!==undefined?config.wind_bearing_entity:config.weather_entity,gust,unit:'km/h',description:wind.source==='Station locale'?String(model.attributes.beaufort_tx || 'Mesuré chez vous'):'Vent du bulletin',detail:parts.join(' · ')});
   }
   const daily=local(config.daily_rain_entity,'rain'),rate=local(config.rain_rate_entity,'rain');
   if(daily!==undefined || rate!==undefined){
