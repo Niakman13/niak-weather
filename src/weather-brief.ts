@@ -112,7 +112,7 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   const phrases = (group: BriefSignal['group']) => signals.filter(s => s.group === group).slice(0, 2).map(s => s.text).join(' ; ');
   const lines = [`Maintenant : ${current}${phrases('now') ? ' ' + phrases('now') + '.' : ''}`];
   const future = phrases('future'); if (future) lines.push(`À venir : ${future}.`);
-  else lines.push(upcoming.length ? 'À venir : aucun signal marqué dans les prévisions disponibles des 6 prochaines heures.' : 'À venir : prévisions indisponibles.');
+  else if (!upcoming.length) lines.push('À venir : prévisions indisponibles.');
   const environment = phrases('environment'); if (environment) lines.push(`Air et pollens : ${environment}.`);
   const officialText = phrases('official'); if (officialText) lines.push(officialText + '.');
   const omitted = ['now', 'future', 'environment'].reduce((sum, g) => sum + signals.filter(s => s.group === g).slice(2).filter(s => s.severity > 0).length, 0);

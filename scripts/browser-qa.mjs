@@ -175,8 +175,10 @@ try {
     const ids=form.schema.find(item=>item.name==='humidex_entity').selector.entity.include_entities;
     const filtered=ids.join(',')==='sensor.renamed';
     const prefilled=form.data.humidex_entity==='sensor.renamed' && form.data.humidex_perception_entity==='sensor.renamed_sensation';
+    const simplifiedThermal=!all.some(item=>item.name==='thermal_device_id')&&!editor.shadowRoot.textContent.includes('L’humidex provient uniquement');
+    const recommendedStation=editor.shadowRoot.querySelector('details[data-category="station"] .category-body p').textContent.startsWith('Conseillé :');
     const removed=!all.some(item=>['comfort_entity','lightning_distance_entity'].includes(item.name)) && !('comfort_entity' in events.at(-1));
-    const renamed=editor.shadowRoot.querySelector('details[data-category="station"] summary').textContent.includes('Sources de la station météo locale');
+    const renamed=editor.shadowRoot.querySelector('details[data-category="station"] summary').textContent.includes('Capteurs locaux / station météo locale');
     form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,humidex_entity:''}},bubbles:true}));await sleep(20);
     editor.shadowRoot.querySelector('button[data-fill="thermal"]').click();await sleep(20);
     const preserved=events.at(-1).humidex_entity==='';
@@ -190,7 +192,7 @@ try {
     tile.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:10,clientY:10}));await sleep(520);
     tile.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}));tile.dispatchEvent(new MouseEvent('click',{bubbles:true}));
     const hold=location.pathname==='/test-weather'&&window.info.length===0;
-    return {partial,race,filtered,prefilled,removed,renamed,preserved,scrollRejected,hold};
+    return {partial,race,filtered,prefilled,removed,renamed,preserved,scrollRejected,hold,simplifiedThermal,recommendedStation};
   });
   for (const [test, passed] of Object.entries(behavior)) assert.equal(passed,true, test);
   // Test the new optional Atmo branch independently: the original weather-only baseline remains unchanged above.
@@ -212,10 +214,9 @@ try {
     const editor=document.createElement('niak-weather-card-editor');editor.setConfig(config);editor.hass=hass;root.append(editor);await sleep(50);
     editor.shadowRoot.querySelector('details[data-category="atmo"]').open=true;await sleep(20);
     editor.shadowRoot.querySelector('button[data-fill="atmo"]').click();await sleep(30);
-    const form=editor.shadowRoot.querySelector('ha-form[data-category="atmo"]');const selected={...form.data};
+    const form=editor.shadowRoot.querySelector('ha-form[data-category="atmo"]');const selected={...editor.config};
     const today=form.schema.find(item=>item.name==='atmo_today'),next=form.schema.find(item=>item.name==='atmo_tomorrow');
-    const pollenLabels=form.schema.find(item=>item.name==='pollen_source').selector.select.options;
-    const simplifiedLabel=pollenLabels.find(option=>option.value==='legacy')?.label==='Polleninformation' && !JSON.stringify(form.schema).includes('ancienne liste YAML');
+    const simplifiedLabel=!form.schema.some(item=>item.name==='pollen_source') && !JSON.stringify(form.schema).includes('ancienne liste YAML');
     const fullPrefill=Object.keys(selected).filter(k=>/^atmo_.*_entity$/.test(k)&&selected[k]).length===38 && selected.pollen_source==='atmo';
     const filtered=today.schema.find(item=>item.name==='atmo_grass_entity').selector.entity.include_entities.join(',')==='sensor.atmo_a_grass'
       && next.schema.find(item=>item.name==='atmo_grass_tomorrow_entity').selector.entity.include_entities.join(',')==='sensor.atmo_a_grass_j_1'
@@ -302,22 +303,35 @@ try {
     const text=card.shadowRoot.querySelector('#heros').textContent;
     const combined=['75 km/h','Fortes pluies','Vigilance Météo-France orange'].every(s=>text.includes(s));
     const concise=card.shadowRoot.querySelectorAll('.nw-summary-lines p').length<=3;
-    card.shadowRoot.querySelector('.nw-brief-details summary').click();await sleep(20);
-    const nativeDetails=card.shadowRoot.querySelector('.nw-brief-details').open && window.briefInfo.length===0;
+    const banner=card.shadowRoot.querySelector('#heros'),nextSection=card.shadowRoot.querySelector('#today');
+    const before=[banner.getBoundingClientRect().height,nextSection.getBoundingClientRect().top];
+    card.shadowRoot.querySelector('.nw-synthesis-info-button').click();await sleep(20);
+    const panel=card.shadowRoot.querySelector('.nw-brief-panel');
+    const nativeDetails=panel.matches(':popover-open') && window.briefInfo.length===0;
+    const noLayoutShift=JSON.stringify(before)===JSON.stringify([banner.getBoundingClientRect().height,nextSection.getBoundingClientRect().top]);
+    const simplePanel=!panel.textContent.includes('La couleur suit')&&[...panel.querySelectorAll('.nw-brief-group')].every(e=>getComputedStyle(e).borderWidth==='0px');
     const hasSource=!!card.shadowRoot.querySelector('.nw-brief-details button[data-entity="sensor.rafales"]');
     const readableGroups=card.shadowRoot.querySelectorAll('.nw-brief-group').length===4&&!card.shadowRoot.querySelector('.nw-brief-details').textContent.includes('≥');
-    const infoAtTitle=!!card.shadowRoot.querySelector('.nw-section-heading .nw-brief-details summary .nw-info-icon')&&!card.shadowRoot.querySelector('#heros>.nw-brief-details');
-    const help=card.shadowRoot.querySelector('.nw-brief-details');help.querySelector('summary').focus();help.querySelector('summary').click();
-    const helpClosed=!help.open;help.querySelector('summary').click();
+    const infoAtTitle=!!card.shadowRoot.querySelector('.nw-section-heading .nw-synthesis-info-button .nw-info-icon')&&!card.shadowRoot.querySelector('#heros>.nw-brief-details');
+    const help=card.shadowRoot.querySelector('.nw-synthesis-info-button');help.focus();help.click();
+    const helpClosed=!panel.matches(':popover-open');help.click();
     const orange=card.shadowRoot.querySelector('#heros').style.getPropertyValue('--vc').trim()==='230,125,45';
-    return {combined,nativeDetails,hasSource,orange,concise,readableGroups,infoAtTitle,helpClosed};
+    return {combined,nativeDetails,hasSource,orange,concise,readableGroups,infoAtTitle,helpClosed,noLayoutShift,simplePanel};
   });
   for(const [test,passed] of Object.entries(briefBehavior))assert.equal(passed,true,`Brief: ${test}`);
   await page.locator('niak-weather-card .nw-brief-details button[data-entity="sensor.rafales"]').first().focus();await page.keyboard.press('Enter');
-  await page.locator('niak-weather-card .nw-brief-details>summary').focus();await page.keyboard.press('Enter');
-  assert.equal(await page.evaluate(()=>window.briefCard.shadowRoot.querySelector('.nw-brief-details').open),false,'Synthesis help closes with keyboard');
+  await page.locator('niak-weather-card .nw-synthesis-info-button').focus();await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>window.briefCard.shadowRoot.querySelector('.nw-brief-panel').matches(':popover-open')),false,'Synthesis help closes with keyboard');
   await page.keyboard.press('Enter');
-  assert.equal(await page.evaluate(()=>window.briefCard.shadowRoot.querySelector('.nw-brief-details').open),true,'Synthesis help opens with keyboard');
+  assert.equal(await page.evaluate(()=>window.briefCard.shadowRoot.querySelector('.nw-brief-panel').matches(':popover-open')),true,'Synthesis help opens with keyboard');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.evaluate(()=>window.briefCard.shadowRoot.querySelector('.nw-brief-panel').matches(':popover-open')),false,'Escape dismisses synthesis help');
+  await page.locator('niak-weather-card .nw-synthesis-info-button').click();
+  await page.locator('niak-weather-card .nw-brief-panel-heading button').click();
+  assert.equal(await page.evaluate(()=>window.briefCard.shadowRoot.querySelector('.nw-brief-panel').matches(':popover-open')),false,'Explicit close button dismisses synthesis help');
+  await page.locator('niak-weather-card .nw-synthesis-info-button').click();
+  await page.mouse.click(2,2);
+  assert.equal(await page.evaluate(()=>window.briefCard.shadowRoot.querySelector('.nw-brief-panel').matches(':popover-open')),false,'Outside click dismisses synthesis help');
   assert.equal(await page.evaluate(()=>window.briefInfo.at(-1)),'sensor.rafales','Brief source keyboard popup');
   const noAtmoBrief=await page.evaluate(async()=>{
     const card=document.createElement('niak-weather-card');card.id='no-atmo-card';window.noAtmoCard=card;
@@ -336,7 +350,24 @@ try {
     await page.locator('#no-atmo-card #heros').screenshot({path:`${out}/brief-no-atmo-${width}.png`,animations:'disabled'});
   }
   await page.evaluate(()=>window.noAtmoCard.remove());
-  await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-details').open=false;});
+  const pressureBrief=await page.evaluate(async()=>{
+    const card=document.createElement('niak-weather-card'),base=window.briefCard;
+    const states={...base.hass.states};
+    for(const [id,value] of [['sensor.vent','7'],['sensor.rafales','11'],['sensor.pluie_taux','0'],['sensor.atmo_a_air','3'],['sensor.pression','1001.1']]) states[id]={...states[id],state:value};
+    card.setConfig({...base.config,vigilance_entity:undefined,pressure_entity:'sensor.pression'});
+    const time=Date.now()/1000;
+    const history={'sensor.pression':[{s:'1000',lu:time-10800},{s:'1000.2',lu:time-9800}]};
+    const hourly=Array.from({length:6},(_,i)=>({datetime:new Date(Date.now()+(i+1)*3600000).toISOString(),temperature:24,precipitation:0,condition:'cloudy'}));
+    card.hass={...base.hass,states,callWS:async msg=>msg.type==='call_service'?{response:{'weather.test':{forecast:hourly}}}:history};
+    document.querySelector('main').append(card);await new Promise(r=>setTimeout(r,60));
+    const text=()=>card.shadowRoot.querySelector('.nw-summary-lines').textContent;
+    const first=text().includes('Pression en hausse (1,1 hPa sur 3 h)');
+    card.requestUpdate();await card.updateComplete;
+    const result={pressureAlongsideAir:first&&text().includes('Pression en hausse'),noEmptyOutlook:!text().includes('Pas de signal')&&!text().includes('À venir')};
+    card.remove();return result;
+  });
+  for(const [key,value] of Object.entries(pressureBrief))assert.equal(value,true,`Meaningful pressure brief: ${key}`);
+  await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-panel').hidePopover();});
   await page.emulateMedia({reducedMotion:'no-preference'});
   const haloMotion=await page.evaluate(async()=>{
     const root=window.briefCard.shadowRoot, circle=root.querySelector('.nw-summary-emblem .me-rond'), halo=root.querySelector('.nw-summary-emblem .me-halo');
@@ -365,9 +396,24 @@ try {
     await page.locator('niak-weather-card').screenshot({path:`${out}/brief-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/brief-header-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     await page.locator('niak-weather-card #today .nw-atmo-grid').screenshot({path:`${out}/atmo-discs-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
-    await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-details').open=true;});
-    await page.locator('niak-weather-card #heros').screenshot({path:`${out}/brief-details-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
-    await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-details').open=false;});
+    await page.evaluate(()=>{window.briefCard.scrollIntoView({block:'start'});window.briefCard.shadowRoot.querySelector('.nw-synthesis-info-button').click();});
+    const overlay=await page.evaluate(()=>{
+      const root=window.briefCard.shadowRoot,host=root.querySelector('#heros').getBoundingClientRect(),panel=root.querySelector('.nw-brief-panel').getBoundingClientRect();
+      return {fullWidth:Math.abs(host.width-panel.width)<2,withinViewport:panel.left>=0&&panel.right<=innerWidth&&panel.bottom<=innerHeight,aboveContent:root.querySelector('.nw-brief-panel').matches(':popover-open')};
+    });assert.deepEqual(overlay,{fullWidth:true,withinViewport:true,aboveContent:true},'Full-width, viewport-bounded synthesis overlay');
+    await page.locator('niak-weather-card .nw-brief-panel').screenshot({path:`${out}/brief-details-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
+    await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-panel').hidePopover();});
+    if(width===375){
+      await page.setViewportSize({width,height:640});
+      await page.evaluate(()=>{window.briefCard.scrollIntoView({block:'start'});window.briefCard.shadowRoot.querySelector('.nw-synthesis-info-button').click();});
+      const scrollBefore=await page.evaluate(()=>scrollY);
+      await page.locator('niak-weather-card .nw-brief-panel').hover();await page.mouse.wheel(0,800);await page.waitForTimeout(80);
+      const smallScreen=await page.evaluate(()=>{const p=window.briefCard.shadowRoot.querySelector('.nw-brief-panel'),r=p.getBoundingClientRect(),close=p.querySelector('.nw-brief-panel-heading button').getBoundingClientRect();return {inside:r.top>=0&&r.bottom<=innerHeight,scrolls:p.scrollTop>0,pageY:scrollY,closeVisible:close.top>=r.top&&close.bottom<=r.bottom};});
+      assert.equal(smallScreen.inside,true,'Synthesis overlay fits a short mobile viewport');assert.equal(smallScreen.scrolls,true,'Long synthesis content scrolls within overlay');assert.equal(smallScreen.pageY,scrollBefore,'Overlay scrolling does not scroll the underlying page');
+      assert.equal(smallScreen.closeVisible,true,'Close button stays visible while overlay content scrolls');
+      await page.locator('niak-weather-card .nw-brief-panel').screenshot({path:`${out}/brief-overlay-short-mobile-${dark?'dark':'light'}.png`,animations:'disabled'});
+      await page.evaluate(()=>window.briefCard.shadowRoot.querySelector('.nw-brief-panel').hidePopover());
+    }
     const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();assert.deepEqual(axe.violations.map(v=>v.id),[],'Brief structural accessibility');
     briefReports.push({width,dark,overflow,accessibility:'structural scan passed; new hero has no committed visual baseline yet'});
   }
@@ -403,6 +449,25 @@ try {
     const before=forecastRequests;
     for(let i=0;i<5;i++){card.setConfig({...config,weather_entity:'weather.second',location:`Lieu ${i}`});await card.updateComplete;}
     const cosmeticNoRequests=forecastRequests===before;
+    editor.addEventListener('config-changed',event=>{editor.setConfig(event.detail.config);card.setConfig(event.detail.config);});
+    const weatherForm=editor.shadowRoot.querySelector('ha-form[data-category="weather"]');
+    const generalForm=editor.shadowRoot.querySelector('ha-form[data-category="general"]');
+    const schemaBefore=weatherForm.schema,generalData=generalForm.data,generalSchema=generalForm.schema;
+    const typingStart=performance.now();
+    for(const text of ['M','Mé','Mét','Mété','Météo','Météo-France']) {
+      weatherForm.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...weatherForm.data,forecast_source:text}},bubbles:true,composed:true}));
+      await Promise.all([editor.updateComplete,card.updateComplete]);
+    }
+    const typingMs=Math.round(performance.now()-typingStart);
+    const stableTypingSelectors=weatherForm.schema===schemaBefore&&generalForm.schema===generalSchema&&generalForm.data===generalData&&editor.config.forecast_source==='Météo-France'&&!editor.schemaCache.has('station')&&!editor.schemaCache.has('thermal');
+    const beforeSources=forecastRequests;
+    card.setConfig({...card.config,wind_speed_entity:'sensor.other_wind',pressure_entity:'sensor.other_pressure',daily_rain_entity:'sensor.other_rain'});await card.updateComplete;await sleep(20);
+    const sourceEditsNoForecasts=forecastRequests===beforeSources;
+    const pressureId='sensor.saved_pressure';
+    card.setConfig({...card.config,pressure_entity:pressureId});await card.updateComplete;await sleep(20);
+    card.history={[pressureId]:[{s:'1000',lu:Date.now()/1000-10800}]};
+    card.setConfig({...card.config,wind_speed_entity:'sensor.another_wind'});
+    const retainedPressure=card.history[pressureId]?.length===1;
     editor.hass=hass;
     editor.shadowRoot.querySelector('details[data-category="atmo"]').open=true;await sleep(20);
     const addAir=id=>{
@@ -415,9 +480,9 @@ try {
     delete states['sensor.atmo_old'];addAir('sensor.atmo_new');
     editor.shadowRoot.querySelector('button[data-fill="atmo"]').click();await sleep(30);
     const repaired=editor.shadowRoot.querySelector('ha-form[data-category="atmo"]').data.atmo_air_entity==='sensor.atmo_new';
-    return {noMountWrites,lazyForms,editorRenders:unrelatedEditorRenders,cardRenders:unrelatedCardRenders,unrelatedMs,cosmeticNoRequests,initial,repaired,registryReads};
+    return {noMountWrites,lazyForms,editorRenders:unrelatedEditorRenders,cardRenders:unrelatedCardRenders,unrelatedMs,typingMs,stableTypingSelectors,sourceEditsNoForecasts,retainedPressure,cosmeticNoRequests,initial,repaired,registryReads};
   });
-  for(const key of ['noMountWrites','lazyForms','cosmeticNoRequests','initial','repaired']) assert.equal(editorPerformance[key],true,`Editor performance: ${key}`);
+  for(const key of ['noMountWrites','lazyForms','cosmeticNoRequests','stableTypingSelectors','sourceEditsNoForecasts','retainedPressure','initial','repaired']) assert.equal(editorPerformance[key],true,`Editor performance: ${key}`);
   assert.equal(editorPerformance.editorRenders,0,'No selector rebuilding on unrelated state updates');
   assert.equal(editorPerformance.cardRenders,0,'No preview rebuilding on unrelated state updates');
   assert.equal(editorPerformance.registryReads,3,'Registry refreshed on each category fill');
@@ -578,14 +643,14 @@ try {
       const artwork=()=>[...scene.querySelectorAll('.weather-art,.orb,.cloud,.bolt,.particle,.gust,.stars')].map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height];});
       const before=mobile?artwork():[];
       const matches=()=>{const h=header.getBoundingClientRect(),s=sky.getBoundingClientRect();return Math.abs(h.right-s.right)<1&&Math.abs(h.top-s.top)<1&&Math.abs(h.bottom-s.bottom)<1&&Math.abs(h.left-s.left)<1;};
-      const closed=matches();details.open=true;const expanded=matches();
+      const closed=matches();details.querySelector('.nw-synthesis-info-button').click();const expanded=matches();
       const stable=!mobile||JSON.stringify(before)===JSON.stringify(artwork());
       const lines=root.querySelector('.nw-summary-lines').getBoundingClientRect(),emblem=root.querySelector('.nw-summary-emblem').getBoundingClientRect();
       return {closed,expanded,clean:!root.querySelector('.nw-current-feels,.nw-current-source'),stable,leftAligned:Math.abs(lines.left-emblem.left)<1&&lines.top>=emblem.bottom};
     });
     assert.deepEqual(background,{closed:true,expanded:true,clean:true,stable:true,leftAligned:true},'Full banner sky, stationary mobile artwork and synthesis lines below the emblem');
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/current-expanded-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
-    await page.evaluate(()=>{window.skyCard.shadowRoot.querySelector('.nw-brief-details').open=false;});
+    await page.evaluate(()=>{window.skyCard.shadowRoot.querySelector('.nw-brief-panel').hidePopover();});
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/current-weather-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     const axe=await new AxeBuilder({page}).disableRules(['color-contrast']).analyze();assert.deepEqual(axe.violations.map(v=>v.id),[],'Current sky structural accessibility');
     currentReports.push({width,dark,...geometry});
@@ -698,7 +763,7 @@ try {
   }
   const missingDetails=await page.evaluate(async()=>{
     const card=window.detailsCard;
-    card.setConfig({...card.config,daily_rain_entity:'sensor.no_history',wind_gust_entity:'sensor.no_gust_history'});
+    card.setConfig({...card.config,daily_rain_entity:'sensor.no_history',wind_speed_entity:'sensor.no_wind_history',wind_gust_entity:'sensor.no_gust_history',pressure_entity:'sensor.no_pressure_history'});
     card.hass={...card.hass,callWS:async()=>{throw new Error('Recorder excluded');}};await new Promise(r=>setTimeout(r,60));
     return card.shadowRoot.querySelectorAll('.nw-history-chart svg').length===0&&card.shadowRoot.querySelectorAll('.nw-history-empty').length===3;
   });assert.equal(missingDetails,true,'Missing histories never create artificial charts');

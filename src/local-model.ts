@@ -60,8 +60,12 @@ export function normaliseForecasts(hourly: WeatherForecast[], daily: WeatherFore
 export function trend(history: History[string] = [], value: number | undefined, now: number, kind: 'wind' | 'pressure', unit = '') {
   const window = kind === 'pressure' ? 10800 : 3600, min = kind === 'pressure' ? 20 : 15;
   const points = history.map(p => ({ t: p.lu ?? p.lc ?? 0, v: measurement(p.s, unit, kind) }))
-    .filter(p => p.t >= now - window && p.t <= now && p.v !== undefined).sort((a, b) => a.t - b.t);
-  const first = points[0], f = first ? round((now - first.t) / 60, 0) : 0;
+    .filter(p => p.t <= now).sort((a, b) => a.t - b.t);
+  // Recorder records changes, not regular samples: the state just before the
+  // window remains the reference until the next change (unless unavailable).
+  const boundary = [...points].reverse().find(p => p.t <= now - window);
+  const first = boundary?.v !== undefined ? boundary : points.find(p => p.t >= now - window && p.v !== undefined);
+  const f = first ? round(Math.min(window, now - first.t) / 60, 0) : 0;
   const d = first && value !== undefined && f >= min ? round(value - first.v!) : undefined;
   const limit = kind === 'pressure' ? 1 : 3;
   const s = d === undefined ? '' : d >= limit ? 'hausse' : d <= -limit ? 'baisse' : 'stable';

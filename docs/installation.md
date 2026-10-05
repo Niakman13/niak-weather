@@ -35,12 +35,12 @@ jour future apparaîtra dans HACS et se fera avec le même bouton de télécharg
 
 ## Synthèse intelligente
 
-La version stable est **v1.7.1**. Consulte les [notes de mise à jour](release-1.7.1.md) : aide de la synthèse près du titre, détails Atmo centrés et compacts, libellés horaires distincts et séparation de la rose des vents. La configuration par source, les sections indépendantes et l’affichage sans station sont conservés. Une mise à jour de la carte ne nécessite pas de redémarrer Home Assistant.
+La version stable est **v1.7.2**. Consulte les [notes de mise à jour](release-1.7.2.md) : aide de la synthèse superposée, tendances de pression plus stables et éditeur simplifié avec des rafraîchissements allégés. La configuration par source, les sections indépendantes et l’affichage sans station sont conservés. Une mise à jour de la carte ne nécessite pas de redémarrer Home Assistant.
 
 ## Ajouter la carte
 
 Dans un tableau de bord, clique **Ajouter une carte** puis recherche **Niak
-Weather**. Commence par **Sources météo, soleil et vigilance** : seule l’entité météo est requise. Les trois catégories **Station météo locale**, **Thermal Comfort** et **Atmo France** sont facultatives. **Général** regroupe l’affichage et les animations.
+Weather**. Commence par **Sources météo, soleil et vigilance** : seule la source météo est requise. Les trois catégories **Capteurs locaux / station météo locale**, **Thermal Comfort** et **Atmo France** sont conseillées pour enrichir les mesures, le ressenti et la synthèse, sans être nécessaires pour démarrer. **Général** regroupe l’affichage et les animations. Chaque catégorie explique brièvement son rôle.
 
 Chaque catégorie possède son bouton **Remplir automatiquement**. Il recherche les correspondances de cette catégorie seulement et consulte à nouveau les registres Home Assistant. Les listes manuelles proposent des mesures compatibles : températures pour la température, vitesses pour le vent, pression pour le baromètre. Choisis l’appareil de la station pour réduire les listes ; la sélection n’est pas limitée à l’intégration Ecowitt.
 
@@ -87,12 +87,12 @@ Puis recharge le navigateur.
 
 Dans ce mode, les mises à jour sont manuelles : remplacer le fichier par celui de la nouvelle release et recharger le navigateur. Ne charge pas en même temps les ressources `/local/` et `/hacsfiles/` de cette carte.
 
-## Installer ou mettre à jour vers v1.7.1 stable
+## Installer ou mettre à jour vers v1.7.2 stable
 
 La version stable réunit les mesures de la station, le ressenti expliqué, les prévisions et bilans, ainsi que les informations facultatives Atmo France. Une mise à jour conserve les entités et réglages enregistrés.
 
 1. Ouvre **Niak Weather** dans HACS et utilise **Mettre à jour** si proposé, sinon **⋮ → Retélécharger / Redownload**.
-2. Sélectionne **v1.7.1** si le choix d’une version est demandé. Il n’est pas nécessaire d’activer les préversions.
+2. Sélectionne **v1.7.2** si le choix d’une version est demandé. Il n’est pas nécessaire d’activer les préversions.
 3. Télécharge, puis recharge le navigateur avec **Ctrl+F5**. Sur l’application mobile, ferme puis rouvre le tableau de bord et, si nécessaire, vide son cache frontend.
 4. Les choix enregistrés sont conservés. Pour ajouter des mesures ou réparer des références introuvables, ouvre la catégorie concernée et clique **Remplir automatiquement** ; vérifie les propositions avant d’enregistrer.
 
@@ -106,7 +106,7 @@ Dans **Atmo France — air extérieur et pollens**, sélectionne la commune/zone
 
 Installe [Thermal Comfort](https://github.com/dolezsa/thermal_comfort) via HACS si ce n’est pas déjà fait, puis configure un appareil avec la température et l’humidité **extérieures** de la station. Active les capteurs Humidex et Perception de l’humidex dans Home Assistant s’ils sont désactivés.
 
-Dans **Sources Thermal Comfort**, sélectionne cet appareil et utilise **Remplir automatiquement**. Les listes sont filtrées par type de mesure et appareil. La recherche automatique compare aussi ses lectures d’entrée à celles de la station pour éviter de prendre les capteurs d’une pièce intérieure. Si plusieurs choix sont équivalents, elle laisse le champ vide : il faut choisir manuellement. Sans humidex, la carte indique que l’humidité n’est pas comptée dans son estimation.
+Dans **Sources Thermal Comfort**, utilise **Remplir automatiquement**, puis vérifie les capteurs proposés. Les listes sont filtrées par type de mesure. La recherche automatique compare aussi les lectures d’entrée à celles de la station pour éviter de prendre les capteurs d’une pièce intérieure. Si plusieurs choix sont équivalents, elle laisse le champ vide : sélectionne le capteur adapté. Aucun choix supplémentaire « manuel / appareil » n’est nécessaire. Sans humidex, la carte indique que l’humidité n’est pas comptée dans son estimation.
 
 ### Comprendre ce que tu vois
 

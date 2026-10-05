@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { briefPreview, briefPresentation } from '../src/brief-preview';
+import { briefPreview, briefPresentation, briefSecondarySignals } from '../src/brief-preview';
 import type { WeatherBrief, BriefSignal } from '../src/weather-brief';
 const signal = (key: string, group: BriefSignal['group'], severity: BriefSignal['severity']): BriefSignal => ({key,group,severity,text:key,explanation:key,icon:'mdi:weather-sunny'});
 const brief = (signals: BriefSignal[]): WeatherBrief => ({signals,title:'',summary:'',label:'',rgb:'',icon:'',available:true,caveats:[]});
 describe('Concise summary presentation', () => {
+  it('shows meaningful pressure alongside pollution, not an empty outlook',()=>{
+    expect(briefSecondarySignals(brief([signal('air','environment',2),signal('pressure','now',0)])).map(s=>s.key)).toEqual(['pressure']);
+    expect(briefSecondarySignals(brief([]))).toEqual([]);
+    expect(briefSecondarySignals(brief([signal('pressure','now',0)]))).toEqual([]);
+    expect(briefSecondarySignals(brief([signal('air','environment',2),signal('temperature-future','future',0)])).map(s=>s.key)).toEqual(['temperature-future']);
+  });
   it('keeps the highest attention and upcoming event, limits to three, counts omitted signals', () => {
     const result=briefPreview(brief([signal('official','official',3),signal('wind','now',2),signal('storm','future',2),signal('air','environment',2),signal('pollen','environment',1)]));
     expect(result.selected.map(s=>s.key)).toEqual(['official','storm','wind']);expect(result.remaining).toBe(2);

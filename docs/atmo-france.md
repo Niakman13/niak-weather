@@ -47,6 +47,6 @@ La date affichée est celle de **publication Atmo**, pas l’heure d’une mesur
 
 ## Migrer depuis Polleninformation
 
-Après la mise à jour v1.0.0, ouvrir l’éditeur et préremplir les entités Atmo si ce n’est pas déjà fait. La source Atmo est proposée si une zone est identifiable. L’ancienne liste `pollens` est conservée mais n’est plus affichée en double. Pour utiliser cette source, choisir **Polleninformation** et conserver sa liste ; pour ne montrer aucun pollen, choisir **Ne pas afficher les pollens**. L’air extérieur reste indépendant de ce choix.
+Ouvrir l’éditeur et préremplir les capteurs Atmo si ce n’est pas déjà fait. La catégorie Atmo France configure directement ses indices, espèces et concentrations : aucun sélecteur supplémentaire de source des pollens n’est nécessaire. Les anciennes configurations restent prises en charge : `pollen_source: legacy` conserve la liste `pollens`, et `pollen_source: none` masque les pollens. Ces options restent disponibles dans l’éditeur YAML pour les cartes existantes. L’air extérieur reste indépendant de ce choix.
 
 Il n’est pas nécessaire de désinstaller Polleninformation : d’autres tableaux de bord ou automatisations peuvent encore l’utiliser. Cette évolution ne modifie pas les intégrations, automatisations ou capteurs personnalisés existants.

@@ -10,7 +10,9 @@ Le choix Accueil (compact) / Complet est supprimé. Une ancienne configuration `
 
 Quand le brief intelligent est désactivé, le bandeau devient **Météo actuelle** : le résumé de gauche disparaît pour éviter de répéter la condition déjà affichée à droite. Le ciel animé reste disponible.
 
-Lorsque le brief est activé, un petit **i** à côté du titre **Synthèse** ouvre les points à retenir, leurs sources et les limites des données. Il remplace le volet qui occupait le bas du bandeau. Fermé par défaut, il fonctionne à la souris et au clavier, comme l’aide du ressenti.
+Lorsque le brief est activé, un petit **i** à côté du titre **Synthèse** ouvre les points à retenir, leurs sources et les limites des données dans un panneau superposé sur toute la largeur de la carte. L’ouverture ne change pas la hauteur du bandeau et ne déplace pas les sections suivantes. Fermé par défaut, le panneau se referme avec le bouton Fermer, le « i », Échap ou un clic à l’extérieur. Sur un écran trop petit pour tout afficher, seul le panneau fait défiler ses informations.
+
+La ligne **À venir** apparaît seulement lorsqu’une évolution pertinente est détectée dans les prévisions. Une variation de pression d’au moins 1 hPa peut accompagner les autres informations de la synthèse : c’est une mesure de tendance sur les trois dernières heures, pas une prévision de pluie. L’historique reste affiché pendant le rechargement des données ; sa référence tient compte des changements enregistrés par Home Assistant, sans perdre une mesure simplement parce qu’elle passe la limite exacte des trois heures.
 
 Options YAML correspondantes : `show_synthesis`, `show_today` et `show_predictions` (valeurs `true` ou `false`).
 

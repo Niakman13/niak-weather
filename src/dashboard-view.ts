@@ -1,6 +1,6 @@
 import { css, html, nothing } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { briefPresentation } from './brief-preview';
+import { briefPresentation, briefSecondarySignals } from './brief-preview';
 import { renderAtmo } from './atmo-view';
 import { finite, type History } from './local-model';
 import { renderRecentDetails } from './recent-details';
@@ -11,9 +11,24 @@ import './weather-sky';
 import type { WeatherBrief } from './weather-brief';
 import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
 
+function toggleSynthesisInfo(event: Event) {
+  const button=event.currentTarget as HTMLButtonElement;
+  const panel=button.parentElement!.querySelector<HTMLElement>('.nw-brief-panel')!;
+  if(panel.matches(':popover-open')) { panel.hidePopover();return; }
+  const bounds=button.closest('.nw-synthesis')!.getBoundingClientRect();
+  const anchor=button.getBoundingClientRect();
+  const left=Math.max(8,bounds.left),right=Math.min(document.documentElement.clientWidth-8,bounds.right);
+  const top=Math.max(8,Math.min(anchor.bottom+12,window.innerHeight-160));
+  panel.style.left=`${left}px`;panel.style.top=`${top}px`;
+  panel.style.width=`${Math.max(0,right-left)}px`;
+  panel.style.maxHeight=`${Math.max(80,window.innerHeight-top-12)}px`;
+  panel.showPopover();
+}
+
 export function renderDashboard(rendered: Record<string, string>, brief: WeatherBrief | undefined, model: HassEntity,
   hass: HomeAssistant, config: WeatherCardConfig, now: Date, location: string, hourly:WeatherForecast[] = [], history:History={}, rainHistory:History={}) {
   const preview = brief ? briefPresentation(brief) : undefined;
+  const secondary = brief ? briefSecondarySignals(brief) : [];
   const unavailable = ['unknown', 'unavailable'].includes(model.state);
   const headline = preview?.headline;
   const current = unavailable ? 'Mesures indisponibles.' : brief?.summary.split('\n')[0].replace(/^Maintenant : /, '').split('. ')[0];
@@ -29,14 +44,16 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
     { key:'future', title:'Dans les prochaines heures', description:'Ce que prévoit le fournisseur météo ; l’heure peut évoluer.' },
     { key:'environment', title:'Air et pollens', description:'Indices de votre zone, pour aujourd’hui ou demain selon le libellé.' },
   ];
-  const synthesisInfo=brief?html`<details class="nw-brief-details"><summary aria-label="Comprendre la synthèse et consulter les points à retenir"><h2 id="nw-synthesis-title">Synthèse <span class="nw-info-icon" aria-hidden="true">i</span></h2><span class="nw-synthesis-location">${location}</span></summary>
-    <div class="nw-brief-panel"><div class="nw-brief-groups">${groups.map(group=>{
+  const synthesisInfo=brief?html`<div class="nw-brief-details"><h2 id="nw-synthesis-title">Synthèse</h2><button class="nw-synthesis-info-button" aria-label="Consulter les points à retenir de la synthèse" aria-expanded="false" aria-controls="nw-synthesis-info" @click=${toggleSynthesisInfo}><span class="nw-info-icon" aria-hidden="true">i</span></button><span class="nw-synthesis-location">${location}</span>
+    <div id="nw-synthesis-info" class="nw-brief-panel" popover="auto" role="region" aria-label="Les points à retenir" @toggle=${(event:Event)=>{
+      const panel=event.currentTarget as HTMLElement;
+      panel.parentElement!.querySelector('.nw-synthesis-info-button')!.setAttribute('aria-expanded',String(panel.matches(':popover-open')));
+    }}><header class="nw-brief-panel-heading"><h3>Les points à retenir</h3><button aria-label="Fermer les informations de synthèse" @click=${(event:Event)=>(event.currentTarget as HTMLElement).closest<HTMLElement>('.nw-brief-panel')!.hidePopover()}>Fermer ×</button></header><div class="nw-brief-groups">${groups.map(group=>{
       const signals=brief.signals.filter(s=>s.group===group.key&&(s.severity>0||s.key===preview?.outlookKey||s.key==='rain-now'||s.key==='pressure'));
       return signals.length?html`<section class="nw-brief-group"><h4>${group.title}</h4><p class="nw-brief-context">${group.description}</p><ul>${signals.map(s=>html`<li><ha-icon icon=${s.icon}></ha-icon><span>${s.text}</span>${s.entity?html`<button data-entity=${s.entity} aria-label=${`Source : ${s.text}`}>Source</button>`:nothing}</li>`)}</ul></section>`:nothing;
     })}</div>
     ${!brief.signals.some(s=>s.severity>0)?html`<p>Pas de point d’attention renforcé parmi les données disponibles.</p>`:nothing}
-    <p class="nw-brief-context">La couleur suit le point le plus préoccupant. Seule une vigilance rouge Météo-France donne le rouge au bandeau.</p>
-    ${brief.caveats.length?html`<details class="nw-brief-limits"><summary>Données à vérifier · ${brief.caveats.length}</summary><ul>${brief.caveats.map(c=>html`<li>${c}</li>`)}</ul></details>`:nothing}</div></details>`:nothing;
+    ${brief.caveats.length?html`<details class="nw-brief-limits"><summary>Données à vérifier · ${brief.caveats.length}</summary><ul>${brief.caveats.map(c=>html`<li>${c}</li>`)}</ul></details>`:nothing}</div></div>`:nothing;
   return html`
     ${config.show_synthesis===false?nothing:html`<section id="heros" class=${`nw-section nw-synthesis${brief?'':' nw-synthesis--weather-only'}`} aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
       <div class="nw-sky-backdrop" aria-hidden="true"><niak-weather-sky .condition=${weatherNow.condition} .phase=${weatherNow.phase}
@@ -47,9 +64,8 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
       <div class="nw-summary-lead"><h3>${headline}</h3>
         ${brief ? html`<span class="nw-attention"><i aria-hidden="true"></i>${brief.label}</span>` : nothing}</div>
       <div class="nw-summary-lines">
-        ${preview?.selected.length ? preview.selected.slice(1).map(s => html`<p><span>${s.group === 'future' ? 'À venir' : s.group === 'environment' ? 'Environnement' : s.group === 'official' ? 'Vigilance' : 'Maintenant'}</span>${s.text}</p>`)
-          : showComfort ? html`<p>${current}</p>` : html`<p>La synthèse se limite aux sources disponibles.</p>`}
-        ${brief && !preview?.outlookKey && !preview?.selected.some(s => s.group === 'future') ? html`<p><span>À venir</span>${brief.signals.find(s => s.group === 'future')?.text ?? (brief.caveats.some(c => c.startsWith('Prévisions des')) ? 'Prévisions indisponibles.' : 'Pas de signal marqué dans les 6 h disponibles.')}</p>` : nothing}
+        ${secondary.map(s => html`<p><span>${s.group === 'future' ? 'À venir' : s.group === 'environment' ? 'Environnement' : s.group === 'official' ? 'Vigilance' : 'Maintenant'}</span>${s.text}</p>`)}
+        ${!preview?.selected.length && showComfort ? html`<p>${current}</p>` : nothing}
       </div>`:nothing}
       <aside class="nw-current-weather" aria-label="Météo actuelle">
         <div class="nw-current-content"><span class="nw-current-kicker">En ce moment</span>
@@ -107,15 +123,16 @@ export const dashboardStyles = css`
   .nw-summary-lines { grid-column:1 / 3; grid-row:3; margin:8px 0 0; font-size:12px; line-height:1.6; position:relative; z-index:1; }
   .nw-summary-lines p { margin:7px 0; }
   .nw-summary-lines p>span { display:inline-block; color:var(--primary-text-color); margin-right:8px; padding:3px 9px; border:1px solid rgba(var(--vc),.2); border-radius:999px; background:color-mix(in srgb,var(--card-background-color,#fff) 92%,rgb(var(--vc)) 8%); font-size:10px; font-weight:600; line-height:1.4; vertical-align:baseline; }
-  .nw-brief-details { margin:0;font-size:11px;min-width:0; }
-  .nw-brief-details[open] { flex-basis:100%; }
-  .nw-brief-details>summary { display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;list-style:none;cursor:pointer;width:fit-content;border-radius:6px; }
+  .nw-brief-details { display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin:0;font-size:11px;min-width:0; }
+  .nw-brief-details>.nw-synthesis-info-button { display:inline-flex;align-items:center;justify-content:center;border:0;background:none;padding:3px;color:inherit;cursor:pointer; }
+  .nw-synthesis-info-button:focus-visible { outline:2px solid var(--primary-color);outline-offset:2px;border-radius:50%; }
+  .nw-synthesis-info-button[aria-expanded="true"] .nw-info-icon { color:var(--primary-color);border-color:currentColor; }
   .nw-synthesis-location { font-size:11px;color:var(--secondary-text-color); }
-  .nw-brief-details>summary::-webkit-details-marker { display:none; }
-  .nw-brief-details>summary h2 { display:flex;align-items:center;gap:7px; }
-  .nw-brief-details>summary:focus-visible { outline:2px solid var(--primary-color);outline-offset:3px; }
-  .nw-brief-details[open] .nw-info-icon { color:var(--primary-color);border-color:currentColor; }
-  .nw-brief-panel { margin-top:12px;padding:12px;border:1px solid var(--divider-color,rgba(150,150,150,.2));border-radius:12px;background:color-mix(in srgb,var(--card-background-color,#fff) 96%,transparent);line-height:1.5; }
+  .nw-brief-panel { position:fixed;inset:auto;margin:0;padding:16px;box-sizing:border-box;border:1px solid var(--divider-color,rgba(150,150,150,.2));border-radius:14px;background:var(--card-background-color,#fff);color:var(--primary-text-color);box-shadow:0 14px 40px #0004;line-height:1.5;overflow:auto;overscroll-behavior:contain; }
+  .nw-brief-panel::backdrop { background:transparent; }
+  .nw-brief-panel-heading { position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:6px 0;background:var(--card-background-color,#fff); }
+  .nw-brief-panel-heading h3 { font-size:14px;margin:0; }
+  .nw-brief-panel-heading button { font:inherit;font-size:11px;cursor:pointer;border:0;background:none;color:var(--secondary-text-color);padding:5px; }
   .nw-current-weather { position:relative; grid-column:3; grid-row:1 / span 3; min-height:190px; display:flex; justify-content:flex-end; align-items:center; }
   .nw-current-content { position:relative; display:flex; flex-direction:column; align-items:flex-end; text-align:right; color:white; text-shadow:0 1px 5px #142c4699; padding:8px 0 8px 26px; gap:4px; }
   .nw-current-kicker { font-size:10px; text-transform:uppercase; letter-spacing:.12em; opacity:.85; }
@@ -173,7 +190,8 @@ export const dashboardStyles = css`
   #bilan .me-bl { background:rgba(150,150,150,.035); border-color:var(--divider-color,rgba(150,150,150,.18)); }
   #bilan .me-bln { flex-basis:102px; }
   .nw-brief-groups { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:0 0 12px; }
-  .nw-brief-group { min-width:0;padding:10px;border:1px solid var(--divider-color,rgba(150,150,150,.2));border-radius:9px;background:rgba(150,150,150,.025); }
+  .nw-brief-group { min-width:0;padding:0;border:0;background:none; }
+  .nw-brief-group:only-child { grid-column:1/-1; }
   .nw-brief-group h4 { margin:0; font-size:12px; font-weight:650; }
   .nw-brief-context { font-size:11px; color:var(--secondary-text-color); line-height:1.5; }
   .nw-brief-group ul { list-style:none; padding:0; margin:8px 0 0; }

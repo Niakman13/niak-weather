@@ -25,3 +25,12 @@ export function briefPresentation(brief: WeatherBrief) {
     outlookKey:outlook?.key,
   };
 }
+
+/** Only useful observations/outlooks, without repeating the headline. */
+export function briefSecondarySignals(brief: WeatherBrief) {
+  const preview=briefPresentation(brief),signals=preview.selected.slice(1);
+  for(const signal of [brief.signals.find(s=>s.key==='pressure'),brief.signals.find(s=>s.group==='future')]) {
+    if(signal && signal!==preview.selected[0] && signal.key!==preview.contextKey && signal.key!==preview.outlookKey && !signals.includes(signal) && signals.length<3) signals.push(signal);
+  }
+  return signals;
+}

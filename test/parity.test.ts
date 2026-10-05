@@ -46,6 +46,14 @@ describe('data integrity and missing values', () => {
     expect(trend([{ s: '1000', lu: 1000 }], 1005, 1500, 'pressure').d).toBe(-999);
     expect(trend([{ s: '1000', lu: 1000 }], 1005, 11800, 'pressure')).toMatchObject({ d: 5, f: 180, tx: 'amélioration' });
   });
+  it('keeps the pressure reference at the three-hour boundary between recorded changes',()=>{
+    const history=[{s:'1000',lu:1000},{s:'1000.2',lu:2000}];
+    for(const now of [11800,11801,11860]) expect(trend(history,1001.1,now,'pressure')).toMatchObject({d:1.1,f:180,s:'hausse'});
+    expect(trend(history,1001.1,12801,'pressure')).toMatchObject({d:.9,s:'stable'});
+  });
+  it('does not bridge an unavailable pressure reference',()=>{
+    expect(trend([{s:'1000',lu:500},{s:'unavailable',lu:1000},{s:'1001',lu:11800}],1001.1,11801,'pressure').d).toBe(-999);
+  });
   it('keeps cumulative counters nested, not summed', () => expect(rainNarrative(1, 1, 1)).toBe('tout ce qui est tombé ce mois-ci est tombé aujourd’hui'));
   it('uses the Home Assistant timezone, including midnight', () => {
     const f = normaliseForecasts([{ datetime: '2026-10-04T22:00:00Z', temperature: 18 }], [], new Date('2026-10-04T20:00:00Z'), 'Europe/Paris');

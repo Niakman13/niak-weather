@@ -21,7 +21,9 @@ export class NiakWeatherCard extends LitElement {
   @state() private daily: WeatherForecast[] = [];
   @state() private history: History = {};
   @state() private rainHistory: History = {};
-  private generation = 0;
+  private forecastGeneration = 0;
+  private historyGeneration = 0;
+  private rainGeneration = 0;
   private forecastAt = 0;
   private historyAt = 0;
   private rainHistoryAt = 0;
@@ -40,11 +42,15 @@ export class NiakWeatherCard extends LitElement {
     this.config = next;
     if (old?.show_today===false && next.show_today!==false) { this.historyAt=0; this.rainHistoryAt=0; }
     // Cosmetic edits must not clear graphs and launch new forecast/history requests.
-    if (!old || old.weather_entity !== next.weather_entity || old.pressure_entity !== next.pressure_entity || old.wind_speed_entity !== next.wind_speed_entity || old.wind_gust_entity !== next.wind_gust_entity || old.daily_rain_entity !== next.daily_rain_entity) {
-      this.generation++;
-      this.hourly = []; this.daily = []; this.history = {}; this.forecastAt = 0; this.historyAt = 0;
-      this.forecastPending = false; this.historyPending = false;
-      this.rainHistory = {}; this.rainHistoryAt = 0; this.rainHistoryPending = false;
+    if (!old || old.weather_entity !== next.weather_entity) {
+      this.forecastGeneration++;this.hourly=[];this.daily=[];this.forecastAt=0;this.forecastPending=false;
+    }
+    if (!old || old.pressure_entity !== next.pressure_entity || old.wind_speed_entity !== next.wind_speed_entity || old.wind_gust_entity !== next.wind_gust_entity) {
+      const retained = new Set([next.pressure_entity,next.wind_speed_entity,next.wind_gust_entity]);
+      this.historyGeneration++;this.history=Object.fromEntries(Object.entries(this.history).filter(([id])=>retained.has(id)));this.historyAt=0;this.historyPending=false;
+    }
+    if (!old || old.daily_rain_entity !== next.daily_rain_entity) {
+      this.rainGeneration++;this.rainHistory={};this.rainHistoryAt=0;this.rainHistoryPending=false;
     }
     this.requestUpdate();
   }
@@ -65,7 +71,7 @@ export class NiakWeatherCard extends LitElement {
     this.forecastAt = 0; this.historyAt = 0; this.rainHistoryAt = 0;
   }
   public disconnectedCallback(): void {
-    super.disconnectedCallback(); clearInterval(this.timer); clearTimeout(this.holdTimer); this.generation++;
+    super.disconnectedCallback(); clearInterval(this.timer); clearTimeout(this.holdTimer); this.forecastGeneration++;this.historyGeneration++;this.rainGeneration++;
     this.forecastPending = false; this.historyPending = false;
     this.rainHistoryPending = false;
   }
@@ -82,11 +88,11 @@ export class NiakWeatherCard extends LitElement {
   private async loadForecasts(): Promise<void> {
     if (!this.hass || !this.config || this.forecastPending || Date.now() - this.forecastAt < 900_000) return;
     this.forecastPending = true; this.forecastAt = Date.now();
-    const generation = this.generation, id = this.config.weather_entity, hass = this.hass;
+    const generation = this.forecastGeneration, id = this.config.weather_entity, hass = this.hass;
     const request = (type: 'hourly' | 'daily') => hass.callWS<ForecastResponse>({ type: 'call_service', domain: 'weather', service: 'get_forecasts',
       service_data: { type }, target: { entity_id: id }, return_response: true });
     const results = await Promise.allSettled([request('hourly'), request('daily')]);
-    if (generation !== this.generation || !this.isConnected) return;
+    if (generation !== this.forecastGeneration || !this.isConnected) return;
     this.forecastPending = false;
     const weather = hass.states[id];
     const convert = (rows: WeatherForecast[]) => rows.map(p => ({ ...p,
@@ -102,23 +108,23 @@ export class NiakWeatherCard extends LitElement {
     const ids = [...new Set([this.config.pressure_entity, this.config.wind_speed_entity, this.config.show_today===false?undefined:this.config.wind_gust_entity].filter((id): id is string => !!id))];
     if (!ids.length) return;
     this.historyPending = true; this.historyAt = Date.now();
-    const generation = this.generation;
+    const generation = this.historyGeneration;
     try {
       const result = await this.hass.callWS<History>({ type: 'history/history_during_period', start_time: new Date(Date.now() - 21600_000).toISOString(),
         end_time: new Date().toISOString(), entity_ids: ids, minimal_response: true, no_attributes: true });
-      if (generation === this.generation && this.isConnected) this.history = result;
+      if (generation === this.historyGeneration && this.isConnected) this.history = result;
     } catch { /* Recorder may exclude the entities. No invented trend: the local renderer says it's being measured. */ }
-    finally { if (generation === this.generation) this.historyPending = false; }
+    finally { if (generation === this.historyGeneration) this.historyPending = false; }
   }
   private async loadRainHistory(): Promise<void> {
     if (!this.hass || !this.config?.daily_rain_entity || this.config.show_today===false || this.rainHistoryPending || Date.now()-this.rainHistoryAt<900_000) return;
     this.rainHistoryPending=true;this.rainHistoryAt=Date.now();
-    const generation=this.generation,id=this.config.daily_rain_entity;
+    const generation=this.rainGeneration,id=this.config.daily_rain_entity;
     try {
       const result=await this.hass.callWS<History>({type:'history/history_during_period',start_time:new Date(Date.now()-8*86400_000).toISOString(),end_time:new Date().toISOString(),entity_ids:[id],minimal_response:true,no_attributes:true});
-      if(generation===this.generation&&this.isConnected)this.rainHistory=result;
+      if(generation===this.rainGeneration&&this.isConnected)this.rainHistory=result;
     } catch { /* Optional Recorder history: never invent missing daily totals. */ }
-    finally {if(generation===this.generation)this.rainHistoryPending=false;}
+    finally {if(generation===this.rainGeneration)this.rainHistoryPending=false;}
   }
   protected render() {
     if (!this.hass || !this.config) return nothing;
@@ -143,6 +149,7 @@ export class NiakWeatherCard extends LitElement {
   private down(event: PointerEvent): void {
     clearTimeout(this.holdTimer); if (event.button !== 0) return;
     if (event.composedPath().some(e => e instanceof HTMLElement && e.classList.contains('nw-comfort-info'))) return;
+    if (event.composedPath().some(e => e instanceof HTMLElement && e.classList.contains('nw-brief-details'))) { this.gesture=undefined;return; }
     if (event.composedPath().some(e => e instanceof HTMLElement && e.tagName === 'SUMMARY')) return;
     this.gesture = { x:event.clientX, y:event.clientY, at:Date.now(), moved:false };
     if (this.config?.weather_path) this.holdTimer = setTimeout(() => {
@@ -167,6 +174,7 @@ export class NiakWeatherCard extends LitElement {
     const path = this.config?.weather_path;
     if (gesture && Date.now() - gesture.at >= 500) { if (path) this.navigate(path); return; }
     const target = event.composedPath().find(e => e instanceof HTMLElement && (e.hasAttribute('data-entity') || e.hasAttribute('data-nav'))) as HTMLElement | undefined;
+    if (!target && event.composedPath().some(e => e instanceof HTMLElement && e.classList.contains('nw-brief-details'))) return;
     if (target?.hasAttribute('data-nav')) { this.navigate(target.getAttribute('data-nav')!); return; }
     const id = target?.getAttribute('data-entity') ?? this.config?.weather_entity;
     if (id) this.open(id);
