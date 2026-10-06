@@ -780,7 +780,53 @@ try {
     resolveOld({'sensor.old_rain':[{s:'123',lu:Date.now()/1000}]});await new Promise(r=>setTimeout(r,20));
     const safe=!card.rainHistory['sensor.old_rain']&&!!card.rainHistory['sensor.new_rain'];card.remove();return safe;
   });assert.equal(rainHistoryRace,true,'A stale response cannot overwrite another rain source');
+  const stationJourney=await page.evaluate(async()=>{
+    const sleep=ms=>new Promise(r=>setTimeout(r,ms)),main=document.querySelector('main');main.replaceChildren();
+    const prefix='sensor.ws90_',time=Date.now(),day=new Date();day.setUTCHours(0,0,0,0);
+    const specs={temperature:['temperature','°C','20'],dew_point:['temperature','°C','15'],humidity:['humidity','%','70'],wind_speed:['wind_speed','m/s','2'],gust_speed:['wind_speed','m/s','4'],wind_direction:['','°','180'],illuminance:['illuminance','lx','1000'],illuminance_raw:['','','30827'],precipitation:['precipitation','mm','12'],rain_rate:['precipitation_intensity','mm/h','0']};
+    const states={'weather.test':window.fixture.states['weather.test'],...Object.fromEntries(Object.entries(specs).map(([name,[device_class,unit_of_measurement,state]])=>[prefix+name,{entity_id:prefix+name,state,attributes:{friendly_name:name,device_class,unit_of_measurement,state_class:name==='precipitation'?'total_increasing':'measurement'}}]))};
+    let requests=0,resolveStale;
+    const entities=Object.keys(specs).map(name=>({entity_id:prefix+name,device_id:'ws90',platform:'mqtt'}));
+    const hass={states,language:'fr',config:{time_zone:'UTC'},callWS:async msg=>{
+      requests++;
+      if(msg.type==='config/entity_registry/list')return entities;
+      if(msg.type==='config/device_registry/list')return [{id:'ws90',name:'WS90 MQTT',manufacturer:'Shelly'}];
+      if(msg.type==='recorder/get_statistics_metadata')return [{statistic_id:prefix+'precipitation',has_sum:true,unit_of_measurement:'mm'}];
+      if(msg.type==='recorder/statistics_during_period')return {[prefix+'precipitation']:[{start:day.getTime()-86400_000,end:day.getTime(),sum:10,state:10},{start:day.getTime(),end:time-3600_000,sum:11,state:11}]};
+      if(msg.type==='history/history_during_period')return Object.fromEntries(msg.entity_ids.map(id=>[id,id===prefix+'precipitation'?[{s:'10',lu:day.getTime()/1000},{s:'11',lu:(time-3600_000)/1000}]:[{s:states[id]?.state??'0',lu:(time-3600_000)/1000}]]));
+      return {};
+    }};
+    const editor=document.createElement('niak-weather-card-editor'),card=document.createElement('niak-weather-card');
+    editor.setConfig({type:'custom:niak-weather-card',weather_entity:'weather.test'});editor.hass=hass;main.append(editor);await sleep(30);
+    editor.shadowRoot.querySelector('details[data-category="station"]').open=true;await sleep(20);
+    editor.addEventListener('config-changed',event=>{editor.setConfig(event.detail.config);card.setConfig(event.detail.config);});
+    const form=editor.shadowRoot.querySelector('ha-form[data-category="station"]');
+    form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,station_device_id:'ws90'}},bubbles:true}));await sleep(60);
+    const flatten=items=>items.flatMap(item=>item.schema?flatten(item.schema):[item]);
+    const schemas=flatten(form.schema),tempIds=schemas.find(s=>s.name==='temperature_entity').selector.entity.include_entities;
+    const deviceForm=editor.shadowRoot.querySelector('ha-form[data-category="station-device"]');
+    const result={profile:editor.shadowRoot.querySelector('.station-report').textContent.includes('WS90 via MQTT'),prefilled:form.data.illuminance_entity===prefix+'illuminance'&&form.data.rain_total_entity===prefix+'precipitation',strictTemperature:tempIds.join(',')===prefix+'temperature',manualMode:deviceForm.schema[0].selector.select.options.some(o=>o.value===''&&o.label.includes('Autres capteurs')),deviceFirst:!!(deviceForm.compareDocumentPosition(editor.shadowRoot.querySelector('.station-report'))&Node.DOCUMENT_POSITION_FOLLOWING)};
+    form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,temperature_entity:prefix+'dew_point'}},bubbles:true}));await sleep(20);
+    result.rejectWrongFunction=editor.config.temperature_entity===prefix+'temperature';
+    card.hass=hass;main.append(card);await sleep(60);window.stationDemo={editor,card,hass};
+    const rain=card.shadowRoot.querySelector('[aria-label="Bilan pluie"]');
+    result.rainComputed=rain.textContent.includes('historique')&&rain.querySelector('.nw-history-headline strong').textContent.includes('2,0');
+    result.partialYear=rain.textContent.includes('Cette année · partiel');
+    result.noExtraEntities=Object.keys(hass.states).length===Object.keys(states).length;
+    const before=requests;card.setConfig({...card.config,location:'Une autre saisie'});await sleep(20);result.cached=requests===before;
+    card.setConfig({...card.config,weekly_rain_entity:'sensor.native_week'});card.hass={...hass,states:{...states,'sensor.native_week':{entity_id:'sensor.native_week',state:'99',attributes:{unit_of_measurement:'mm'}}}};await sleep(20);
+    result.nativeWins=card.shadowRoot.querySelector('[data-entity="sensor.native_week"] strong').textContent.includes('99,0');
+    return result;
+  });
+  for(const [key,value] of Object.entries(stationJourney))assert.equal(value,true,`Station setup: ${key}`);
+  for(const width of [375,768,1440]){
+    await page.setViewportSize({width,height:1400});
+    const fits=await page.evaluate(()=>{const {editor,card}=window.stationDemo;return [editor,card].every(e=>e.scrollWidth<=e.clientWidth+1);});
+    assert.equal(fits,true,`Station editor/card fits ${width}`);
+    await page.locator('niak-weather-card-editor details[data-category="station"]').screenshot({path:`${out}/station-editor-${width}.png`});
+    await page.locator('niak-weather-card #bilan').screenshot({path:`${out}/station-derived-${width}.png`});
+  }
   assert.deepEqual(errors,[],'Current sky browser console/network');
-  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,displayOptions,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,recentDetails,missingDetails,errors},null,2));
+  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,stationJourney,displayOptions,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,recentDetails,missingDetails,errors},null,2));
   console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,displayOptions,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,recentDetails,missingDetails,errors},null,2));
 } finally { await browser.close();server.close(); }

@@ -4,7 +4,7 @@ import type {HomeAssistant,WeatherCardConfig} from '../src/types';
 const prefix='sensor.station_meteo_ecowitt_ws90_powered_by_shelly_';
 const measurements={temperature:['temperature','°C'],dew_point:['temperature','°C'],apparent_temperature:['temperature','°C'],illuminance:['illuminance','lx'],illuminance_raw:['',''],wind_speed:['wind_speed','km/h'],gust_speed:['wind_speed','km/h'],wind_direction:['','°'],precipitation:['precipitation','mm'],precipitations_24h:['precipitation','mm']} as const;
 const states=Object.fromEntries(Object.entries(measurements).map(([name,[device_class,unit_of_measurement]])=>[prefix+name,{entity_id:prefix+name,state:'1',attributes:{device_class,unit_of_measurement,state_class:name==='precipitation'?'total_increasing':'measurement'}}]));
-const hass={states} as HomeAssistant;
+const hass={states} as unknown as HomeAssistant;
 const registry={entities:Object.keys(states).map(entity_id=>({entity_id,device_id:'station',platform:'mqtt'})),devices:[{id:'station',name:'WS90',manufacturer:'Shelly'}]};
 const config:WeatherCardConfig={type:'custom:niak-weather-card',weather_entity:'weather.home',station_device_id:'station'};
 describe('Station profiles and function-aware choices',()=>{
@@ -17,7 +17,7 @@ describe('Station profiles and function-aware choices',()=>{
   it('does not offer a generic counter as a daily counter',()=>expect(manualCandidates(hass,'daily_rain_entity',registry,config)).toEqual([]));
   it('does not mistake averaged wind direction for speed',()=>{
     const id='sensor.gw2000a_wind_direction_10m_avg';
-    expect(fillCategory({states:{[id]:{entity_id:id,state:'180',attributes:{unit_of_measurement:'°'}}}} as HomeAssistant,{entities:[],devices:[]},{...config,station_device_id:undefined},'station').wind_speed_entity).toBeUndefined();
+    expect(fillCategory({states:{[id]:{entity_id:id,state:'180',attributes:{unit_of_measurement:'°'}}}} as unknown as HomeAssistant,{entities:[],devices:[]},{...config,station_device_id:undefined},'station').wind_speed_entity).toBeUndefined();
   });
   it('recognizes a WS90 MQTT profile and reports ambiguous fields without choosing',async()=>{
     const profiles=await import('../src/station-profiles');
@@ -25,5 +25,19 @@ describe('Station profiles and function-aware choices',()=>{
     expect(report.profile).toBe('WS90 via MQTT');
     expect(report.fields.find(f=>f.field==='illuminance_entity')).toMatchObject({status:'recognized',entity:prefix+'illuminance'});
     expect(report.fields.find(f=>f.field==='daily_rain_entity')).toMatchObject({status:'absent'});
+  });
+  it('fills explicit blank fields only when requested, and keeps valid manual choices',()=>{
+    const empty={...config,illuminance_entity:''};
+    expect(fillCategory(hass,registry,empty,'station').illuminance_entity).toBe('');
+    expect(fillCategory(hass,registry,empty,'station',true).illuminance_entity).toBe(prefix+'illuminance');
+    expect(fillCategory(hass,registry,{...config,temperature_entity:prefix+'temperature'},'station',true).temperature_entity).toBe(prefix+'temperature');
+  });
+  it('reports a real ambiguity without selecting either thermometer',async()=>{
+    const {stationReport}=await import('../src/station-profiles');
+    const id='sensor.station_ws90_outdoor_temperature',more={...states,[id]:{...states[prefix+'temperature'],entity_id:id}};
+    const context={...registry,entities:[...registry.entities,{entity_id:id,device_id:'station',platform:'mqtt'}]};
+    const report=stationReport({...hass,states:more},context,config);
+    expect(report.fields.find(f=>f.field==='temperature_entity')).toMatchObject({status:'ambiguous',entity:undefined});
+    expect(fillCategory({...hass,states:more},context,config,'station').temperature_entity).toBeUndefined();
   });
 });

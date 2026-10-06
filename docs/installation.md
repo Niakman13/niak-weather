@@ -44,6 +44,8 @@ Weather**. Commence par **Sources météo, soleil et vigilance** : seule la sour
 
 Chaque catégorie possède son bouton **Remplir automatiquement**. Il recherche les correspondances de cette catégorie seulement et consulte à nouveau les registres Home Assistant. Les listes manuelles proposent des mesures compatibles : températures pour la température, vitesses pour le vent, pression pour le baromètre. Choisis l’appareil de la station pour réduire les listes ; la sélection n’est pas limitée à l’intégration Ecowitt.
 
+Le parcours des appareils locaux, les profils WS90/GW2000A et les compléments calculés depuis Recorder sont décrits dans [Profils et historiques locaux](station-profiles.md). Les compteurs dédiés restent prioritaires et les cumuls incomplets sont signalés.
+
 Après une réinstallation, clique le bouton de la catégorie concernée pour réparer les références introuvables. Une correspondance ambiguë n’est pas choisie arbitrairement. Les choix valides, les entités `unavailable`/`unknown` et les champs volontairement vidés ne sont pas remplacés. Vérifie toujours les propositions avant d’enregistrer : notamment température/humidité extérieures et période des cumuls de pluie.
 
 Voici l’équivalent YAML minimal :

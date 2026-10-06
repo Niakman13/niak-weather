@@ -7,6 +7,7 @@ import { renderLocal } from './local-renderer';
 import { localStyles } from './local-styles';
 import { detectEcowittStation } from './station-detection';
 import { cleanConfig } from './config';
+import {deriveStation,periodStarts,type StationArchive,type Statistic} from './station-history';
 import './niak-weather-card-editor';
 import { atmoStyles, usesAtmoPollens } from './atmo-view';
 import { dashboardStyles, renderDashboard } from './dashboard-view';
@@ -21,6 +22,10 @@ export class NiakWeatherCard extends LitElement {
   @state() private daily: WeatherForecast[] = [];
   @state() private history: History = {};
   @state() private rainHistory: History = {};
+  @state() private stationArchive:StationArchive={rain:[],counter:{}};
+  private archiveAt=0;
+  private archivePending=false;
+  private archiveGeneration=0;
   private forecastGeneration = 0;
   private historyGeneration = 0;
   private rainGeneration = 0;
@@ -45,12 +50,13 @@ export class NiakWeatherCard extends LitElement {
     if (!old || old.weather_entity !== next.weather_entity) {
       this.forecastGeneration++;this.hourly=[];this.daily=[];this.forecastAt=0;this.forecastPending=false;
     }
-    if (!old || old.pressure_entity !== next.pressure_entity || old.wind_speed_entity !== next.wind_speed_entity || old.wind_gust_entity !== next.wind_gust_entity) {
-      const retained = new Set([next.pressure_entity,next.wind_speed_entity,next.wind_gust_entity]);
+    if (!old || old.pressure_entity !== next.pressure_entity || old.wind_speed_entity !== next.wind_speed_entity || old.wind_gust_entity !== next.wind_gust_entity||old.temperature_entity!==next.temperature_entity||old.station_history!==next.station_history||old.max_daily_gust_entity!==next.max_daily_gust_entity) {
+      const retained = new Set([next.pressure_entity,next.wind_speed_entity,next.wind_gust_entity,next.temperature_entity]);
       this.historyGeneration++;this.history=Object.fromEntries(Object.entries(this.history).filter(([id])=>retained.has(id)));this.historyAt=0;this.historyPending=false;
     }
-    if (!old || old.daily_rain_entity !== next.daily_rain_entity) {
+    if (!old || old.daily_rain_entity !== next.daily_rain_entity||old.rain_total_entity!==next.rain_total_entity||old.station_history!==next.station_history) {
       this.rainGeneration++;this.rainHistory={};this.rainHistoryAt=0;this.rainHistoryPending=false;
+      this.archiveGeneration++;this.stationArchive={rain:[],counter:{}};this.archiveAt=0;this.archivePending=false;
     }
     this.requestUpdate();
   }
@@ -68,14 +74,15 @@ export class NiakWeatherCard extends LitElement {
   public connectedCallback(): void {
     super.connectedCallback();
     this.timer = setInterval(() => { this.requestUpdate(); }, 60_000);
-    this.forecastAt = 0; this.historyAt = 0; this.rainHistoryAt = 0;
+    this.forecastAt = 0; this.historyAt = 0; this.rainHistoryAt = 0;this.archiveAt=0;
   }
   public disconnectedCallback(): void {
     super.disconnectedCallback(); clearInterval(this.timer); clearTimeout(this.holdTimer); this.forecastGeneration++;this.historyGeneration++;this.rainGeneration++;
     this.forecastPending = false; this.historyPending = false;
     this.rainHistoryPending = false;
+    this.archiveGeneration++;this.archivePending=false;
   }
-  protected updated(): void { if (this.isConnected) { void this.loadForecasts(); void this.loadHistory(); void this.loadRainHistory(); } }
+  protected updated(): void { if (this.isConnected) { void this.loadForecasts(); void this.loadHistory(); void this.loadRainHistory();void this.loadStationArchive(); } }
   protected shouldUpdate(changed: Map<PropertyKey, unknown>): boolean {
     if (!this.hass || !this.config) return true;
     const ids = Object.values(this.config).filter((v): v is string => typeof v === 'string' && /^(sensor|weather|sun|binary_sensor)\./.test(v));
@@ -105,33 +112,62 @@ export class NiakWeatherCard extends LitElement {
   }
   private async loadHistory(): Promise<void> {
     if (!this.hass || !this.config || this.historyPending || Date.now() - this.historyAt < 300_000) return;
-    const ids = [...new Set([this.config.pressure_entity, this.config.wind_speed_entity, this.config.show_today===false?undefined:this.config.wind_gust_entity].filter((id): id is string => !!id))];
+    const derived=this.config.station_history!==false;
+    const ids = [...new Set([this.config.pressure_entity, this.config.wind_speed_entity, this.config.show_today===false?undefined:this.config.wind_gust_entity,derived&&!this.config.temperature_trend_entity?this.config.temperature_entity:undefined].filter((id): id is string => !!id))];
     if (!ids.length) return;
     this.historyPending = true; this.historyAt = Date.now();
     const generation = this.historyGeneration;
     try {
-      const result = await this.hass.callWS<History>({ type: 'history/history_during_period', start_time: new Date(Date.now() - 21600_000).toISOString(),
+      const today=periodStarts(new Date(),this.hass.config?.time_zone??'UTC').day;
+      const start=derived&&!this.config.max_daily_gust_entity&&this.config.wind_gust_entity?Math.min(today,Date.now()-21600_000):Date.now()-21600_000;
+      const result = await this.hass.callWS<History>({ type: 'history/history_during_period', start_time: new Date(start).toISOString(),
         end_time: new Date().toISOString(), entity_ids: ids, minimal_response: true, no_attributes: true });
       if (generation === this.historyGeneration && this.isConnected) this.history = result;
     } catch { /* Recorder may exclude the entities. No invented trend: the local renderer says it's being measured. */ }
     finally { if (generation === this.historyGeneration) this.historyPending = false; }
   }
   private async loadRainHistory(): Promise<void> {
-    if (!this.hass || !this.config?.daily_rain_entity || this.config.show_today===false || this.rainHistoryPending || Date.now()-this.rainHistoryAt<900_000) return;
+    if (!this.hass || !this.config || this.config.show_today===false || this.rainHistoryPending || Date.now()-this.rainHistoryAt<900_000) return;
+    const ids=[this.config.daily_rain_entity,this.config.station_history!==false?this.config.rain_total_entity:undefined].filter((id):id is string=>!!id);
+    if(!ids.length)return;
     this.rainHistoryPending=true;this.rainHistoryAt=Date.now();
-    const generation=this.rainGeneration,id=this.config.daily_rain_entity;
+    const generation=this.rainGeneration;
     try {
-      const result=await this.hass.callWS<History>({type:'history/history_during_period',start_time:new Date(Date.now()-8*86400_000).toISOString(),end_time:new Date().toISOString(),entity_ids:[id],minimal_response:true,no_attributes:true});
+      const result=await this.hass.callWS<History>({type:'history/history_during_period',start_time:new Date(Date.now()-8*86400_000).toISOString(),end_time:new Date().toISOString(),entity_ids:ids,minimal_response:true,no_attributes:true});
       if(generation===this.rainGeneration&&this.isConnected)this.rainHistory=result;
     } catch { /* Optional Recorder history: never invent missing daily totals. */ }
     finally {if(generation===this.rainGeneration)this.rainHistoryPending=false;}
+  }
+  private async loadStationArchive():Promise<void>{
+    const hass=this.hass,config=this.config,id=config?.rain_total_entity;
+    if(!hass||!config||!id||config.station_history===false||config.show_today===false||this.archivePending||Date.now()-this.archiveAt<900_000)return;
+    const e=hass.states[id];
+    if(e?.attributes.state_class!=='total_increasing')return;
+    this.archivePending=true;this.archiveAt=Date.now();const generation=this.archiveGeneration;
+    try{
+      const metadata=await hass.callWS<Array<{statistic_id:string;has_sum:boolean;unit_of_measurement:string}>>({type:'recorder/get_statistics_metadata',statistic_ids:[id]});
+      const meta=Array.isArray(metadata)?metadata.find(m=>m.statistic_id===id&&m.has_sum):undefined;
+      if(!meta||!['mm','in','inch'].includes(meta.unit_of_measurement))return;
+      const now=new Date(),year=periodStarts(now,hass.config?.time_zone??'UTC').year;
+      const common={type:'recorder/statistics_during_period',end_time:now.toISOString(),statistic_ids:[id],types:['sum','state']};
+      const results=await Promise.allSettled([
+        hass.callWS<Record<string,Statistic[]>>({...common,start_time:new Date(Math.min(year,now.getTime()-8*86400_000)-86400_000).toISOString(),period:'day'}),
+        hass.callWS<Record<string,Statistic[]>>({...common,start_time:new Date(now.getTime()-9*86400_000).toISOString(),period:'hour'})]);
+      if(generation!==this.archiveGeneration||!this.isConnected)return;
+      const rows=results.flatMap(r=>r.status==='fulfilled'&&Array.isArray(r.value[id])?r.value[id]:[]);
+      const ordered=[...new Map(rows.sort((a,b)=>(b.end-b.start)-(a.end-a.start)).map(r=>[r.end,r])).values()].sort((a,b)=>a.end-b.end);
+      this.stationArchive={rain:ordered,rainUnit:meta.unit_of_measurement,counter:{}};
+    }catch{/* Unsupported statistics/Recorder exclusion: keep missing data honest. */}
+    finally{if(generation===this.archiveGeneration)this.archivePending=false;}
   }
   protected render() {
     if (!this.hass || !this.config) return nothing;
     const config = this.config, hass = this.hass, now = new Date();
     const forecast = normaliseForecasts(this.hourly, this.daily, now, hass.config?.time_zone);
     const hourly = forecast.heures.map((p: any) => ({ datetime: '', temperature: finite(p.t), precipitation: finite(p.p), condition: p.c }));
+    const derived=config.station_history===false?undefined:deriveStation(hass,config,{...this.stationArchive,counter:this.rainHistory},this.history,now);
     const calculated = buildLocalModel(hass, config, hourly, this.history, now);
+    if(derived?.temperatureTrend!==undefined&&config.temperature_trend_entity===undefined){calculated.attributes.tend_temp=derived.temperatureTrend;(calculated.attributes.sources as Record<string,string>).tend_temp=config.temperature_entity!;}
     let model = calculated;
     const weather = hass.states[config.weather_entity];
     const briefPoints: BriefPoint[] = this.hourly.map(p => ({ hours: (Date.parse(p.datetime) - now.getTime()) / 3600_000, temperature: p.temperature, precipitation: p.precipitation, condition: p.condition }));
@@ -144,7 +180,7 @@ export class NiakWeatherCard extends LitElement {
     const states = { ...hass.states, __niak_model: model, __niak_forecast: { state: String(forecast.heures.length), attributes: forecast } };
     const rendered = renderLocal(variables, states, hass);
     return html`<ha-card><div id="container" ?data-smart-brief=${!!brief} @pointerdown=${this.down} @pointermove=${this.move} @pointercancel=${this.cancel} @pointerup=${this.up}
-      @click=${this.handleClick} @keydown=${this.keydown}>${renderDashboard(rendered, brief, model, hass, config, now, variables.lieu, this.hourly, this.history, this.rainHistory)}</div></ha-card>`;
+      @click=${this.handleClick} @keydown=${this.keydown}>${renderDashboard(rendered, brief, model, hass, config, now, variables.lieu, this.hourly, this.history, this.rainHistory,derived)}</div></ha-card>`;
   }
   private down(event: PointerEvent): void {
     clearTimeout(this.holdTimer); if (event.button !== 0) return;

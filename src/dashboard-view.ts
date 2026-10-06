@@ -4,6 +4,7 @@ import { briefPresentation, briefSecondarySignals } from './brief-preview';
 import { renderAtmo } from './atmo-view';
 import { finite, type History } from './local-model';
 import { renderRecentDetails } from './recent-details';
+import type {StationDerived} from './station-history';
 import { comfortColor } from './comfort-color';
 import { buildCurrentWeather } from './current-weather';
 import { currentMetrics, meaningfulComfort } from './current-measurements';
@@ -26,7 +27,7 @@ function toggleSynthesisInfo(event: Event) {
 }
 
 export function renderDashboard(rendered: Record<string, string>, brief: WeatherBrief | undefined, model: HassEntity,
-  hass: HomeAssistant, config: WeatherCardConfig, now: Date, location: string, hourly:WeatherForecast[] = [], history:History={}, rainHistory:History={}) {
+  hass: HomeAssistant, config: WeatherCardConfig, now: Date, location: string, hourly:WeatherForecast[] = [], history:History={}, rainHistory:History={},derived?:StationDerived) {
   const preview = brief ? briefPresentation(brief) : undefined;
   const secondary = brief ? briefSecondarySignals(brief) : [];
   const unavailable = ['unknown', 'unavailable'].includes(model.state);
@@ -36,7 +37,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   const showComfort=meaningfulComfort(hass,config,model);
   const metrics=currentMetrics(hass,config,model,hourly,now);
   const weatherNow=buildCurrentWeather(hass,config,model);
-  const hasDetails=metrics.some(m=>m.key!=='temperature')||!!(config.rain_24h_entity||config.daily_rain_entity||config.weekly_rain_entity||config.monthly_rain_entity||config.yearly_rain_entity||config.max_daily_gust_entity);
+  const hasDetails=metrics.some(m=>m.key!=='temperature')||!!(config.rain_total_entity||config.rain_24h_entity||config.daily_rain_entity||config.weekly_rain_entity||config.monthly_rain_entity||config.yearly_rain_entity||config.max_daily_gust_entity);
   const degrees=(value:number)=>new Intl.NumberFormat(hass.language || 'fr',{maximumFractionDigits:1}).format(value);
   const groups = [
     { key:'official', title:'Vigilance officielle', description:'Bulletin du département choisi dans les réglages.' },
@@ -84,7 +85,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
             <a href="https://github.com/Niakman13/niak-weather#expliquer-le-ressenti" target="_blank" rel="noopener noreferrer">En savoir plus sur GitHub</a>.</p>
         </details>
         ${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>`:nothing}
-      ${hasDetails ? html`<div id="bilan" aria-label="Pluie, vent et pression">${renderRecentDetails(hass,config,history,rainHistory,now,metrics)}</div>` : nothing}
+      ${hasDetails ? html`<div id="bilan" aria-label="Pluie, vent et pression">${renderRecentDetails(hass,config,history,rainHistory,now,metrics,derived)}</div>` : nothing}
       <div id="pastilles">${unsafeHTML(rendered.pastilles)}</div>
       ${renderAtmo(hass, config, now, 'today')}
     </section>`}

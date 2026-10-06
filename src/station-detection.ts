@@ -42,7 +42,19 @@ export const sensorText = (e: HassEntity, r?: Registry) => `${e.entity_id} ${e.a
 const text=sensorText;
 /** Function exclusions apply to automatic and manual choices alike. */
 export function functionMatches(e:HassEntity,field:SensorField,r?:Registry):boolean {
-  const t=text(e,r),unit=String(e.attributes.unit_of_measurement??'').toLowerCase(),cls=e.attributes.device_class;
+  const t=text(e,r),unit=String(e.attributes.unit_of_measurement??'').toLowerCase().replace(/\s/g,''),cls=e.attributes.device_class;
+  const physical:Partial<Record<SensorField,[string[],RegExp]>>={
+    temperature_entity:[['temperature'],/^(°?[cf]|k)$/],dew_point_entity:[['temperature'],/^(°?[cf]|k)$/],
+    humidity_entity:[['humidity'],/^%$/],pressure_entity:[['pressure','atmospheric_pressure'],/^(hpa|pa|kpa|mbar|inhg|mmhg)$/],
+    wind_speed_entity:[['wind_speed'],/^(km\/h|m\/s|mph|kn|kt|kts|knots?)$/],wind_gust_entity:[['wind_speed'],/^(km\/h|m\/s|mph|kn|kt|kts|knots?)$/],
+    max_daily_gust_entity:[['wind_speed'],/^(km\/h|m\/s|mph|kn|kt|kts|knots?)$/],wind_bearing_entity:[['wind_direction'],/^(°|deg|degrees?)$/],
+    illuminance_entity:[['illuminance'],/^(lx|lux)$/],solar_radiation_entity:[['irradiance'],/^k?w\/(m²|m2)$/],
+    rain_rate_entity:[['precipitation_intensity'],/^(mm|in|inch)\/h$/],
+    temperature_trend_entity:[['temperature'],/^(°?[cf])\/h$/],
+  };
+  const measure=physical[field];
+  if(measure&&((cls&&!measure[0].includes(String(cls)))||(unit&&!measure[1].test(unit))))return false;
+  if(/^(daily_rain|rain_24h|weekly_rain|monthly_rain|yearly_rain|event_rain|rain_total)_entity$/.test(field)&&((cls&&cls!=='precipitation')||(unit&&!/^(mm|in|inch)$/.test(unit))))return false;
   if(field==='illuminance_entity'&&/\braw\b|_raw|brut/.test(t))return false;
   if(field==='temperature_entity'&&/dew|rosee|humidex|heat_?index|wind_?chill|apparent|ressenti|indoor|interieur|trend|tendance/.test(t))return false;
   if(field==='humidity_entity'&&/humidex|absolute|absolue|indoor|interieur|heat.?stress|battery|batterie/.test(t))return false;

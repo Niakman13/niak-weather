@@ -60,13 +60,13 @@ export function vigilanceCandidates(hass: Pick<HomeAssistant,'states'>, context:
     return !r?.disabled_by && e.entity_id.startsWith('sensor.') && (r?.platform==='meteo_france'||/meteo.france/.test(norm(e.attributes.attribution)))
       && /weather_alert|vigilance|alerte/.test(norm(`${e.entity_id} ${r?.unique_id} ${r?.translation_key} ${r?.original_name}`));}).map(e=>e.entity_id);
 }
-export function fillCategory(hass: HomeAssistant, context: RegistryContext, config: WeatherCardConfig, category: SourceCategory): WeatherCardConfig {
+export function fillCategory(hass: HomeAssistant, context: RegistryContext, config: WeatherCardConfig, category: SourceCategory, fillEmpty=false): WeatherCardConfig {
   const result = {...config}, search = {...config};
   const fields = categoryFields[category];
   for (const field of fields) {
     const id = search[field];
     // Empty strings are deliberate opt-outs; unavailable states still refer to real entities.
-    if (typeof id === 'string' && id && !hass.states[id]) delete search[field];
+    if (typeof id === 'string' && ((id && !hass.states[id])||(fillEmpty&&id===''))) delete search[field];
   }
   const deviceField = category === 'station' ? 'station_device_id' : category === 'thermal' ? 'thermal_device_id' : undefined;
   if (deviceField && search[deviceField] && !context.entities.some(r=>r.device_id===search[deviceField])) delete search[deviceField];

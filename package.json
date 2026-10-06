@@ -8,6 +8,7 @@
     "build": "node ./scripts/build.mjs",
     "check": "tsc --noEmit",
     "test": "vitest run",
+    "test:station-coverage": "vitest run --coverage --coverage.include=src/station-history.ts --coverage.include=src/station-profiles.ts",
     "test:browser": "npm run build && node scripts/browser-qa.mjs",
     "preview:weather": "npm run build && node scripts/preview-current-weather.mjs",
     "port:local": "node scripts/port-local.mjs",
@@ -23,6 +24,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@mdi/js": "^7.4.47",
+    "@vitest/coverage-v8": "^4.1.11",
     "esbuild": "^0.25.0",
     "pixelmatch": "^7.2.0",
     "playwright": "^1.63.0",

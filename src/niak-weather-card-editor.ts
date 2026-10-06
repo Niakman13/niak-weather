@@ -5,13 +5,14 @@ import { categoryFields, fillCategory, manualCandidates, measurementMatches, sou
 import type { HomeAssistant, WeatherCardConfig } from './types';
 import { atmoAreas, atmoCandidates, atmoFields, atmoField, atmoMetrics } from './atmo';
 import { cleanConfig } from './config';
+import {stationReport} from './station-profiles';
 import type { AtmoField, AtmoMetric } from './types';
 const categoryOptions:Record<SourceCategory,string[]>={
   general:['location','smart_brief','weather_animations','weather_animation_quality','weather_path','show_synthesis','show_today','show_predictions'],
-  weather:['forecast_source'],station:['station_device_id'],thermal:['thermal_device_id'],
+  weather:['forecast_source'],station:['station_device_id','station_history'],thermal:['thermal_device_id'],
   atmo:['atmo_area','show_atmo_details','show_atmo_tomorrow'],
 };
-const defaults:Partial<WeatherCardConfig>={show_synthesis:true,show_today:true,show_predictions:true,smart_brief:true,weather_animations:true,weather_animation_quality:'standard',show_atmo_details:true,show_atmo_tomorrow:true};
+const defaults:Partial<WeatherCardConfig>={show_synthesis:true,show_today:true,show_predictions:true,smart_brief:true,weather_animations:true,weather_animation_quality:'standard',show_atmo_details:true,show_atmo_tomorrow:true,station_history:true};
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   weather_entity: 'Source météo', location: 'Lieu', forecast_source: 'Fournisseur des prévisions',
   smart_brief: 'Activer le brief intelligent', vigilance_entity: 'Vigilance officielle Météo-France (département)',
@@ -20,6 +21,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   temperature_entity: 'Température extérieure', humidity_entity: 'Humidité extérieure',
   wind_speed_entity: 'Vitesse du vent (moyenne si disponible)', wind_gust_entity: 'Rafales', wind_bearing_entity: 'Direction du vent',
   rain_rate_entity: 'Intensité de pluie', daily_rain_entity: 'Pluie depuis minuit', rain_24h_entity: 'Pluie sur 24 h',
+  rain_total_entity:'Compteur total de pluie (pour les calculs historiques)',station_history:'Compléter les mesures manquantes avec l’historique Home Assistant',
   weekly_rain_entity: 'Pluie de la semaine', monthly_rain_entity: 'Pluie du mois', yearly_rain_entity: 'Pluie de l’année', event_rain_entity: 'Pluie de l’épisode',
   pressure_entity: 'Pression (relative recommandée)', solar_radiation_entity: 'Rayonnement solaire', dew_point_entity: 'Point de rosée de la station',
   uv_index_entity: 'Indice UV', illuminance_entity: 'Luminosité', max_daily_gust_entity: 'Rafale maximale du jour', temperature_trend_entity: 'Tendance température (°C/h)',
@@ -46,6 +48,9 @@ export class NiakWeatherCardEditor extends LitElement {
   private candidateCatalog = '';
   private stationOptions?: Array<{value:string;label:string}>;
   private dataCache = new Map<SourceCategory,{key:string;data:Record<string,unknown>}>();
+  private reportCache?:{key:string;registry?:RegistryContext;catalog:string;report:ReturnType<typeof stationReport>};
+  private stationDeviceSchema:unknown[]=[];
+  private stationDeviceData:Record<string,unknown>={};
   private catalog = '';
   private registryRequest = 0;
   private readonly computeLabel = (item: { name: keyof WeatherCardConfig }) => labels[item.name] ?? item.name;
@@ -63,7 +68,7 @@ export class NiakWeatherCardEditor extends LitElement {
   protected shouldUpdate(changed: Map<PropertyKey, unknown>): boolean {
     if (changed.size !== 1 || !changed.has('hass') || !this.hass) return true;
     // HA pushes every state update to editors. A new wind value must not rebuild 70 pickers.
-    const catalog = Object.values(this.hass.states).map(e => `${e.entity_id}:${e.attributes.device_class ?? ''}:${e.attributes.unit_of_measurement ?? ''}:${e.attributes.friendly_name ?? ''}:${e.attributes['Nom de la zone'] ?? ''}:${e.attributes['Type de zone'] ?? ''}:${['unknown','unavailable'].includes(e.state) ? e.state : 'ok'}`).join('|');
+    const catalog = Object.values(this.hass.states).map(e => `${e.entity_id}:${e.attributes.device_class ?? ''}:${e.attributes.state_class??''}:${e.attributes.unit_of_measurement ?? ''}:${e.attributes.friendly_name ?? ''}:${e.attributes['Nom de la zone'] ?? ''}:${e.attributes['Type de zone'] ?? ''}:${['unknown','unavailable'].includes(e.state) ? e.state : 'ok'}`).join('|');
     if (catalog === this.catalog) return false;
     this.catalog = catalog; return true;
   }
@@ -76,7 +81,7 @@ export class NiakWeatherCardEditor extends LitElement {
     this.detecting = true;
     try { ++this.registryRequest; this.registry = await getRegistry(this.hass);
       if (!this.config || !this.hass) return;
-      const current = this.config, next = fillCategory(this.hass, this.registry, current, category);
+      const current = this.config, next = fillCategory(this.hass, this.registry, current, category,category==='station');
       const count = Object.keys(next).filter(k => next[k as keyof WeatherCardConfig] !== current[k as keyof WeatherCardConfig]).length;
       if (count) this.apply(next);
       this.message = count ? `${count} champ${count > 1 ? 's' : ''} mis à jour. ${sourceStatus(this.hass, next, category)}.` : `Aucune modification. ${sourceStatus(this.hass, next, category)}.`;
@@ -89,6 +94,12 @@ export class NiakWeatherCardEditor extends LitElement {
     const values = Object.fromEntries(Object.entries(event.detail.value).filter(([key])=>allowed.has(key)));
     const next = { ...this.config, ...values };
     const stationChanged = next.station_device_id !== this.config.station_device_id;
+    if(category==='station'&&!stationChanged)for(const field of categoryFields.station as SensorField[]){
+      const id=next[field];
+      if(id&&id!==this.config[field]&&!manualCandidates(this.hass!,field,this.registry??{entities:[],devices:[]},next).includes(id)){
+        next[field]=this.config[field];this.message=`${labels[field]} : ce capteur n’a pas la fonction ou l’unité attendue.`;
+      }
+    }
     const thermalChanged = next.thermal_device_id !== this.config.thermal_device_id;
     const atmoChanged = next.atmo_area !== this.config.atmo_area;
     if (stationChanged && next.station_device_id) for (const key of Object.keys(stationRules) as SensorField[]) delete next[key];
@@ -140,7 +151,7 @@ export class NiakWeatherCardEditor extends LitElement {
       const options=[...this.stationOptions];
       const selected = this.config![name];
       if (selected && !options.some(o => o.value === selected)) options.push({value: selected, label: 'Appareil configuré (introuvable)'});
-      return {name, selector: {select: {options: [{value: '', label: 'Choix manuel des entités'}, ...options]}}};
+      return {name, selector: {select: {options: [{value: '', label: 'Autres capteurs / configuration manuelle'}, ...options]}}};
     };
     const schemas: Record<SourceCategory, ()=>unknown[]> = {
       general: ()=>[{ name: 'location', selector: { text: {} } },
@@ -156,7 +167,10 @@ export class NiakWeatherCardEditor extends LitElement {
         return [entity('weather_entity','weather',true), {name:'vigilance_entity',selector:{entity:{filter:{domain:'sensor'},include_entities:vigilanceIds}}}, entity('sun_entity','sun'),
         {name:'sun_elevation_entity',selector:{entity:{filter:{domain:'sensor'},include_entities:elevationIds}}}, {name:'forecast_source',selector:{text:{}}}];
       },
-      station: ()=>[device('station_device_id'), ...Object.keys(stationRules).map(n=>sensor(n as SensorField))],
+      station: ()=>{this.stationDeviceSchema=[device('station_device_id')];return [{name:'station_history',selector:{boolean:{}}},
+        expand('station_current','Mesures actuelles',['temperature_entity','humidity_entity','wind_speed_entity','wind_gust_entity','wind_bearing_entity','pressure_entity','rain_rate_entity','illuminance_entity','uv_index_entity','dew_point_entity'].map(n=>sensor(n as SensorField))),
+        expand('station_rain','Pluie et compteurs',['rain_total_entity','daily_rain_entity','rain_24h_entity','weekly_rain_entity','monthly_rain_entity','yearly_rain_entity','event_rain_entity'].map(n=>sensor(n as SensorField))),
+        expand('station_extra','Mesures complémentaires',['solar_radiation_entity','max_daily_gust_entity','temperature_trend_entity'].map(n=>sensor(n as SensorField)))];},
       thermal: ()=>thermalFields.map(sensor),
       atmo: ()=>{
         const areas=atmoAreas(this.hass!,this.registry);
@@ -181,6 +195,10 @@ export class NiakWeatherCardEditor extends LitElement {
       {key:'thermal',title:'Sources Thermal Comfort',description:'Conseillé : améliore le ressenti en tenant compte de l’humidité extérieure. Renseignez les capteurs de votre installation Thermal Comfort.'},
       {key:'atmo',title:'Sources Atmo France',description:'Conseillé : ajoute la qualité de l’air et les pollens de votre commune, aujourd’hui et demain. Ces informations enrichissent la synthèse.'},
     ];
+    const reportKey=JSON.stringify([this.config.station_device_id,...categoryFields.station.map(f=>this.config![f])]);
+    if(this.opened.has('station')&&(!this.reportCache||this.reportCache.key!==reportKey||this.reportCache.registry!==this.registry||this.reportCache.catalog!==this.catalog))this.reportCache={key:reportKey,registry:this.registry,catalog:this.catalog,report:stationReport(this.hass,this.registry??{entities:[],devices:[]},this.config)};
+    const report=this.opened.has('station')?this.reportCache?.report:undefined;
+    if(this.opened.has('station')){this.schemas('station');if(this.stationDeviceData.station_device_id!==this.config.station_device_id)this.stationDeviceData={station_device_id:this.config.station_device_id};}
     return html`<p class="intro">Choisissez votre météo, puis ajoutez les sources dont vous disposez. Utilisez « Remplir automatiquement » pour vous aider à sélectionner les capteurs.</p>
       <p role="status" aria-live="polite">${this.message}</p>
       ${sections.map(s=>html`<details data-category=${s.key} .open=${this.opened.has(s.key)} @toggle=${(event:Event)=>{
@@ -188,7 +206,9 @@ export class NiakWeatherCardEditor extends LitElement {
         if (next.size !== this.opened.size) this.opened = next;
       }}><summary><strong>${s.title}</strong><span>${sourceStatus(this.hass!,this.config!,s.key)}</span></summary>
         ${this.opened.has(s.key) ? html`<div class="category-body"><p>${s.description}</p>
+          ${s.key==='station'?html`<ha-form data-category="station-device" .hass=${this.hass} .data=${this.stationDeviceData} .schema=${this.stationDeviceSchema} .computeLabel=${this.computeLabel} @value-changed=${(event:CustomEvent<{value:Partial<WeatherCardConfig>}>)=>this.valueChanged(event,'station')}></ha-form>`:html``}
           <button type="button" data-fill=${s.key} ?disabled=${this.detecting} @click=${()=>this.detect(s.key)}>${this.detecting ? 'Recherche en cours…' : s.key === 'general' ? 'Compléter les réglages' : 'Remplir automatiquement'}</button>
+          ${s.key==='station'&&report?html`<div class="station-report" role="status"><strong>${report.profile}</strong><p>${report.recognized} mesures reconnues · seuls les choix certains sont préremplis.</p><details><summary>Voir les correspondances</summary><ul>${report.fields.map(f=>html`<li><strong>${labels[f.field]}</strong><span>${f.status==='recognized'?'Reconnue':f.status==='ambiguous'?`${f.candidates.length} choix possibles — à sélectionner`:f.status==='invalid'?'Choix à vérifier':'Non trouvée'}${f.entity?` · ${this.hass!.states[f.entity]?.attributes.friendly_name??f.entity}`:''}</span></li>`)}</ul></details></div>`:html``}
           <ha-form data-category=${s.key} .hass=${this.hass} .data=${this.formData(s.key)} .schema=${this.schemas(s.key)} .computeLabel=${this.computeLabel} @value-changed=${(event:CustomEvent<{value:Partial<WeatherCardConfig>}>)=>this.valueChanged(event,s.key)}></ha-form>
         </div>` : html``}</details>`)}`;
   }
