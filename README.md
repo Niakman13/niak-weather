@@ -27,9 +27,9 @@ Niak Weather organise la météo en trois lectures : **maintenant**, avec les me
 
 La jauge explique l’écart entre le ressenti estimé et le thermomètre. Les mesures du jour sont présentées dans **trois colonnes de même hauteur : Pluie, Vent et Pression**. Le vent associe vitesse moyenne, rafales et rose des directions ; la pression affiche son évolution. Chaque cadre indique sa source — station locale ou météo — et propose des statistiques repliées au départ. La pluie rassemble les cumuls récents ; ses statistiques comprennent le graphique journalier. Les détails historiques du vent et de la pression se déplient à la demande.
 
-Quand Atmo France est configuré, **Air extérieur** et **Pollens** apparaissent dans deux cadres distincts, avec des cercles de niveau et une indication de source. Les prévisions de demain sont présentées séparément ; les détails des polluants et des espèces de pollens restent repliés pour gagner de la place. [Sources des graphiques et limites](docs/recent-details.md).
+![Détails Pluie et Vent — données de démonstration](docs/images/3.png)
 
-![Détails Pluie et Vent — données de démonstration](docs/images/niak-weather-details.png)
+Quand Atmo France est configuré, **Air extérieur** et **Pollens** apparaissent dans deux cadres distincts, avec des cercles de niveau et une indication de source. Les prévisions de demain sont présentées séparément ; les détails des polluants et des espèces de pollens restent repliés pour gagner de la place. [Sources des graphiques et limites](docs/recent-details.md).
 
 Les prévisions sont réparties dans deux cadres : la courbe des prochaines heures et le tableau de la semaine. Les unités **Min °C**, **Max °C** et **Pluie mm** sont indiquées au-dessus des colonnes. Les courbes historiques des mesures locales restent distinctes des prévisions météo. [Sources des graphiques et limites](docs/recent-details.md).
 
