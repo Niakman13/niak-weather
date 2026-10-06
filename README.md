@@ -10,25 +10,27 @@ La carte s’organise en **Synthèse, Aujourd’hui et Prévisions**. La synthè
 
 [![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
-![Niak Weather — aperçu de la synthèse intelligente](docs/images/niak-weather-github.png)
+![Niak Weather — mesures locales en trois colonnes et prévisions horaires et hebdomadaires](docs/images/niak-weather-github.png)
 
 [Installation et mise à jour](docs/installation.md) · [Sources et prérequis](docs/sources.md) · [Atmo France : air et pollens](docs/atmo-france.md) · [Tous les réglages](docs/data-model.md)
 
-![Niak Weather avec les données facultatives Atmo France](docs/images/niak-weather-atmo.png)
+![Niak Weather — synthèse et cadres Air extérieur et Pollens alimentés par Atmo France](docs/images/niak-weather-atmo.png)
 
-Aperçu avec des données de démonstration ; le volet de demain est ouvert. La carte suit votre thème Home Assistant. [Aperçu météo en thème clair](docs/images/niak-weather-light.png) · [Aperçu en thème sombre](docs/images/niak-weather-dark.png).
+Aperçus réalisés avec des données de démonstration dans le navigateur de test. La carte suit le thème Home Assistant ; les sources et valeurs illustrées peuvent différer de votre installation. [Aperçu météo en thème clair](docs/images/niak-weather-light.png) · [Aperçu en thème sombre](docs/images/niak-weather-dark.png).
 
 ## Ce que la carte apporte
 
-Niak Weather organise la météo en trois lectures : **maintenant**, avec le ressenti et les mesures de la station ; **ce qui arrive**, avec l’évolution horaire et les prochains jours ; **ce qui s’est passé**, avec les cumuls de pluie et le bilan du vent. Vous pouvez ainsi repérer une hausse de température, l’arrivée d’une pluie ou une rafale marquante sans ouvrir plusieurs cartes.
+Niak Weather organise la météo en trois lectures : **maintenant**, avec les mesures prises chez vous et leur contexte ; **ce qui arrive**, avec les prochaines heures et les jours à venir ; **ce qui est déjà tombé**, avec les cumuls de pluie et les statistiques du vent. La synthèse du bandeau met en avant les alertes ou changements qui méritent votre attention. Elle évite de répéter les mesures visibles plus bas et reste discrète lorsqu’aucun signal utile ne ressort.
 
-La jauge compare le ressenti au thermomètre et en explique les principales contributions. La boussole situe le vent, le baromètre donne son évolution et les courbes permettent de lire les variations plutôt que des valeurs isolées. Les indices Atmo ajoutent une lecture de l’environnement extérieur et des pollens.
+La jauge explique l’écart entre le ressenti estimé et le thermomètre. Les mesures du jour sont présentées dans **trois colonnes de même hauteur : Pluie, Vent et Pression**. Le vent associe vitesse moyenne, rafales et rose des directions ; la pression affiche son évolution. Chaque cadre indique sa source — station locale ou météo — et propose des statistiques repliées au départ. La pluie rassemble les cumuls récents ; ses statistiques comprennent le graphique journalier. Les détails historiques du vent et de la pression se déplient à la demande.
 
-Les détails **Pluie et Vent** gardent deux colonnes sur desktop et s’empilent sur mobile. La pluie met en avant les dernières 24 h (ou le cumul depuis minuit), avec les compteurs semaine, mois et année, puis les maxima journaliers enregistrés sur sept jours. Le vent compare sa lecture actuelle et la rafale maximale du jour sur une échelle graduée, puis affiche six heures de rafales, ou de vent moyen si aucun capteur de rafales n’est configuré. Les courbes sont des observations, pas des prévisions. [Sources des graphiques et limites](docs/recent-details.md).
+Quand Atmo France est configuré, **Air extérieur** et **Pollens** apparaissent dans deux cadres distincts, avec des cercles de niveau et une indication de source. Les prévisions de demain sont présentées séparément ; les détails des polluants et des espèces de pollens restent repliés pour gagner de la place. [Sources des graphiques et limites](docs/recent-details.md).
 
 ![Détails Pluie et Vent — données de démonstration](docs/images/niak-weather-details.png)
 
-Le rendu s’adapte à la largeur disponible et au thème Home Assistant. Les interrupteurs des sections permettent de choisir les informations utiles sur chaque tableau de bord, sans mode d’affichage distinct.
+Les prévisions sont réparties dans deux cadres : la courbe des prochaines heures et le tableau de la semaine. Les unités **Min °C**, **Max °C** et **Pluie mm** sont indiquées au-dessus des colonnes. Les courbes historiques des mesures locales restent distinctes des prévisions météo. [Sources des graphiques et limites](docs/recent-details.md).
+
+Le rendu s’adapte à la largeur disponible et au thème Home Assistant. Les colonnes se réorganisent sur mobile et les interrupteurs des sections permettent de choisir les informations affichées, sans mode compact séparé.
 
 Les trois sections peuvent être activées ou masquées dans Général. Sans brief intelligent, le bandeau affiche uniquement la météo actuelle, sans résumé en double. Sans station, les cadres utilisent les données du bulletin disponibles ; chaque cadre indique sa source. Les mesures locales restent prioritaires et un remplacement par le bulletin est signalé. La jauge de ressenti est masquée sans température locale ni humidex utilisable. [Affichage et priorité des sources](docs/display-options.md).
 
