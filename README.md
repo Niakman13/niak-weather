@@ -14,7 +14,7 @@ La carte s’organise en **Synthèse, Aujourd’hui et Prévisions**. La synthè
 
 [![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
-![Niak Weather — mesures locales en trois colonnes et prévisions horaires et hebdomadaires](docs/images/niak-weather-github.png)
+![Niak Weather — mesures locales en trois colonnes et prévisions horaires et hebdomadaires](docs/images/1.png)
 
 [Installation et mise à jour](docs/installation.md) · [Sources et prérequis](docs/sources.md) · [Atmo France : air et pollens](docs/atmo-france.md) · [Tous les réglages](docs/data-model.md)
 
