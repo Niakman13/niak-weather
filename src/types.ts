@@ -86,6 +86,7 @@ export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   weather_path?: string;
   location?: string;
   station_device_id?: string;
+  station_model?: 'gw2000a'|'ws90'|'manual';
   thermal_device_id?: string;
   atmo_area?: string;
   pollen_source?: 'atmo' | 'legacy' | 'none';

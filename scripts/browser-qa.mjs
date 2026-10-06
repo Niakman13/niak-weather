@@ -801,11 +801,12 @@ try {
     editor.shadowRoot.querySelector('details[data-category="station"]').open=true;await sleep(20);
     editor.addEventListener('config-changed',event=>{editor.setConfig(event.detail.config);card.setConfig(event.detail.config);});
     const form=editor.shadowRoot.querySelector('ha-form[data-category="station"]');
-    form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,station_device_id:'ws90'}},bubbles:true}));await sleep(60);
+    form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,station_model:'ws90'}},bubbles:true}));await sleep(60);
     const flatten=items=>items.flatMap(item=>item.schema?flatten(item.schema):[item]);
     const schemas=flatten(form.schema),tempIds=schemas.find(s=>s.name==='temperature_entity').selector.entity.include_entities;
     const deviceForm=editor.shadowRoot.querySelector('ha-form[data-category="station-device"]');
-    const result={profile:editor.shadowRoot.querySelector('.station-report').textContent.includes('WS90 via MQTT'),prefilled:form.data.illuminance_entity===prefix+'illuminance'&&form.data.rain_total_entity===prefix+'precipitation',strictTemperature:tempIds.join(',')===prefix+'temperature',manualMode:deviceForm.schema[0].selector.select.options.some(o=>o.value===''&&o.label.includes('Autres capteurs')),deviceFirst:!!(deviceForm.compareDocumentPosition(editor.shadowRoot.querySelector('.station-report'))&Node.DOCUMENT_POSITION_FOLLOWING)};
+    const modelOptions=deviceForm.schema[0].selector.select.options;
+    const result={profile:deviceForm.data.station_model==='ws90',explicitModels:modelOptions.map(o=>o.value).join(',')==='gw2000a,ws90,manual',subjectGroups:form.schema.map(g=>g.title).join(',')==='Température et humidité,Pluie,Vent,Soleil,Spécifiques',ws90Fields:!schemas.some(s=>['weekly_rain_entity','solar_radiation_entity','max_daily_gust_entity'].includes(s.name))&&schemas.some(s=>s.name==='station_history'),prefilled:form.data.illuminance_entity===prefix+'illuminance'&&form.data.rain_total_entity===prefix+'precipitation',strictTemperature:tempIds.join(',')===prefix+'temperature',manualMode:modelOptions.some(o=>o.value==='manual'),deviceFirst:!!(deviceForm.compareDocumentPosition(editor.shadowRoot.querySelector('.station-report'))&Node.DOCUMENT_POSITION_FOLLOWING)};
     form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,temperature_entity:prefix+'dew_point'}},bubbles:true}));await sleep(20);
     result.rejectWrongFunction=editor.config.temperature_entity===prefix+'temperature';
     card.hass=hass;main.append(card);await sleep(60);window.stationDemo={editor,card,hass};
@@ -816,6 +817,10 @@ try {
     const before=requests;card.setConfig({...card.config,location:'Une autre saisie'});await sleep(20);result.cached=requests===before;
     card.setConfig({...card.config,weekly_rain_entity:'sensor.native_week'});card.hass={...hass,states:{...states,'sensor.native_week':{entity_id:'sensor.native_week',state:'99',attributes:{unit_of_measurement:'mm'}}}};await sleep(20);
     result.nativeWins=card.shadowRoot.querySelector('[data-entity="sensor.native_week"] strong').textContent.includes('99,0');
+    deviceForm.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{station_model:'manual'}},bubbles:true}));await sleep(20);
+    const manualFields=flatten(form.schema);
+    result.manualAllFields=manualFields.some(f=>f.name==='solar_radiation_entity')&&manualFields.some(f=>f.name==='weekly_rain_entity')&&manualFields.some(f=>f.name==='station_history')&&editor.config.temperature_entity===prefix+'temperature';
+    deviceForm.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{station_model:'ws90'}},bubbles:true}));await sleep(30);
     return result;
   });
   for(const [key,value] of Object.entries(stationJourney))assert.equal(value,true,`Station setup: ${key}`);

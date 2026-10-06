@@ -1,14 +1,20 @@
 # Appareils locaux et profils de station
 
-Dans **Capteurs locaux / station météo locale**, choisissez d’abord l’appareil. La carte identifie les profils **WS90 via MQTT** et **GW2000A / Ecowitt** à partir de leurs métadonnées et noms d’entités. Un profil n’est pas une promesse que toutes les mesures existent : seules les correspondances certaines sont préremplies. Le bilan distingue les mesures reconnues, absentes, ambiguës et les choix à vérifier.
+Dans **Capteurs locaux / station météo locale**, commencez par **Modèle de votre station** : **Ecowitt GW2000A**, **Shelly / Ecowitt WS90 — Zigbee2MQTT**, ou **Autre station / configuration manuelle**. Le modèle détermine les champs affichés. Une configuration existante GW2000A ou WS90 retrouve son modèle à partir des entités déjà renseignées, sans supprimer les sources lors de l’ouverture de l’éditeur.
 
-**Autres capteurs / configuration manuelle** permet d’associer des capteurs indépendants ou des compteurs complémentaires. Les listes utilisent la fonction et le type physique : une rosée n’est pas proposée comme température réelle, une direction moyenne n’est pas une vitesse, un cumul générique n’est pas un compteur quotidien. Le canal `illuminance_raw` n’est pas un éclairement en lux.
+Pour un modèle connu, si un seul appareil correspondant est identifié, le choix du modèle sélectionne cet appareil et préremplit les capteurs certains. Sinon, choisissez **Votre station dans Home Assistant**, puis utilisez **Remplir automatiquement**. Les rubriques sont **Température et humidité**, **Pluie**, **Vent**, **Soleil** et **Spécifiques**. Le résumé compte les capteurs réellement renseignés ; seuls les problèmes de sélection apparaissent dans **choix à vérifier**.
+
+La GW2000A présente les compteurs de pluie natifs, le rayonnement solaire et la rafale maximale du jour. La WS90 présente ses mesures disponibles, dont le compteur total et le calcul des bilans de pluie : les compteurs semaine/mois/année et le rayonnement absent ne sont pas proposés comme capteurs natifs. Le mode manuel propose tous les champs et les calculs historiques.
+
+**Autre station / configuration manuelle** permet d’associer des capteurs indépendants ou des compteurs complémentaires. Les listes utilisent la fonction et le type physique : une rosée n’est pas proposée comme température réelle, une direction moyenne n’est pas une vitesse, un cumul générique n’est pas un compteur quotidien. Le canal `illuminance_raw` n’est pas un éclairement en lux.
+
+Changer vers un autre modèle connu remplace les sources de station dans la configuration en cours d’édition, afin de ne pas mélanger les mesures de deux appareils. Les autres catégories restent intactes. Passer en manuel conserve les capteurs renseignés. Les sources ne sont enregistrées dans le tableau de bord qu’après validation de l’éditeur Home Assistant.
 
 Le bouton **Remplir automatiquement** de cette catégorie complète aussi les champs enregistrés vides ; il conserve les références existantes valides. Un choix retiré reste vide tant que ce bouton n’est pas utilisé. Les anciennes configurations restent lisibles, y compris un choix à corriger : elles ne sont pas supprimées automatiquement.
 
 ## Compléter les données avec l’historique
 
-L’option **Compléter les mesures manquantes avec l’historique Home Assistant** est activée par défaut. Elle ne crée aucune entité et ne modifie ni Recorder ni la station.
+L’option **Calculer les bilans de pluie depuis l’historique** apparaît dans **Pluie** pour la WS90 et le mode manuel. Elle est activée par défaut, ne crée aucune entité et ne modifie ni Recorder ni la station. Le réglage YAML `station_history` couvre également les compléments historiques de température et de rafales déjà disponibles.
 
 Pour la pluie, renseignez **Compteur total de pluie** : un capteur en mm (ou pouces) avec `state_class: total_increasing`, qui représente une accumulation et non une fenêtre glissante. Les compteurs dédiés configurés restent prioritaires, même s’ils sont momentanément indisponibles. Un champ explicitement vide désactive le calcul de secours correspondant.
 

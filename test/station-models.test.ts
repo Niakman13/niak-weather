@@ -19,4 +19,13 @@ describe('Explicit station model setup',()=>{
     expect(fields(manual)).toContain('solar_radiation_entity');
     expect(fields(manual)).toContain('rain_total_entity');
   });
+  it('keeps an explicit manual choice even when its sensors belong to a WS90',()=>{
+    expect(profiles.selectedStationModel({station_model:'manual',temperature_entity:'sensor.ws90_temperature'})).toBe('manual');
+    expect(profiles.selectedStationModel({temperature_entity:'sensor.ws90_temperature'})).toBe('ws90');
+    expect(profiles.selectedStationModel({temperature_entity:'sensor.custom_temperature'})).toBe('manual');
+  });
+  it('finds known station devices from the entity registry when the device registry is unavailable',()=>{
+    const id='sensor.ws90_temperature',states={[id]:{entity_id:id,state:'20',attributes:{}}};
+    expect(profiles.modelDevices({states},{entities:[{entity_id:id,device_id:'ws',platform:'mqtt'}],devices:[]},'ws90')).toEqual(['ws']);
+  });
 });
