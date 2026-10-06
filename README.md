@@ -4,7 +4,7 @@
 
 Une température seule ne raconte pas toute la météo : 25 °C à l’ombre, avec de l’humidité ou sous un vent soutenu, ne se vivent pas de la même façon. La carte donne du contexte aux chiffres et rapproche les observations de votre maison des prévisions de votre zone, sans les confondre.
 
-**Version stable : v1.8.0.** Choisissez votre appareil local : profils WS90/GW2000A, préremplissage sûr et listes filtrées par fonction et unité. Les bilans de pluie manquants peuvent être calculés depuis Recorder, sans remplacer vos compteurs natifs ; les périodes incomplètes sont signalées. [Nouveautés et mise à jour](docs/release-1.8.0.md).
+**Version stable : v1.9.0.** Choisissez votre appareil local — GW2000A, WS90 via Zigbee2MQTT ou configuration manuelle — puis complétez ses mesures par catégories. La synthèse affiche uniquement les informations utiles, comme une pluie importante prévue demain ou un écart marqué entre température et ressenti. [Nouveautés et mise à jour](docs/release-1.9.0.md).
 
 La carte s’organise en **Synthèse, Aujourd’hui et Prévisions**. La synthèse intelligente est accompagnée de la météo actuelle et d’un ciel animé sur tout le bandeau : nuages, pluie, éclairs ou rafales. Le halo d’attention conserve sa signification, distincte de l’ambiance météo. Le ressenti expliqué, les indices air/pollens et les graphiques complètent cette lecture. [Nouveautés et mise à jour](docs/release-1.3.0.md) · [Météo actuelle et animations](docs/current-weather.md) · [Comprendre le brief et ses limites](docs/brief-intelligent.md).
 
@@ -34,7 +34,7 @@ Les trois sections peuvent être activées ou masquées dans Général. Sans bri
 
 Les prévisions affichent jusqu’à **18 heures et 7 jours**, selon les données réellement fournies. La carte distingue les conditions prévues pour la zone des mesures prises chez vous. Une mesure de station indisponible n’est pas remplacée par un zéro, et un orage prévu n’est pas présenté comme de la foudre détectée par la station.
 
-L’éditeur organise les réglages en cinq catégories : **Général**, **Météo, soleil et vigilance**, **Station météo locale**, **Thermal Comfort** et **Atmo France**. Chaque catégorie dispose de son propre remplissage automatique. Les choix manuels sont filtrés par type de mesure ; Atmo est aussi filtré par commune et par jour. Les références introuvables peuvent être réparées après une réinstallation. Les choix valides, les entités momentanément indisponibles et les champs volontairement vidés sont conservés ; les correspondances ambiguës restent à choisir manuellement.
+L’éditeur organise les réglages en catégories claires. Pour la station locale, choisissez d’abord **GW2000A**, **WS90 via Zigbee2MQTT** ou **Autre station / configuration manuelle** ; les champs correspondants apparaissent ensuite par type de mesure. Les autres catégories disposent de leur propre remplissage automatique. Les choix manuels sont filtrés par fonction ; Atmo est aussi filtré par commune et par jour. Les références introuvables peuvent être réparées après une réinstallation. Les choix valides, les entités momentanément indisponibles et les champs volontairement vidés sont conservés ; les correspondances ambiguës restent à choisir manuellement.
 
 ## Comment la carte interprète la météo
 
@@ -93,7 +93,7 @@ Le [guide des sources](docs/sources.md) explique pour chacune sa configuration, 
 
 1. Ouvrez le bouton HACS en haut de cette page. Il ouvre le dépôt, sans installer automatiquement la carte.
 2. Si le dépôt n’est pas trouvé, ajoutez `https://github.com/Niakman13/niak-weather` dans **HACS → ⋮ → Dépôts personnalisés**, catégorie **Tableau de bord / Dashboard**. Il s’agit d’un dépôt personnalisé, pas d’un référencement dans le catalogue HACS par défaut.
-3. Téléchargez **Niak Weather v1.8.0**, puis rechargez le navigateur.
+3. Téléchargez **Niak Weather v1.9.0**, puis rechargez le navigateur.
 4. Dans votre tableau de bord, choisissez **Ajouter une carte → Niak Weather** et sélectionnez votre entité météo.
 5. Ajoutez si souhaité les sources **Station météo locale**, **Thermal Comfort** et **Atmo France**. Utilisez **Remplir automatiquement** dans chaque catégorie, puis vérifiez les propositions avant d’enregistrer. Sans station, les cadres utilisent les attributs du bulletin disponibles, avec une bulle de source ; la pluie prévue reste distinguée de la pluie mesurée.
 
@@ -119,9 +119,9 @@ daily_rain_entity: sensor.station_daily_rain
 
 Ces identifiants sont des **exemples**, pas des noms imposés. Privilégiez vos entités réelles dans l’éditeur. Le [tutoriel d’installation](docs/installation.md) détaille les ressources, les réglages et le dépannage.
 
-## Mettre à jour vers v1.8.0
+## Mettre à jour vers v1.9.0
 
-Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.8.0**. Il n’est pas nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
+Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.9.0**. Il n’est pas nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
 
 Les mises à jour utilisent la même ressource et conservent vos entités. Les anciens modes sont convertis en réglages de sections : les prévisions d’une ancienne configuration compacte restent masquées sauf choix explicite contraire. Vous pouvez enrichir la configuration progressivement, sans recommencer l’installation. [Notes de version](docs/release-1.4.0.md).
 
