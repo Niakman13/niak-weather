@@ -1,5 +1,9 @@
 # Niak Weather
 
+![Illustration du bandeau supérieur Niak Weather : synthèse utile, ciel animé et météo actuelle](docs/images/niak-weather-banner.png)
+
+Illustration de présentation avec des données d’exemple ; le rendu réel du bandeau dépend de votre météo, de vos capteurs et du thème Home Assistant.
+
 **Comprendre le temps qu’il fait chez vous, anticiper ce qui arrive et suivre ce qui est tombé.** Niak Weather rassemble dans une seule carte Home Assistant les mesures de votre station, les prévisions météo, un ressenti expliqué et les informations d’air extérieur et de pollens.
 
 Une température seule ne raconte pas toute la météo : 25 °C à l’ombre, avec de l’humidité ou sous un vent soutenu, ne se vivent pas de la même façon. La carte donne du contexte aux chiffres et rapproche les observations de votre maison des prévisions de votre zone, sans les confondre.
