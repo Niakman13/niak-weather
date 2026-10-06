@@ -13,7 +13,7 @@ Illustration de présentation avec des données d’exemple ; le rendu réel du 
 | Source | Statut | Ce qu’elle apporte |
 | --- | --- | --- |
 | Entité météo `weather.*` | **Obligatoire** | Conditions et prévisions de votre zone. Météo-France est recommandée ; les données disponibles dépendent du fournisseur. |
-| Capteurs locaux / station météo | **Conseillée** | Mesures prises chez vous : température, pluie, vent et pression. Profils guidés GW2000A et WS90 via Zigbee2MQTT, ou sélection manuelle. Chaque capteur se configure séparément : vous n’avez pas besoin de tous les instruments. |
+| Capteurs locaux / station météo | **Conseillé** | Mesures prises chez vous : température, pluie, vent et pression. Profils guidés GW2000A et WS90 via Zigbee2MQTT, ou sélection manuelle. Chaque capteur se configure séparément : vous n’avez pas besoin de tous les instruments. |
 | Thermal Comfort | **Conseillé pour un ressenti tenant compte de l’humidité** | Humidex extérieur. Sans lui, la carte peut encore estimer le ressenti à partir de la température, mais indique que l’humidité n’est pas comptée. |
 | Soleil (`sun.sun`) | **Conseillé**, généralement déjà présent | Lever, coucher et position du soleil. L’effet du rayonnement sur le ressenti demande aussi un capteur de rayonnement solaire local. |
 | Atmo France | Facultative | Indices d’air extérieur et de pollens pour aujourd’hui et demain, selon les données activées dans l’intégration. |
