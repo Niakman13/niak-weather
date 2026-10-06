@@ -171,7 +171,7 @@ export class NiakWeatherCard extends LitElement {
     let model = calculated;
     const weather = hass.states[config.weather_entity];
     const briefPoints: BriefPoint[] = this.hourly.map(p => ({ hours: (Date.parse(p.datetime) - now.getTime()) / 3600_000, temperature: p.temperature, precipitation: p.precipitation, condition: p.condition }));
-    const brief = config.smart_brief === false || config.show_synthesis === false ? undefined : buildWeatherBrief(hass, config, model, briefPoints, now);
+    const brief = config.smart_brief === false || config.show_synthesis === false ? undefined : buildWeatherBrief(hass, config, model, briefPoints, now,this.daily);
     if (['unknown', 'unavailable'].includes(model.state)) model = { ...model, attributes:{} };
     const variables = { mode: 'complet', dashboard:true, adaptive:true, configured:config, ent: '__niak_model', ent_prev: '__niak_forecast',
       lieu: config.location ?? String(weather?.attributes.friendly_name ?? ''),

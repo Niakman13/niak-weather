@@ -15,11 +15,11 @@ export function briefPreview(brief: WeatherBrief) {
 /** The left panel explains attention/outlook, never repeats the current sky. */
 export function briefPresentation(brief: WeatherBrief) {
   const preview=briefPreview(brief),priority=preview.selected[0];
-  const context=priority?undefined:brief.signals.find(s=>s.key==='rain-now')??brief.signals.find(s=>s.key==='pressure');
-  const outlook=priority||context?undefined:brief.signals.find(s=>s.group==='future');
+  const context=priority?undefined:brief.signals.find(s=>s.key==='rain-now')??brief.signals.find(s=>s.key==='comfort-gap')??brief.signals.find(s=>s.key==='pressure');
+  const outlook=priority||context?undefined:brief.signals.find(s=>s.group==='future'&&s.key!=='temperature-future')??brief.signals.find(s=>s.key==='temperature-future');
   return {
     ...preview,
-    headline:priority?.group==='official'?brief.title:priority?.text??context?.text??outlook?.text??(brief.available?'Pas de point d’attention marqué':'Données insuffisantes pour une synthèse'),
+    headline:priority?.group==='official'?brief.title:priority?.text??context?.text??outlook?.text,
     icon:priority?.icon??context?.icon??outlook?.icon??'mdi:information-outline',
     contextKey:context?.key,
     outlookKey:outlook?.key,
@@ -29,7 +29,7 @@ export function briefPresentation(brief: WeatherBrief) {
 /** Only useful observations/outlooks, without repeating the headline. */
 export function briefSecondarySignals(brief: WeatherBrief) {
   const preview=briefPresentation(brief),signals=preview.selected.slice(1);
-  for(const signal of [brief.signals.find(s=>s.key==='pressure'),brief.signals.find(s=>s.group==='future')]) {
+  for(const signal of [brief.signals.find(s=>s.key==='comfort-gap'),brief.signals.find(s=>s.key==='pressure'),brief.signals.find(s=>s.group==='future'&&s.key!=='temperature-future')]) {
     if(signal && signal!==preview.selected[0] && signal.key!==preview.contextKey && signal.key!==preview.outlookKey && !signals.includes(signal) && signals.length<3) signals.push(signal);
   }
   return signals;

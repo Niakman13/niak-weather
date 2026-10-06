@@ -4,7 +4,17 @@ Cette fonction est incluse dans la version stable v1.2.0. Son objectif est de tr
 
 ## Un bandeau, trois lectures
 
-**Maintenant** explique le ressenti, son écart avec la température et la contribution dominante du vent, du soleil, de la pluie ou de l’humidité. Il ajoute les phénomènes observés importants : vent, fortes pluies, brouillard déduit, UV, chaleur ou froid. La tendance de pression apporte du contexte, sans être transformée en prévision de pluie.
+### Afficher seulement ce qui compte
+
+Le titre **Synthèse** apparaît une seule fois. La pastille de niveau n’est affichée que lorsqu’un point d’attention est retenu : il n’y a pas de pastille neutre répétant « Synthèse ». Sans signal pertinent, le résumé et son icône disparaissent, tandis que la météo actuelle et l’aide restent disponibles.
+
+Le ressenti n’est pas recopié systématiquement sous le titre. Un écart strictement supérieur à **4 °C** par rapport à la température peut remonter comme information explicite de chaleur ou de froid ressentis. Les situations de chaleur ou froid déjà marqués conservent leur signal prioritaire sans ajouter une seconde phrase équivalente.
+
+Un réchauffement modéré ne sert de titre que s’il n’y a pas mieux à expliquer. Il est formulé **« Pic de température annoncé : … °C »**, sans délai approximatif. La valeur est le maximum des points horaires disponibles des six prochaines heures, et non la dernière température de la série ni nécessairement le maximum de toute la journée. Le minimum est utilisé pour une fraîcheur annoncée. Les limites de cette fenêtre sont expliquées dans l’aide.
+
+Le bulletin journalier peut ajouter **« Pluie importante prévue demain : … mm »** à partir de 20 mm annoncés pour demain, selon le fuseau Home Assistant. Cette prévision est prioritaire sur le simple pic de température. Elle reste informative : pas de nouvelle vigilance, pas d’intensité en mm/h déduite d’un cumul journalier, et pas de modification du ciel actuel.
+
+**Maintenant** retient les phénomènes observés importants : vent, pluie, brouillard déduit, UV, chaleur ou froid. Un grand écart de ressenti peut être expliqué, sans répéter systématiquement la jauge. La tendance de pression apporte du contexte, sans être transformée en prévision de pluie.
 
 **À venir** lit les six prochaines heures : première pluie annoncée, cumul des quantités disponibles, orage/grêle, température prévue négative ou changement de température marqué. Les délais utilisent les dates des prévisions, pas la position d’un point dans une liste. Pour une source structurée personnalisée, ils utilisent ses repères jour/heure dans le fuseau Home Assistant. Les valeurs restent celles du fournisseur : le brief n’invente pas un modèle de prévision.
 

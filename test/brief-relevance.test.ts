@@ -28,4 +28,9 @@ describe('Only relevant brief content',()=>{
     expect(briefPresentation(b).headline).toBe('Pluie importante prévue demain : 72 mm');
     expect(b.signals.find((s:any)=>s.key==='rain-tomorrow')?.severity).toBe(0);
   });
+  it('does not present today, old or small daily rainfall as noteworthy tomorrow',()=>{
+    for(const daily of [[{datetime:'2026-10-06T10:00:00Z',precipitation:72}],[{datetime:'2026-10-07T10:00:00Z',precipitation:19.9}],[{datetime:'invalid',precipitation:72}]]){
+      expect(buildWeatherBrief(hass,config,model({}),[],now,daily).signals.some(s=>s.key==='rain-tomorrow')).toBe(false);
+    }
+  });
 });

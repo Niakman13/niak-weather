@@ -30,9 +30,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   hass: HomeAssistant, config: WeatherCardConfig, now: Date, location: string, hourly:WeatherForecast[] = [], history:History={}, rainHistory:History={},derived?:StationDerived) {
   const preview = brief ? briefPresentation(brief) : undefined;
   const secondary = brief ? briefSecondarySignals(brief) : [];
-  const unavailable = ['unknown', 'unavailable'].includes(model.state);
   const headline = preview?.headline;
-  const current = unavailable ? 'Mesures indisponibles.' : brief?.summary.split('\n')[0].replace(/^Maintenant : /, '').split('. ')[0];
   const feels = finite(model.attributes.ressenti);
   const showComfort=meaningfulComfort(hass,config,model);
   const metrics=currentMetrics(hass,config,model,hourly,now);
@@ -42,7 +40,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   const groups = [
     { key:'official', title:'Vigilance officielle', description:'Bulletin du département choisi dans les réglages.' },
     { key:'now', title:'Maintenant', description:'Mesures et estimations actuelles à la maison.' },
-    { key:'future', title:'Dans les prochaines heures', description:'Ce que prévoit le fournisseur météo ; l’heure peut évoluer.' },
+    { key:'future', title:'À venir', description:'Prévisions du fournisseur météo pour la période indiquée ; elles peuvent évoluer.' },
     { key:'environment', title:'Air et pollens', description:'Indices de votre zone, pour aujourd’hui ou demain selon le libellé.' },
   ];
   const synthesisInfo=brief?html`<div class="nw-brief-details"><h2 id="nw-synthesis-title">Synthèse</h2><button class="nw-synthesis-info-button" aria-label="Consulter les points à retenir de la synthèse" aria-expanded="false" aria-controls="nw-synthesis-info" @click=${toggleSynthesisInfo}><span class="nw-info-icon" aria-hidden="true">i</span></button><span class="nw-synthesis-location">${location}</span>
@@ -50,23 +48,22 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
       const panel=event.currentTarget as HTMLElement;
       panel.parentElement!.querySelector('.nw-synthesis-info-button')!.setAttribute('aria-expanded',String(panel.matches(':popover-open')));
     }}><header class="nw-brief-panel-heading"><h3>Les points à retenir</h3><button aria-label="Fermer les informations de synthèse" @click=${(event:Event)=>(event.currentTarget as HTMLElement).closest<HTMLElement>('.nw-brief-panel')!.hidePopover()}>Fermer ×</button></header><div class="nw-brief-groups">${groups.map(group=>{
-      const signals=brief.signals.filter(s=>s.group===group.key&&(s.severity>0||s.key===preview?.outlookKey||s.key==='rain-now'||s.key==='pressure'));
+      const signals=brief.signals.filter(s=>s.group===group.key&&(s.severity>0||s.key===preview?.outlookKey||s.key==='rain-now'||s.key==='pressure'||s.key==='comfort-gap'||s.key==='rain-tomorrow'));
       return signals.length?html`<section class="nw-brief-group"><h4>${group.title}</h4><p class="nw-brief-context">${group.description}</p><ul>${signals.map(s=>html`<li><ha-icon icon=${s.icon}></ha-icon><span>${s.text}</span>${s.entity?html`<button data-entity=${s.entity} aria-label=${`Source : ${s.text}`}>Source</button>`:nothing}</li>`)}</ul></section>`:nothing;
     })}</div>
     ${!brief.signals.some(s=>s.severity>0)?html`<p>Pas de point d’attention renforcé parmi les données disponibles.</p>`:nothing}
     ${brief.caveats.length?html`<details class="nw-brief-limits"><summary>Données à vérifier · ${brief.caveats.length}</summary><ul>${brief.caveats.map(c=>html`<li>${c}</li>`)}</ul></details>`:nothing}</div></div>`:nothing;
   return html`
-    ${config.show_synthesis===false?nothing:html`<section id="heros" class=${`nw-section nw-synthesis${brief?'':' nw-synthesis--weather-only'}`} aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
+    ${config.show_synthesis===false?nothing:html`<section id="heros" class=${`nw-section nw-synthesis${headline?'':' nw-synthesis--weather-only'}`} aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
       <div class="nw-sky-backdrop" aria-hidden="true"><niak-weather-sky .condition=${weatherNow.condition} .phase=${weatherNow.phase}
         .animated=${config.weather_animations!==false} .quality=${config.weather_animation_quality ?? 'standard'} .wind=${weatherNow.wind ?? 0}></niak-weather-sky></div>
       <header class="nw-section-heading">${brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>`}</header>
-      ${brief?html`<div class="nw-summary-emblem me-bulle" aria-hidden="true"><div class="me-halo"></div>
+      ${brief&&headline?html`<div class="nw-summary-emblem me-bulle" aria-hidden="true"><div class="me-halo"></div>
         <div class="me-rond"><ha-icon icon=${preview?.icon ?? 'mdi:information-outline'}></ha-icon></div></div>
       <div class="nw-summary-lead"><h3>${headline}</h3>
-        ${brief ? html`<span class="nw-attention"><i aria-hidden="true"></i>${brief.label}</span>` : nothing}</div>
+        ${preview?.selected.length ? html`<span class="nw-attention"><i aria-hidden="true"></i>${brief.label}</span>` : nothing}</div>
       <div class="nw-summary-lines">
         ${secondary.map(s => html`<p><span>${s.group === 'future' ? 'À venir' : s.group === 'environment' ? 'Environnement' : s.group === 'official' ? 'Vigilance' : 'Maintenant'}</span>${s.text}</p>`)}
-        ${!preview?.selected.length && showComfort ? html`<p>${current}</p>` : nothing}
       </div>`:nothing}
       <aside class="nw-current-weather" aria-label="Météo actuelle">
         <div class="nw-current-content"><span class="nw-current-kicker">En ce moment</span>

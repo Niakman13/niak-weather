@@ -8,7 +8,7 @@ describe('Concise summary presentation', () => {
     expect(briefSecondarySignals(brief([signal('air','environment',2),signal('pressure','now',0)])).map(s=>s.key)).toEqual(['pressure']);
     expect(briefSecondarySignals(brief([]))).toEqual([]);
     expect(briefSecondarySignals(brief([signal('pressure','now',0)]))).toEqual([]);
-    expect(briefSecondarySignals(brief([signal('air','environment',2),signal('temperature-future','future',0)])).map(s=>s.key)).toEqual(['temperature-future']);
+    expect(briefSecondarySignals(brief([signal('air','environment',2),signal('temperature-future','future',0)])).map(s=>s.key)).toEqual([]);
   });
   it('keeps the highest attention and upcoming event, limits to three, counts omitted signals', () => {
     const result=briefPreview(brief([signal('official','official',3),signal('wind','now',2),signal('storm','future',2),signal('air','environment',2),signal('pollen','environment',1)]));
@@ -29,7 +29,7 @@ describe('Concise summary presentation', () => {
       expect(result.headline).toBe(key);expect(result.contextKey).toBe(key);
       expect(result.outlookKey).toBeUndefined();expect(result.selected).toEqual([]);
     }
-    expect(briefPresentation(brief([signal('wind-soft','now',0)])).headline).toBe('Pas de point d’attention marqué');
+    expect(briefPresentation(brief([signal('wind-soft','now',0)])).headline).toBeUndefined();
   });
   it('uses a forecast outlook without Atmo or attention signals, without raising its level',()=>{
     const b=brief([signal('wind-soft','now',0),{...signal('temperature-future','future',0),text:'Fraîcheur annoncée dans 5 h',icon:'mdi:thermometer'}]);
@@ -38,9 +38,9 @@ describe('Concise summary presentation', () => {
     expect(result.icon).toBe('mdi:thermometer');expect(result.outlookKey).toBe('temperature-future');
     expect(result.selected).toEqual([]);expect(b.signals.every(s=>s.severity===0)).toBe(true);
   });
-  it('uses a bounded neutral message rather than a sky condition when nothing stands out',()=>{
-    expect(briefPresentation(brief([])).headline).toBe('Pas de point d’attention marqué');
-    expect(briefPresentation({...brief([]),available:false}).headline).toBe('Données insuffisantes pour une synthèse');
+  it('leaves the brief empty when nothing useful stands out',()=>{
+    expect(briefPresentation(brief([])).headline).toBeUndefined();
+    expect(briefPresentation({...brief([]),available:false}).headline).toBeUndefined();
   });
   it('retains priority attention even when a mild outlook is available',()=>{
     const result=briefPresentation({...brief([signal('official','official',2),signal('temperature-future','future',0)]),title:'Vigilance Météo-France orange'});

@@ -632,8 +632,8 @@ try {
       document.documentElement.style.setProperty('--card-background-color',dark?'#242424':'#fff4f4');
     },dark);
     const geometry=await page.evaluate(()=>{
-      const root=window.skyCard.shadowRoot, host=window.skyCard.getBoundingClientRect(), current=root.querySelector('.nw-current-content').getBoundingClientRect(), lead=root.querySelector('.nw-summary-lead').getBoundingClientRect();
-      return {overflow:current.left<host.left||current.right>host.right,distinct:current.left>=lead.right||current.top>=lead.bottom,rightAligned:getComputedStyle(root.querySelector('.nw-current-content')).textAlign==='right'};
+      const root=window.skyCard.shadowRoot, host=window.skyCard.getBoundingClientRect(), current=root.querySelector('.nw-current-content').getBoundingClientRect(), lead=root.querySelector('.nw-summary-lead')?.getBoundingClientRect();
+      return {overflow:current.left<host.left||current.right>host.right,distinct:!lead||current.left>=lead.right||current.top>=lead.bottom,rightAligned:getComputedStyle(root.querySelector('.nw-current-content')).textAlign==='right'};
     });
     assert.equal(geometry.overflow,false);assert.equal(geometry.distinct,true);assert.equal(geometry.rightAligned,true);
     const background=await page.evaluate(()=>{
@@ -645,8 +645,8 @@ try {
       const matches=()=>{const h=header.getBoundingClientRect(),s=sky.getBoundingClientRect();return Math.abs(h.right-s.right)<1&&Math.abs(h.top-s.top)<1&&Math.abs(h.bottom-s.bottom)<1&&Math.abs(h.left-s.left)<1;};
       const closed=matches();details.querySelector('.nw-synthesis-info-button').click();const expanded=matches();
       const stable=!mobile||JSON.stringify(before)===JSON.stringify(artwork());
-      const lines=root.querySelector('.nw-summary-lines').getBoundingClientRect(),emblem=root.querySelector('.nw-summary-emblem').getBoundingClientRect();
-      return {closed,expanded,clean:!root.querySelector('.nw-current-feels,.nw-current-source'),stable,leftAligned:Math.abs(lines.left-emblem.left)<1&&lines.top>=emblem.bottom};
+      const lines=root.querySelector('.nw-summary-lines')?.getBoundingClientRect(),emblem=root.querySelector('.nw-summary-emblem')?.getBoundingClientRect();
+      return {closed,expanded,clean:!root.querySelector('.nw-current-feels,.nw-current-source'),stable,leftAligned:!lines&&!emblem||!!lines&&!!emblem&&Math.abs(lines.left-emblem.left)<1&&lines.top>=emblem.bottom};
     });
     assert.deepEqual(background,{closed:true,expanded:true,clean:true,stable:true,leftAligned:true},'Full banner sky, stationary mobile artwork and synthesis lines below the emblem');
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/current-expanded-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
@@ -831,7 +831,34 @@ try {
     await page.locator('niak-weather-card-editor details[data-category="station"]').screenshot({path:`${out}/station-editor-${width}.png`});
     await page.locator('niak-weather-card #bilan').screenshot({path:`${out}/station-derived-${width}.png`});
   }
+  const relevantBrief=await page.evaluate(async()=>{
+    const main=document.querySelector('main');main.replaceChildren();
+    const e=(entity_id,state,unit)=>({entity_id,state:String(state),attributes:{unit_of_measurement:unit}});
+    const states={'weather.test':{...window.fixture.states['weather.test'],state:'sunny'},'sensor.outdoor':e('sensor.outdoor',20,'°C'),'sensor.thermal_comfort_humidex':e('sensor.thermal_comfort_humidex',20,'°C'),'sensor.wind':e('sensor.wind',0,'km/h')};
+    const card=document.createElement('niak-weather-card');
+    const config={type:'custom:niak-weather-card',weather_entity:'weather.test',temperature_entity:'sensor.outdoor',humidex_entity:'sensor.thermal_comfort_humidex',wind_speed_entity:'sensor.wind',smart_brief:true};
+    let dailyRain=0;
+    const callWS=async msg=>{
+      if(msg.type!=='call_service')return {};
+      const today=new Date();today.setUTCHours(12,0,0,0);const tomorrow=new Date(today);tomorrow.setUTCDate(today.getUTCDate()+1);
+      const forecast=msg.service_data.type==='daily'?[{datetime:tomorrow.toISOString(),precipitation:dailyRain,temperature:25}]:Array.from({length:6},(_,i)=>({datetime:new Date(Date.now()+(i+1)*3600_000).toISOString(),temperature:20,precipitation:0,condition:'sunny'}));
+      return {response:{'weather.test':{forecast}}};
+    };
+    card.setConfig(config);card.hass={states,language:'fr',config:{time_zone:'UTC'},callWS};main.append(card);await new Promise(r=>setTimeout(r,60));
+    const root=card.shadowRoot;
+    const empty=!root.querySelector('.nw-summary-lead,.nw-summary-emblem,.nw-attention')&&!!root.querySelector('.nw-current-temperature')&&!!root.querySelector('#comfort');
+    card.hass={...card.hass,states:{...states,'sensor.thermal_comfort_humidex':e('sensor.thermal_comfort_humidex',28,'°C')}};await card.updateComplete;
+    const gap=root.querySelector('.nw-summary-lead')?.textContent.includes('nettement plus chaud')&&!root.querySelector('.nw-summary-lines').textContent.includes('ressentis')&&!root.querySelector('.nw-attention');
+    dailyRain=72;card.hass={...card.hass,states};card.forecastAt=0;await card.loadForecasts();await card.updateComplete;
+    const tomorrow=root.querySelector('.nw-summary-lead')?.textContent.includes('Pluie importante prévue demain : 72 mm')&&!root.querySelector('.nw-attention');
+    window.relevantBriefCard=card;return {empty,gap,tomorrow};
+  });
+  for(const [key,value] of Object.entries(relevantBrief))assert.equal(value,true,`Relevant brief: ${key}`);
+  for(const width of [375,1440]){
+    await page.setViewportSize({width,height:1000});
+    await page.locator('niak-weather-card #heros').screenshot({path:`${out}/brief-relevant-${width}.png`,animations:'disabled'});
+  }
   assert.deepEqual(errors,[],'Current sky browser console/network');
-  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,stationJourney,displayOptions,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,recentDetails,missingDetails,errors},null,2));
+  writeFileSync(`${out}/browser-report.json`,JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,stationJourney,relevantBrief,displayOptions,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,recentDetails,missingDetails,errors},null,2));
   console.log(JSON.stringify({reports,behavior,atmoBehavior,atmoReports,briefBehavior,briefReports,editorPerformance,displayOptions,compactAndMissing,gaugeEdges,haloMotion,skyBehavior,skyScenes,currentReports,skyMotion,weatherEffects,recentDetails,missingDetails,errors},null,2));
 } finally { await browser.close();server.close(); }

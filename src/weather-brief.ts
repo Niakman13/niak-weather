@@ -1,6 +1,6 @@
 import { atmoField, atmoFields, atmoMetrics, atmoReading, pollenMetrics, pollutantMetrics, normal } from './atmo';
 import { finite } from './local-model';
-import type { HassEntity, HomeAssistant, WeatherCardConfig } from './types';
+import type { HassEntity, HomeAssistant, WeatherCardConfig,WeatherForecast } from './types';
 
 export interface BriefPoint { hours: number; temperature?: number; precipitation?: number; condition?: string; }
 export interface BriefSignal {
@@ -17,7 +17,7 @@ const levels = ['Synthèse', 'À surveiller', 'Attention renforcée', 'Vigilance
 const knownColor = (v: unknown): number | undefined => ({ vert: 0, green: 0, jaune: 1, yellow: 1, orange: 2, rouge: 3, red: 3 })[normal(v).trim() as 'vert'];
 
 /** An attention hierarchy, never a weather model or a health recommendation. */
-export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig, model: HassEntity, points: BriefPoint[], now = new Date()): WeatherBrief {
+export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig, model: HassEntity, points: BriefPoint[], now = new Date(),daily:WeatherForecast[]=[]): WeatherBrief {
   const a = model.attributes, signals: BriefSignal[] = [], caveats: string[] = [];
   const add = (s: BriefSignal) => signals.push(s);
   const source = (key: string) => (a.sources as Record<string, string> | undefined)?.[key];
@@ -36,6 +36,9 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   if (a.base === 'thermometre' || (feels !== undefined && finite(a.humidex) === undefined)) caveats.push('Humidex absent : le ressenti ne compte pas l’effet de l’humidité.');
   if (feels !== undefined && (feels >= 34 || feels <= 2)) add({ key: 'temperature', group: 'now', severity: feels >= 38 || feels <= -3 ? 2 : 1,
     text: feels >= 34 ? `Forte chaleur ressentie (${format(feels)} °C)` : `Froid marqué (${format(feels)} °C ressentis)`, explanation: 'Estimation du ressenti de la carte, pas une vigilance canicule/grand froid.', entity: source('t_ext'), icon: feels >= 34 ? 'mdi:thermometer-high' : 'mdi:thermometer-low' });
+  if(temp!==undefined&&feels!==undefined&&Math.abs(feels-temp)>4&&!signals.some(s=>s.key==='temperature'))add({key:'comfort-gap',group:'now',severity:0,
+    text:`Il fait nettement plus ${feels>temp?'chaud':'froid'} que ce qu’indique ${config.temperature_entity?'le thermomètre':'la température météo'} (écart estimé : ${format(Math.abs(feels-temp))} °C)`,
+    explanation:'Écart supérieur à 4 °C entre le ressenti estimé par la carte et la température. Ce n’est pas une température mesurée ni une vigilance officielle.',entity:source('t_ext'),icon:feels>temp?'mdi:thermometer-high':'mdi:thermometer-low'});
   if ((wind ?? 0) >= 30 || (gust ?? 0) >= 40) add({ key: 'wind', group: 'now', severity: (wind ?? 0) >= 50 || (gust ?? 0) >= 60 ? 2 : 1,
     text: `Vent ${Math.max(wind ?? 0, gust ?? 0) >= 60 ? 'très fort' : 'soutenu'}${gust !== undefined ? `, rafales à ${format(gust)} km/h` : ` à ${format(wind!)} km/h`}`,
     explanation: 'Mesures de la station : vent moyen ≥ 30 km/h ou rafales ≥ 40 km/h ; attention renforcée dès 50/60 km/h. Seuils éditoriaux, non officiels.', entity: source(gust !== undefined ? 'rafales' : 'vent'), icon: 'mdi:weather-windy' });
@@ -66,9 +69,15 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   if (cold) add({ key: 'freeze-future', group: 'future', severity: 1, text: `Température prévue à ${format(cold.temperature!)} °C ${timing(cold.hours)}`, explanation: 'Température prévue par le fournisseur ; le gel du sol n’est pas mesuré.', entity: config.weather_entity, icon: 'mdi:snowflake' });
   const validTemps = upcoming.filter(p => finite(p.temperature) !== undefined);
   if (temp !== undefined && validTemps.length && !cold) {
-    const last = validTemps.at(-1)!; if (Math.abs(last.temperature! - temp) >= 3) add({ key: 'temperature-future', group: 'future', severity: 0,
-      text: `${last.temperature! > temp ? 'Réchauffement annoncé' : 'Fraîcheur annoncée'}, vers ${format(last.temperature!)} °C ${timing(last.hours)}`, explanation: 'Comparaison du thermomètre actuel et du dernier point disponible dans les 6 prochaines heures ; observation et prévision ont des sources distinctes.', entity: config.weather_entity, icon: 'mdi:thermometer' });
+    const maximum=Math.max(...validTemps.map(p=>p.temperature!)),minimum=Math.min(...validTemps.map(p=>p.temperature!));
+    if(maximum-temp>=3||temp-minimum>=3)add({ key: 'temperature-future', group: 'future', severity: 0,
+      text: maximum-temp>=3?`Pic de température annoncé : ${format(maximum)} °C`:`Fraîcheur annoncée : minimum de ${format(minimum)} °C`, explanation: 'Maximum ou minimum des points horaires disponibles dans les 6 prochaines heures, comparé à la température actuelle. Ce n’est pas nécessairement le maximum ou minimum de toute la journée.', entity: config.weather_entity, icon: 'mdi:thermometer' });
   }
+  const zone=hass.config?.time_zone??'UTC',dateKey=(date:Date)=>new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+  const today=dateKey(now),tomorrowDate=new Date(`${today}T12:00:00Z`);tomorrowDate.setUTCDate(tomorrowDate.getUTCDate()+1);
+  const tomorrow=tomorrowDate.toISOString().slice(0,10);
+  const tomorrowRain=daily.find(p=>Number.isFinite(Date.parse(p.datetime))&&dateKey(new Date(p.datetime))===tomorrow&&finite(p.precipitation)!==undefined&&p.precipitation!>=20);
+  if(tomorrowRain)add({key:'rain-tomorrow',group:'future',severity:0,text:`Pluie importante prévue demain : ${format(tomorrowRain.precipitation!)} mm`,explanation:'Cumul du bulletin journalier pour demain, à partir de 20 mm. Prévision informative, pas une mesure actuelle, une intensité en mm/h ou une vigilance officielle.',entity:config.weather_entity,icon:'mdi:weather-pouring'});
   if (!upcoming.length) caveats.push('Prévisions des 6 prochaines heures indisponibles.');
   else if (upcoming.some(p => finite(p.precipitation) === undefined)) caveats.push('Quantités de pluie partiellement disponibles : le cumul peut être incomplet.');
 
