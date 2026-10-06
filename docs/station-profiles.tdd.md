@@ -20,7 +20,7 @@ Parcours issus des demandes de l’utilisateur : choisir un appareil et préremp
 | Un compteur natif reste prioritaire ; saisie sans rechargement inutile | `scripts/browser-qa.mjs`, scénario `stationJourney` |
 | Affichage à 375, 768 et 1440 px | Captures et assertions du même scénario |
 
-Commandes : `npm run validate` (266 tests réussis et compilation), `npm run test:browser` (parcours existants et dix garanties du scénario station réussis, aucun incident console/réseau), `npm run test:station-coverage` (98,71 % lignes, 97,51 % instructions, 93,61 % fonctions, 82,11 % branches sur les nouveaux modules).
+Commandes : `npm run validate` (266 tests réussis et compilation), `npm run test:browser` (parcours existants et garanties du scénario station réussis, aucun incident console/réseau), `npm run test:station-coverage` (98,71 % lignes, 97,51 % instructions, 93,61 % fonctions, 82,11 % branches sur les nouveaux modules).
 
 La couverture agrégée ciblée des nouveaux modules dépasse 80 % sur lignes, instructions, fonctions et branches. Ce n’est pas une mesure de couverture de toute la carte. Le navigateur utilise une simulation Home Assistant ; les contrôles de sélection vérifient schémas et événements, pas le rendu des composants internes d’une installation réelle. Aucune validation Recorder de production ni publication n’a été réalisée dans cette tâche.
 
