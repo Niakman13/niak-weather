@@ -1,5 +1,5 @@
 import { atmoAreas, atmoFields } from './atmo';
-import { candidates, detectEcowittStation, stationRules, thermalFields, type RegistryContext, type SensorField } from './station-detection';
+import { candidates, detectEcowittStation, functionMatches, stationRules, thermalFields, type RegistryContext, type SensorField } from './station-detection';
 import type { HassEntity, HomeAssistant, WeatherCardConfig } from './types';
 
 export type SourceCategory = 'general' | 'weather' | 'station' | 'thermal' | 'atmo';
@@ -25,7 +25,7 @@ export function measurementMatches(e: HassEntity, field: SensorField | 'sun_elev
     temperature_trend_entity: [[], /^(°?[cf])\/h$/],
     sun_elevation_entity: [[], /^(°|deg|degrees?)$/],
   };
-  if (/(daily_rain|rain_24h|weekly_rain|monthly_rain|yearly_rain|event_rain)_entity/.test(field)) return cls ? cls === 'precipitation' : /^(mm|in|inch)$/.test(unit);
+  if (/(daily_rain|rain_24h|weekly_rain|monthly_rain|yearly_rain|event_rain|rain_total)_entity/.test(field)) return cls ? cls === 'precipitation' : /^(mm|in|inch)$/.test(unit);
   const rule = rules[field];
   // An explicit unit/type takes precedence over a misleading entity name.
   if (field === 'uv_index_entity' && !cls && !unit) return /uv_index|index_uv|\buv\b/.test(norm(`${e.entity_id} ${e.attributes.friendly_name}`));
@@ -39,6 +39,7 @@ export function manualCandidates(hass: Pick<HomeAssistant, 'states'>, field: Sen
     if (!e.entity_id.startsWith('sensor.') || regs.get(e.entity_id)?.disabled_by) return false;
     const r = regs.get(e.entity_id);
     if (r?.platform === 'thermal_comfort') return false;
+    if(!functionMatches(e,field,r))return false;
     if (config.station_device_id && r?.device_id && r.device_id !== config.station_device_id) return false;
     const typed = e.attributes.device_class || e.attributes.unit_of_measurement;
     return measurementMatches(e, field) || (!typed && semantic.includes(e.entity_id));

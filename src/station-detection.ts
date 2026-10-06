@@ -7,7 +7,7 @@ export type SensorField = keyof Pick<WeatherCardConfig,
   'daily_rain_entity' | 'rain_24h_entity' | 'weekly_rain_entity' | 'monthly_rain_entity' | 'yearly_rain_entity' | 'event_rain_entity' |
   'pressure_entity' | 'solar_radiation_entity' | 'dew_point_entity' | 'uv_index_entity' | 'illuminance_entity' | 'max_daily_gust_entity' |
   'temperature_trend_entity' | 'humidex_entity' | 'humidex_perception_entity' | 'thermal_dew_point_entity' | 'heat_index_entity' |
-  'absolute_humidity_entity' | 'thermal_perception_entity'>;
+  'absolute_humidity_entity' | 'thermal_perception_entity' | 'rain_total_entity'>;
 export const stationRules: Partial<Record<SensorField, RegExp>> = {
   temperature_entity: /(?:outdoor|outside|exterieur|external).*temp|temp.*(?:outdoor|outside|exterieur|external)|(?:ecowitt|ws\d{2}|station.*meteo).*temp/,
   humidity_entity: /(?:outdoor|outside|exterieur|external).*humid|humid.*(?:outdoor|outside|exterieur|external)|humidity|humidite/,
@@ -15,6 +15,7 @@ export const stationRules: Partial<Record<SensorField, RegExp>> = {
   wind_gust_entity: /gust|rafale/,
   wind_bearing_entity: /(?:wind.*(?:bearing|direction)|direction.*vent)/,
   rain_rate_entity: /(?:rain.*(?:rate|intensity)|pluie.*(?:taux|intensite))/,
+  rain_total_entity: /precipitation|total.*rain|rain.*total|cumul.*pluie/,
   daily_rain_entity: /(?:daily|today|jour|quotidien).*rain|rain.*(?:daily|today|jour|quotidien)|pluie.*(?:jour|quotidien)/,
   rain_24h_entity: /(?:24h|24_h).*(?:rain|precip)|(?:rain|precip).*(?:24h|24_h)|pluie.*24|precipitation.*24/,
   weekly_rain_entity: /(?:weekly|week|semaine).*rain|rain.*(?:weekly|week|semaine)|pluie.*semaine/,
@@ -36,8 +37,27 @@ const thermalRules: Partial<Record<SensorField, RegExp>> = {
   thermal_perception_entity: /thermal_perception|dew_point_perception|perception_thermique/,
 };
 export const thermalFields = Object.keys(thermalRules) as SensorField[];
-const text = (e: HassEntity, r?: Registry) => `${e.entity_id} ${e.attributes.friendly_name ?? ''} ${r?.unique_id ?? ''} ${r?.translation_key ?? ''} ${r?.original_name ?? ''}`
+export const sensorText = (e: HassEntity, r?: Registry) => `${e.entity_id} ${e.attributes.friendly_name ?? ''} ${r?.unique_id ?? ''} ${r?.translation_key ?? ''} ${r?.original_name ?? ''}`
   .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const text=sensorText;
+/** Function exclusions apply to automatic and manual choices alike. */
+export function functionMatches(e:HassEntity,field:SensorField,r?:Registry):boolean {
+  const t=text(e,r),unit=String(e.attributes.unit_of_measurement??'').toLowerCase(),cls=e.attributes.device_class;
+  if(field==='illuminance_entity'&&/\braw\b|_raw|brut/.test(t))return false;
+  if(field==='temperature_entity'&&/dew|rosee|humidex|heat_?index|wind_?chill|apparent|ressenti|indoor|interieur|trend|tendance/.test(t))return false;
+  if(field==='humidity_entity'&&/humidex|absolute|absolue|indoor|interieur|heat.?stress|battery|batterie/.test(t))return false;
+  if(field==='wind_speed_entity'&&/direction|bearing|gust|rafale|max/.test(t))return false;
+  if(field==='wind_gust_entity'&&(/direction|bearing|max|daily/.test(t)||!stationRules.wind_gust_entity!.test(t)))return false;
+  if(field==='max_daily_gust_entity'&&!stationRules.max_daily_gust_entity!.test(t))return false;
+  if(field==='pressure_entity'&&/trend|tendance/.test(t))return false;
+  if(field==='dew_point_entity'&&!stationRules.dew_point_entity!.test(t))return false;
+  if(field==='temperature_trend_entity'&&!/°?[cf]\/h/.test(unit)&&!stationRules.temperature_trend_entity!.test(t))return false;
+  if(field==='rain_total_entity')return e.attributes.state_class==='total_increasing'&&!/24.?h|daily|today|jour|week|semaine|month|mois|year|annee|event|episode|rate|intensite/.test(t);
+  if(/^(daily_rain|rain_24h|weekly_rain|monthly_rain|yearly_rain|event_rain)_entity$/.test(field))return stationRules[field]!.test(t)&&(field!=='daily_rain_entity'||!/24.?h|week|month|year|semaine|mois|annee/.test(t));
+  if(field==='wind_speed_entity'||field==='wind_gust_entity')return !unit||/^(km\/h|m\/s|mph|kn|kt|kts|knots?)$/.test(unit);
+  if(field==='illuminance_entity')return (!cls||cls==='illuminance')&&(!unit||/^(lx|lux)$/.test(unit));
+  return true;
+}
 const isThermal = (e: HassEntity, r?: Registry) => r?.platform === 'thermal_comfort' || /thermal.*comfort/.test(text(e, r));
 export async function getRegistry(hass: HomeAssistant): Promise<RegistryContext> {
   const results = await Promise.allSettled([
@@ -57,6 +77,7 @@ export function candidates(hass: Pick<HomeAssistant, 'states'>, field: SensorFie
     const device = thermal ? config.thermal_device_id : config.station_device_id;
     if (device && r?.device_id !== device && field !== 'temperature_trend_entity') return false;
     if (!rule.test(t)) return false;
+    if(!thermal&&!functionMatches(e,field,r))return false;
     if (field === 'temperature_entity' && /dew|rosee|humidex|heat_?index|wind_?chill|apparent|ressenti|indoor|interieur|trend|tendance/.test(t)) return false;
     if (field === 'humidity_entity' && /humidex|absolute|absolue|indoor|interieur/.test(t)) return false;
     if (field === 'pressure_entity' && /trend|tendance/.test(t)) return false;

@@ -61,6 +61,8 @@ export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   wind_gust_entity?: string;
   wind_bearing_entity?: string;
   rain_rate_entity?: string;
+  rain_total_entity?: string;
+  station_history?: boolean;
   daily_rain_entity?: string;
   rain_24h_entity?: string;
   weekly_rain_entity?: string;
