@@ -18,7 +18,6 @@ Illustration de présentation avec des données d’exemple ; le rendu réel du 
 | Soleil (`sun.sun`) | **Conseillé**, généralement déjà présent | Lever, coucher et position du soleil. L’effet du rayonnement sur le ressenti demande aussi un capteur de rayonnement solaire local. |
 | Atmo France | Facultative | Indices d’air extérieur et de pollens pour aujourd’hui et demain, selon les données activées dans l’intégration. |
 | Historique Home Assistant (Recorder) | Facultatif | Tendances de pression et de vent ; peut compléter certains bilans de pluie lorsque la station ne fournit pas les compteurs nécessaires. |
-| Polleninformation EU | Facultatif, alternative à Atmo pour les pollens | Conserve les pollens d’une installation existante. Atmo apporte en plus les indices de qualité de l’air. |
 
 **En pratique :** l’entité météo seule suffit pour afficher la carte et ses prévisions. Ajoutez une station pour suivre les observations chez vous, Thermal Comfort pour enrichir le ressenti, et Atmo France si vous souhaitez les informations sur l’air et les pollens. La carte indique la source de chaque valeur et distingue toujours une prévision d’une mesure réelle. [Détails des sources et de leurs limites](docs/sources.md).
 
