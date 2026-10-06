@@ -1,44 +1,57 @@
 # Niak Weather
 
+**La météo chez vous, expliquée et mise en perspective.** Niak Weather rassemble les prévisions de votre commune et, si vous le souhaitez, les mesures d’une station locale, le ressenti, la qualité de l’air et les pollens. La carte lit les intégrations déjà configurées dans Home Assistant : elle ne nécessite pas que vous ajoutiez toutes ces sources.
+
+Pour commencer, il faut seulement Home Assistant **2025.1 ou plus récent** et une entité météo `weather.*`. **Météo-France est la source recommandée**, mais une autre intégration météo peut convenir si elle fournit les prévisions utilisées par la carte. Les autres sources sont des enrichissements, pas des prérequis.
+
 ![Illustration du bandeau supérieur Niak Weather : synthèse utile, ciel animé et météo actuelle](docs/images/niak-weather-banner.png)
 
-**Comprendre le temps qu’il fait chez vous, anticiper ce qui arrive et suivre ce qui est tombé.** Niak Weather rassemble dans une seule carte Home Assistant les mesures de votre station, les prévisions météo, un ressenti expliqué et les informations d’air extérieur et de pollens.
+Illustration de présentation avec des données d’exemple ; le rendu réel du bandeau dépend de votre météo, de vos capteurs et du thème Home Assistant.
 
-Une température seule ne raconte pas toute la météo : 25 °C à l’ombre, avec de l’humidité ou sous un vent soutenu, ne se vivent pas de la même façon. La carte donne du contexte aux chiffres et rapproche les observations de votre maison des prévisions de votre zone, sans les confondre.
+## Les sources : du minimum aux enrichissements
 
-**Version stable : v1.9.0.** Choisissez votre appareil local — GW2000A, WS90 via Zigbee2MQTT ou configuration manuelle — puis complétez ses mesures par catégories. La synthèse affiche uniquement les informations utiles, comme une pluie importante prévue demain ou un écart marqué entre température et ressenti. [Nouveautés et mise à jour](docs/release-1.9.0.md).
+| Source | Statut | Ce qu’elle apporte |
+| --- | --- | --- |
+| Entité météo `weather.*` | **Obligatoire** | Conditions et prévisions de votre zone. Météo-France est recommandée ; les données disponibles dépendent du fournisseur. |
+| Capteurs locaux / station météo | **Conseillée** | Mesures prises chez vous : température, pluie, vent et pression. Profils guidés GW2000A et WS90 via Zigbee2MQTT, ou sélection manuelle. Chaque capteur se configure séparément : vous n’avez pas besoin de tous les instruments. |
+| Thermal Comfort | **Conseillé pour un ressenti tenant compte de l’humidité** | Humidex extérieur. Sans lui, la carte peut encore estimer le ressenti à partir de la température, mais indique que l’humidité n’est pas comptée. |
+| Soleil (`sun.sun`) | **Conseillé**, généralement déjà présent | Lever, coucher et position du soleil. L’effet du rayonnement sur le ressenti demande aussi un capteur de rayonnement solaire local. |
+| Atmo France | Facultative | Indices d’air extérieur et de pollens pour aujourd’hui et demain, selon les données activées dans l’intégration. |
+| Historique Home Assistant (Recorder) | Facultatif | Tendances de pression et de vent ; peut compléter certains bilans de pluie lorsque la station ne fournit pas les compteurs nécessaires. |
+| Polleninformation EU | Facultatif, alternative à Atmo pour les pollens | Conserve les pollens d’une installation existante. Atmo apporte en plus les indices de qualité de l’air. |
 
-La carte s’organise en **Synthèse, Aujourd’hui et Prévisions**. La synthèse intelligente est accompagnée de la météo actuelle et d’un ciel animé sur tout le bandeau : nuages, pluie, éclairs ou rafales. Le halo d’attention conserve sa signification, distincte de l’ambiance météo. Le ressenti expliqué, les indices air/pollens et les graphiques complètent cette lecture. [Nouveautés et mise à jour](docs/release-1.3.0.md) · [Météo actuelle et animations](docs/current-weather.md) · [Comprendre le brief et ses limites](docs/brief-intelligent.md).
+**En pratique :** l’entité météo seule suffit pour afficher la carte et ses prévisions. Ajoutez une station pour suivre les observations chez vous, Thermal Comfort pour enrichir le ressenti, et Atmo France si vous souhaitez les informations sur l’air et les pollens. La carte indique la source de chaque valeur et distingue toujours une prévision d’une mesure réelle. [Détails des sources et de leurs limites](docs/sources.md).
+
+**Version stable : v1.9.0.** L’éditeur propose les profils de station et le mode manuel, puis organise les capteurs par mesure. [Nouveautés de la version 1.9.0](docs/release-1.9.0.md) · [Installation et mise à jour](docs/installation.md).
 
 [![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
 ![Niak Weather — mesures locales en trois colonnes et prévisions horaires et hebdomadaires](docs/images/1.png)
 ![Niak Weather — synthèse et cadres Air extérieur et Pollens alimentés par Atmo France](docs/images/2.png)
 Illustration de présentation avec des données d’exemple ; le rendu réel du bandeau dépend de votre météo, de vos capteurs et du thème Home Assistant.
-[Installation et mise à jour](docs/installation.md) · [Sources et prérequis](docs/sources.md) · [Atmo France : air et pollens](docs/atmo-france.md) · [Tous les réglages](docs/data-model.md)
+[Installation et mise à jour](docs/installation.md) · [Sources et prérequis](docs/sources.md) · [Atmo France : air et pollens](docs/atmo-france.md) · [Tous les réglages](docs/data-model.md) · [Comprendre le brief](docs/brief-intelligent.md)
 
 
 Aperçus réalisés avec des données de démonstration dans le navigateur de test. La carte suit le thème Home Assistant ; les sources et valeurs illustrées peuvent différer de votre installation.
 
 ## Ce que la carte apporte
 
-Niak Weather organise la météo en trois lectures : **maintenant**, avec les mesures prises chez vous et leur contexte ; **ce qui arrive**, avec les prochaines heures et les jours à venir ; **ce qui est déjà tombé**, avec les cumuls de pluie et les statistiques du vent. La synthèse du bandeau met en avant les alertes ou changements qui méritent votre attention. Elle évite de répéter les mesures visibles plus bas et reste discrète lorsqu’aucun signal utile ne ressort.
+La carte s’organise en trois temps : **maintenant**, **ensuite** et **les relevés**. La synthèse du bandeau attire l’attention sur une alerte ou un changement utile ; si rien ne ressort, elle ne remplit pas l’espace avec un message banal. Le ciel animé montre les conditions actuelles fournies par la météo. Les mesures de la station restent des observations locales et les prévisions gardent leur source météo.
 
-La jauge explique l’écart entre le ressenti estimé et le thermomètre. Les mesures du jour sont présentées dans **trois colonnes de même hauteur : Pluie, Vent et Pression**. Le vent associe vitesse moyenne, rafales et rose des directions ; la pression affiche son évolution. Chaque cadre indique sa source — station locale ou météo — et propose des statistiques repliées au départ. La pluie rassemble les cumuls récents ; ses statistiques comprennent le graphique journalier. Les détails historiques du vent et de la pression se déplient à la demande.
+Dans **Aujourd’hui**, la jauge explique l’écart entre le ressenti estimé et le thermomètre. Trois colonnes de même hauteur regroupent **Pluie**, **Vent** et **Pression**. Le vent réunit vitesse, rafales et rose des directions ; la pression montre sa valeur et son évolution. Les cadres indiquent d’où vient chaque lecture et gardent leurs graphiques dans **Statistiques**, replié au départ. La pluie rassemble les cumuls disponibles et leur historique.
 
 ![Détails Pluie et Vent — données de démonstration](docs/images/3.png)
+Quand Atmo France est configuré, **Air extérieur** et **Pollens** sont présentés dans deux cadres distincts, avec une source et des cercles colorés. Les données du jour et les prévisions de demain restent distinctes ; les détails des polluants et des espèces de pollens sont repliés. [Sources des graphiques et limites](docs/recent-details.md).
 
-Quand Atmo France est configuré, **Air extérieur** et **Pollens** apparaissent dans deux cadres distincts, avec des cercles de niveau et une indication de source. Les prévisions de demain sont présentées séparément ; les détails des polluants et des espèces de pollens restent repliés pour gagner de la place. [Sources des graphiques et limites](docs/recent-details.md).
-
-Les prévisions sont réparties dans deux cadres : la courbe des prochaines heures et le tableau de la semaine. Les unités **Min °C**, **Max °C** et **Pluie mm** sont indiquées au-dessus des colonnes. Les courbes historiques des mesures locales restent distinctes des prévisions météo. [Sources des graphiques et limites](docs/recent-details.md).
+Dans **Prévisions**, deux cadres séparent la courbe des prochaines heures du tableau de la semaine. Les unités **Min °C**, **Max °C** et **Pluie mm** sont rappelées en tête du tableau. Les statistiques historiques des capteurs locaux ne se confondent pas avec ces prévisions. [Sources des graphiques et limites](docs/recent-details.md).
 
 Le rendu s’adapte à la largeur disponible et au thème Home Assistant. Les colonnes se réorganisent sur mobile et les interrupteurs des sections permettent de choisir les informations affichées, sans mode compact séparé.
 
-Les trois sections peuvent être activées ou masquées dans Général. Sans brief intelligent, le bandeau affiche uniquement la météo actuelle, sans résumé en double. Sans station, les cadres utilisent les données du bulletin disponibles ; chaque cadre indique sa source. Les mesures locales restent prioritaires et un remplacement par le bulletin est signalé. La jauge de ressenti est masquée sans température locale ni humidex utilisable. [Affichage et priorité des sources](docs/display-options.md).
+Les sections Synthèse / météo actuelle, Aujourd’hui et Prévisions peuvent être activées séparément. Sans station, les cadres s’appuient sur les données météo disponibles et indiquent leur source. Si un capteur local configuré devient indisponible et que la météo fournit une valeur de remplacement, ce repli est signalé. La jauge du ressenti n’apparaît que si elle dispose d’une température locale ou d’un humidex utilisable. [Affichage et priorité des sources](docs/display-options.md).
 
 Les prévisions affichent jusqu’à **18 heures et 7 jours**, selon les données réellement fournies. La carte distingue les conditions prévues pour la zone des mesures prises chez vous. Une mesure de station indisponible n’est pas remplacée par un zéro, et un orage prévu n’est pas présenté comme de la foudre détectée par la station.
 
-L’éditeur organise les réglages en catégories claires. Pour la station locale, choisissez d’abord **GW2000A**, **WS90 via Zigbee2MQTT** ou **Autre station / configuration manuelle** ; les champs correspondants apparaissent ensuite par type de mesure. Les autres catégories disposent de leur propre remplissage automatique. Les choix manuels sont filtrés par fonction ; Atmo est aussi filtré par commune et par jour. Les références introuvables peuvent être réparées après une réinstallation. Les choix valides, les entités momentanément indisponibles et les champs volontairement vidés sont conservés ; les correspondances ambiguës restent à choisir manuellement.
+Dans l’éditeur, choisissez **GW2000A**, **WS90 via Zigbee2MQTT** ou **Autre station / configuration manuelle**. Les champs adaptés apparaissent par catégories simples ; le préremplissage est proposé pour chaque source. Les choix manuels sont filtrés par fonction, et les sélections ambiguës restent à confirmer. [Guide des sources](docs/sources.md) · [Installation](docs/installation.md).
 
 ## Comment la carte interprète la météo
 
@@ -74,22 +87,6 @@ La lecture horaire alimente aussi des phrases de synthèse : première pluie ann
 ### Mettre les mesures en perspective
 
 L’historique Home Assistant permet de qualifier l’évolution de la pression et du vent. Les compteurs de la station mettent la pluie du jour en perspective avec la semaine, le mois et l’année. Atmo France complète cette lecture avec ses indices quotidiens de zone et, si disponibles, ceux de demain. [Mécanique et réglages détaillés](docs/data-model.md).
-
-## Prérequis : obligatoire ou facultatif ?
-
-Le minimum est **Home Assistant 2025.1.0 ou plus récent** et une **entité `weather.*`**. Pour l’installation et les mises à jour recommandées, il faut également [HACS](https://www.hacs.xyz/). Le téléchargement manuel reste possible.
-
-| Source ou composant | Statut | Ce qu’il apporte à la carte |
-| --- | --- | --- |
-| Entité météo, de préférence **Météo-France** | **Obligatoire** | Conditions de la zone, température de repli et prévisions disponibles. Météo-France est le fournisseur de référence. |
-| **Station météo locale** | Facultatif | Température et humidité extérieures, vent, pluie, pression et capteurs complémentaires. Ecowitt et WS90 via MQTT sont reconnus ; d’autres appareils peuvent être associés manuellement selon leurs types de mesure. |
-| **Thermal Comfort** | Facultatif ; recommandé pour le ressenti complet | Humidex extérieur, perception et point de rosée de repli. Demande une température et une humidité extérieures. |
-| **Soleil / `sun.sun`** | Facultatif ; recommandé, généralement déjà présent | Élévation solaire et lever/coucher pour les corrections de ressenti et les repères jour/nuit. |
-| **Atmo France** | Facultatif | Air extérieur, sous-indices de polluants, niveaux et concentrations de pollens, aujourd’hui et demain. |
-| **Polleninformation EU** | Facultatif ; alternative pour les pollens | Ligne d’espèces de pollens. Non affichée en double lorsque la source Atmo est sélectionnée. |
-| **Historique Recorder** | Facultatif ; nécessaire aux tendances intégrées | Évolution de la pression et du vent, sans créer de nouveaux capteurs. |
-
-Le [guide des sources](docs/sources.md) explique pour chacune sa configuration, les entités utiles, ce qui apparaît à l’écran et ce qui manque lorsqu’elle n’est pas présente. Pour profiter des mesures et du ressenti enrichi, renseignez les capteurs Ecowitt disponibles, l’humidex extérieur et le Soleil ; ajoutez Atmo si vous souhaitez l’air extérieur et les pollens.
 
 **Aucun `button-card`, chart-card, card-mod ou package de templates supplémentaire n’est nécessaire.** Node.js et les outils de développement ne sont pas requis chez les utilisateurs. Niak Weather ne configure pas les intégrations à votre place et ne demande aucun identifiant Atmo dans ses réglages.
 
