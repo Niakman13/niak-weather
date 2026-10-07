@@ -37,7 +37,7 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   if (feels !== undefined && (feels >= 34 || feels <= 2)) add({ key: 'temperature', group: 'now', severity: feels >= 38 || feels <= -3 ? 2 : 1,
     text: feels >= 34 ? `Forte chaleur ressentie (${format(feels)} °C)` : `Froid marqué (${format(feels)} °C ressentis)`, explanation: 'Estimation du ressenti de la carte, pas une vigilance canicule/grand froid.', entity: source('t_ext'), icon: feels >= 34 ? 'mdi:thermometer-high' : 'mdi:thermometer-low' });
   if(temp!==undefined&&feels!==undefined&&Math.abs(feels-temp)>4&&!signals.some(s=>s.key==='temperature'))add({key:'comfort-gap',group:'now',severity:0,
-    text:`Il fait nettement plus ${feels>temp?'chaud':'froid'} que ce qu’indique ${config.temperature_entity?'le thermomètre':'la température météo'} (écart estimé : ${format(Math.abs(feels-temp))} °C)`,
+    text:`Le ressenti est plus ${feels>temp?'élevé':'bas'} que ${config.temperature_entity?'le thermomètre':'la température météo'} (${feels>temp?'+':'−'}${format(Math.abs(feels-temp))} °C)`,
     explanation:'Écart supérieur à 4 °C entre le ressenti estimé par la carte et la température. Ce n’est pas une température mesurée ni une vigilance officielle.',entity:source('t_ext'),icon:feels>temp?'mdi:thermometer-high':'mdi:thermometer-low'});
   if ((wind ?? 0) >= 30 || (gust ?? 0) >= 40) add({ key: 'wind', group: 'now', severity: (wind ?? 0) >= 50 || (gust ?? 0) >= 60 ? 2 : 1,
     text: `Vent ${Math.max(wind ?? 0, gust ?? 0) >= 60 ? 'très fort' : 'soutenu'}${gust !== undefined ? `, rafales à ${format(gust)} km/h` : ` à ${format(wind!)} km/h`}`,

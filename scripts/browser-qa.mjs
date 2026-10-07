@@ -848,7 +848,7 @@ try {
     const root=card.shadowRoot;
     const empty=!root.querySelector('.nw-summary-lead,.nw-summary-emblem,.nw-attention')&&!!root.querySelector('.nw-current-temperature')&&!!root.querySelector('#comfort');
     card.hass={...card.hass,states:{...states,'sensor.thermal_comfort_humidex':e('sensor.thermal_comfort_humidex',28,'°C')}};await card.updateComplete;
-    const gap=root.querySelector('.nw-summary-lead')?.textContent.includes('nettement plus chaud')&&!root.querySelector('.nw-summary-lines').textContent.includes('ressentis')&&!root.querySelector('.nw-attention');
+    const gap=root.querySelector('.nw-summary-lead')?.textContent.includes('ressenti est plus élevé')&&!root.querySelector('.nw-summary-lines').textContent.includes('ressentis')&&!root.querySelector('.nw-attention');
     dailyRain=72;card.hass={...card.hass,states};card.forecastAt=0;await card.loadForecasts();await card.updateComplete;
     const tomorrow=root.querySelector('.nw-summary-lead')?.textContent.includes('Pluie importante prévue demain : 72 mm')&&!root.querySelector('.nw-attention');
     window.relevantBriefCard=card;return {empty,gap,tomorrow};

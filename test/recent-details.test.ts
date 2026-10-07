@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rainDays, windPoints, windScale, windChartSeries, windCurvePaths, pressureChartSeries } from '../src/recent-details';
+import { columnStatus, rainDays, windPoints, windScale, windChartSeries, windCurvePaths, pressureChartSeries } from '../src/recent-details';
 const now=new Date('2026-10-05T16:00:00Z');
 const p=(date:string,s:string)=>({s,lu:Date.parse(date)/1000});
 describe('Recorded rain days',()=>{
@@ -17,10 +17,28 @@ describe('Recorded rain days',()=>{
     expect(days[0]).toMatchObject({value:5,partial:true});
     expect(days[1].value).toBeUndefined();
   });
-  it('marks outages as missing and mid-day resets as partial',()=>{
+  it('keeps a day whose counter recovers after an outage and marks mid-day resets as partial',()=>{
     const days=rainDays([p('2026-09-28T22:00:00Z','0'),p('2026-09-29T12:00:00Z','unavailable'),p('2026-09-29T14:00:00Z','3'),p('2026-09-29T22:00:00Z','0'),p('2026-09-30T10:00:00Z','4'),p('2026-09-30T12:00:00Z','0')],'mm',now,'Europe/Paris');
-    expect(days[0].value).toBeUndefined();
+    expect(days[0].value).toBe(3);
     expect(days[1]).toMatchObject({value:4,partial:true});
+  });
+  it('does not erase days whose counter is briefly unknown at the midnight reset',()=>{
+    const rows=['2026-09-29','2026-09-30','2026-10-01','2026-10-02','2026-10-03','2026-10-04','2026-10-05'].flatMap((d,i)=>{
+      const midnight=Date.parse(`${d}T00:00:00+02:00`);
+      return [{s:'unknown',lu:midnight/1000},{s:'0',lu:midnight/1000+2},...(i%2?[{s:String(i*3),lu:midnight/1000+36000}]:[])];
+    });
+    const days=rainDays(rows,'mm',now,'Europe/Paris');
+    expect(days.map(d=>d.value)).toEqual([0,3,0,9,0,15,0]);
+    expect(days.slice(1).some(d=>d.partial)).toBe(false); // The first day has no earlier reading.
+  });
+  it('marks a day as partial when an outage is still running at midnight',()=>{
+    const days=rainDays([p('2026-09-28T22:00:00Z','0'),p('2026-09-29T08:00:00Z','2'),p('2026-09-29T18:00:00Z','unavailable'),p('2026-09-30T06:00:00Z','0')],'mm',now,'Europe/Paris');
+    expect(days[0]).toMatchObject({value:2,partial:true});
+    expect(days[1]).toMatchObject({value:0,partial:false});
+  });
+  it('leaves a day missing when the counter is unavailable all day',()=>{
+    const days=rainDays([p('2026-09-28T22:00:00Z','0'),p('2026-09-29T08:00:00Z','unavailable'),p('2026-09-30T06:00:00Z','0')],'mm',now,'Europe/Paris');
+    expect(days[0].value).toBeUndefined();
   });
   it('converts inches and follows the HA date rather than UTC',()=>{
     const days=rainDays([p('2026-10-04T23:00:00Z','1')],'in',now,'Europe/Paris');
@@ -89,5 +107,18 @@ describe('Wind history and scale',()=>{
     expect(windScale(14,30)).toBe(80);
     expect(windScale(90,150)).toBe(160);
     expect(windScale(0,0)).toBe(80);
+  });
+});
+
+describe('Column status pills',()=>{
+  const model=(attributes:Record<string,unknown>)=>({entity_id:'sensor.m',state:'ok',attributes} as any);
+  it('echoes current rain, notable wind changes and pressure trends',()=>{
+    expect(columnStatus(model({pluie_taux:1.2,vent_t:{d:9,s:'hausse'},baro:{s:'baisse',d:-1.4,f:180}}))).toEqual({rain:'Pluie en cours',wind:'Le vent s’intensifie',pressure:'La pression baisse'});
+    expect(columnStatus(model({pluie_taux:5,vent_t:{d:-10,s:'baisse'},baro:{s:'hausse'}}))).toEqual({rain:'Forte pluie en cours',wind:'Le vent faiblit',pressure:'La pression monte'});
+  });
+  it('stays silent when nothing notable happens or data is missing',()=>{
+    expect(columnStatus(model({pluie_taux:0,vent_t:{d:4,s:'hausse'},baro:{s:'stable'}}))).toEqual({rain:undefined,wind:undefined,pressure:undefined});
+    expect(columnStatus(model({vent_t:{d:-999,s:''}}))).toEqual({rain:undefined,wind:undefined,pressure:undefined});
+    expect(columnStatus(undefined)).toEqual({rain:undefined,wind:undefined,pressure:undefined});
   });
 });

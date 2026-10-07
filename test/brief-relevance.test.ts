@@ -17,7 +17,7 @@ describe('Only relevant brief content',()=>{
   it.each([[24,false],[24.1,true],[15.9,true]])('only explains a comfort gap strictly above 4 degrees: %s', (ressenti,exists)=>{
     const b=buildWeatherBrief(hass,config,model({ressenti}),[],now);
     expect(b.signals.some(s=>s.key==='comfort-gap')).toBe(exists);
-    if(exists)expect(b.signals.find(s=>s.key==='comfort-gap')?.text).toContain(ressenti>20?'plus chaud':'plus froid');
+    if(exists)expect(b.signals.find(s=>s.key==='comfort-gap')?.text).toContain(ressenti>20?'plus élevé':'plus bas');
   });
   it('keeps an ordinary temperature outlook out when a current concern is present',()=>{
     const b=buildWeatherBrief(hass,config,model({vent:40}),[{hours:5,temperature:25}],now);

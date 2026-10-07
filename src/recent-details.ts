@@ -24,11 +24,15 @@ export function rainDays(rows:History[string]|undefined,unit:unknown,now:Date,ti
     const daily=grouped.get(key)??[];
     const previous=series.filter(p=>p.date<key).at(-1);
     const values=daily.map(p=>p.v).filter((v):v is number=>v!==undefined&&v>=0);
-    const missing=daily.some(p=>p.v===undefined||p.v<0);
+    // A daily counter keeps accumulating through a short outage (e.g. `unknown` at the midnight reset),
+    // so readings after it still give the right maximum. Only an outage still running at the end of the day can hide rain.
+    const last=daily.at(-1),endsInOutage=!!last&&(last.v===undefined||last.v<0);
     // A zero that persists is a dry day; an old nonzero total must never be carried into a new day.
-    const value=missing?undefined:values.length?Math.max(...values):previous?.v===0?0:undefined;
-    const resetInside=daily.some((p,j)=>j>0&&p.v!==undefined&&daily[j-1].v!==undefined&&p.v<daily[j-1].v!);
-    const partial=resetInside||(!previous&&daily.length>0);
+    const highest=values.length?Math.max(...values):!daily.length&&previous?.v===0?0:undefined;
+    // "At least 0 mm" says nothing: a dry reading followed by an unfinished outage stays unknown.
+    const value=endsInOutage&&highest===0?undefined:highest;
+    const resetInside=values.some((v,j)=>j>0&&v<values[j-1]);
+    const partial=value!==undefined&&(resetInside||endsInOutage||(!previous&&daily.length>0));
     return {date:key,label:i===6?'Auj.':new Intl.DateTimeFormat('fr',{weekday:'short',timeZone:'UTC'}).format(date),value,partial};
   });
 }
@@ -92,7 +96,20 @@ export function windCurvePaths(series:Point[],top:number,now:Date):Array<{line:s
   });
 }
 
-export function renderRecentDetails(hass:HomeAssistant,config:WeatherCardConfig,history:History,rainHistory:History,now:Date,metrics:CurrentMetric[]=[],derived?:StationDerived){
+/** One-word reminders of what is happening now, echoing the synthesis in the matching column. */
+export function columnStatus(model?:HassEntity):{rain?:string;wind?:string;pressure?:string} {
+  const a=model?.attributes??{},rate=finite(a.pluie_taux);
+  const wind=a.vent_t as {d?:number}|undefined,windChange=finite(wind?.d)!==undefined&&wind!.d!==-999?wind!.d!:undefined;
+  const pressure=(a.baro as {s?:string}|undefined)?.s;
+  return {
+    rain:rate===undefined||rate<.3?undefined:rate>=4?'Forte pluie en cours':'Pluie en cours',
+    // Over one hour: a few km/h is noise, 8 km/h is felt.
+    wind:windChange===undefined?undefined:windChange>=8?'Le vent s’intensifie':windChange<=-8?'Le vent faiblit':undefined,
+    pressure:pressure==='baisse'?'La pression baisse':pressure==='hausse'?'La pression monte':undefined,
+  };
+}
+
+export function renderRecentDetails(hass:HomeAssistant,config:WeatherCardConfig,history:History,rainHistory:History,now:Date,metrics:CurrentMetric[]=[],derived?:StationDerived,model?:HassEntity){
   const read=(id:string|undefined,kind:string)=>{const e=hass.states[id??''];const v=valid(e)?measurement(e!.state,e!.attributes.unit_of_measurement,kind):undefined;return v!==undefined&&v>=0?v:undefined;};
   const fmt=(v:number|undefined,d=1)=>v===undefined?'—':new Intl.NumberFormat(hass.language||'fr',{maximumFractionDigits:d,minimumFractionDigits:d}).format(v);
   const metric=(value:number|undefined,unit:string,label:string,id?:string,large=false)=>html`<button class=${`nw-history-value${large?' nw-history-value--large':''}`} data-entity=${id??config.weather_entity} aria-label=${`${label} : ${fmt(value)} ${unit}`}><strong>${fmt(value,unit==='km/h'||unit==='hPa'?0:1)}<small>${unit}</small></strong><span>${label}</span></button>`;
@@ -133,9 +150,11 @@ export function renderRecentDetails(hass:HomeAssistant,config:WeatherCardConfig,
   const timeLabels=()=>[0,2,4,6].map(h=>svg`<text x=${42+h/6*420} y="148" text-anchor="middle">${new Intl.DateTimeFormat('fr',{timeZone:hass.config?.time_zone,hour:'2-digit',minute:'2-digit'}).format(new Date(now.getTime()-(6-h)*3600_000))}</text>`);
   const measuredRain=headlineRain!==undefined;
   const bearing=windMetric?.bearing,compass=bearing===undefined?'Direction indisponible':['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'][Math.round(((bearing%360+360)%360)/22.5)%16];
+  const status=columnStatus(model);
+  const pill=(text?:string)=>text?html`<p class="nw-history-status"><i aria-hidden="true"></i>${text}</p>`:nothing;
   return html`<div class="nw-history-grid me-bilan" style=${`--history-columns:${Number(hasRain)+Number(hasWind)+Number(hasPressure)}`}>
     ${hasRain?html`<section class="nw-history-card me-bl" style="--history-accent:27,171,175" aria-label="Bilan pluie">
-      <header><h3><ha-icon icon="mdi:weather-rainy"></ha-icon>Pluie</h3><span class="nw-history-source">${computedRain?.value!==undefined?'Station locale · historique':measuredRain?'Station locale':rainMetric?`${rainMetric.source}${rainMetric.fallback?' · repli':''}`:'Station locale'}</span></header>
+      <header><h3><ha-icon icon="mdi:weather-rainy"></ha-icon>Pluie</h3><span class="nw-history-source">${computedRain?.value!==undefined?'Station locale · historique':measuredRain?'Station locale':rainMetric?`${rainMetric.source}${rainMetric.fallback?' · repli':''}`:'Station locale'}</span></header>${pill(status.rain)}
       <div class="nw-history-headline">${measuredRain||!rainMetric?metric(headlineRain,'mm',rainLabel,headlineRainId,true):rainMetric.text?html`<button class="nw-history-value nw-history-value--condition" data-entity=${rainMetric.entity}><strong>${rainMetric.text}</strong><span>${rainMetric.description}</span></button>`:metric(rainMetric.value,rainMetric.unit,rainMetric.description,rainMetric.entity,true)}</div>
       <div class="nw-rain-counters">${(['week','month','year'] as const).map((key,i)=>{
         const field=(['weekly_rain_entity','monthly_rain_entity','yearly_rain_entity'] as const)[i],label=['Cette semaine','Ce mois','Cette année'][i],computed=config[field]===undefined&&config.rain_total_entity?derived?.rain[key]:undefined;
@@ -148,7 +167,7 @@ export function renderRecentDetails(hass:HomeAssistant,config:WeatherCardConfig,
       ${rainChart?html`<p class="nw-history-caption">${config.daily_rain_entity===undefined&&config.rain_total_entity?'Calculé depuis le compteur total':'Maxima enregistrés'} · aujourd’hui en cours${days.some(d=>d.partial)?' · ≥ historique partiel':''}</p>`:nothing}</div></details>
     </section>`:nothing}
     ${hasWind?html`<section class="nw-history-card me-bl" style="--history-accent:40,130,240" aria-label="Bilan vent">
-      <header><h3><ha-icon icon="mdi:weather-windy"></ha-icon>Vent</h3><span class="nw-history-source">${windSource}</span></header>
+      <header><h3><ha-icon icon="mdi:weather-windy"></ha-icon>Vent</h3><span class="nw-history-source">${windSource}</span></header>${pill(status.wind)}
       <div class="nw-history-headline nw-wind-headline">${metric(wind,'km/h',windLabel,windId,true)}${hasGust?metric(gust,'km/h',`Rafales maintenant${windMetric?.gust?.source&&windMetric.gust.source!==windMetric.source?' · '+windMetric.gust.source:''}`,gustId):nothing}
       ${bearing!==undefined||config.wind_bearing_entity?html`<button class="nw-wind-direction" data-entity=${windMetric?.bearingEntity??config.wind_bearing_entity??config.weather_entity} aria-label=${`Direction du vent : ${compass}, ${windMetric?.bearingSource??'Station locale'}`}><svg class="me-rose" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17.2" class="me-rc"/><text x="20" y="7.4" text-anchor="middle" class="me-rn">N</text><circle cx="20" cy="20" r="1.7" class="me-rd"/>${bearing===undefined?nothing:svg`<g class="me-aig" style=${`transform:rotate(${bearing}deg)`}><path d="M20 6 L24 21 L20 18.5 L16 21 Z" class="me-aigp"/></g>`}</svg><span>${compass}${bearing===undefined?'':` · ${fmt((bearing%360+360)%360,0)}°`}${windMetric?.bearingSource&&windMetric.bearingSource!==windMetric.source?html`<small>${windMetric.bearingSource}</small>`:nothing}</span></button>`:nothing}
       </div><details class="nw-statistics"><summary>Statistiques</summary>
@@ -157,7 +176,7 @@ export function renderRecentDetails(hass:HomeAssistant,config:WeatherCardConfig,
       <div class="nw-history-chart"><h4>Vent des 6 dernières heures</h4>${windChart?svg`<svg viewBox="0 0 480 156" role="img" aria-label="Vent moyen et rafales regroupés par dix minutes ; les données indisponibles restent des coupures"><defs><linearGradient id="nw-wind-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgb(40,130,240)" stop-opacity=".18"/><stop offset="100%" stop-color="rgb(40,130,240)" stop-opacity=".015"/></linearGradient></defs>${chartGrid(windTop,'km/h')}${meanPaths.map(d=>svg`<path class="nw-history-area" d=${d.area} fill="url(#nw-wind-area)"/><path class="nw-wind-curve" d=${d.line} fill="none"/>`)}${gustPaths.map(d=>svg`<path class="nw-wind-curve nw-wind-curve--gust" d=${d.line} fill="none"/>`)}${[0,2,4,6].map(h=>svg`<text x=${42+h/6*420} y="148" text-anchor="middle">${new Intl.DateTimeFormat('fr',{timeZone:hass.config?.time_zone,hour:'2-digit',minute:'2-digit'}).format(new Date(now.getTime()-(6-h)*3600_000))}</text>`)}</svg>`:html`<p class="nw-history-empty">Historique du vent indisponible ou insuffisant</p>`}
       ${windChart?html`<div class="nw-wind-chart-legend">${meanPaths.length?html`<span>${isGustPrimary?'Rafales · pics 10 min':'Vent moyen · moyenne 10 min'}</span>`:nothing}${gustPaths.length?html`<span class="nw-wind-chart-legend--gust">Rafales · pics 10 min</span>`:nothing}</div>`:nothing}</div></details>
     </section>`:nothing}
-    ${hasPressure?html`<section class="nw-history-card me-bl" style="--history-accent:135,117,190" aria-label="Bilan pression"><header><h3><ha-icon icon="mdi:gauge"></ha-icon>Pression</h3><span class="nw-history-source">${pressureMetric?`${pressureMetric.source}${pressureMetric.fallback?' · repli':''}`:'Station locale'}</span></header>
+    ${hasPressure?html`<section class="nw-history-card me-bl" style="--history-accent:135,117,190" aria-label="Bilan pression"><header><h3><ha-icon icon="mdi:gauge"></ha-icon>Pression</h3><span class="nw-history-source">${pressureMetric?`${pressureMetric.source}${pressureMetric.fallback?' · repli':''}`:'Station locale'}</span></header>${pill(status.pressure)}
       <div class="nw-history-headline">${metric(pressure,'hPa','Pression actuelle',pressureId,true)}</div>
       <details class="nw-statistics"><summary>Statistiques</summary><div class="nw-history-chart"><h4>Pression des 6 dernières heures</h4>${pressurePaths.length?svg`<svg viewBox="0 0 480 156" role="img" aria-label="Historique de pression mesurée, en hectopascals ; les données absentes restent des coupures"><defs><linearGradient id="nw-pressure-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgb(135,117,190)" stop-opacity=".18"/><stop offset="100%" stop-color="rgb(135,117,190)" stop-opacity=".015"/></linearGradient></defs>${chartGrid(pressureTop,'hPa',pressureLow)}${pressurePaths.map(d=>svg`<path class="nw-history-area" d=${d.area} fill="url(#nw-pressure-area)"/><path class="nw-wind-curve" d=${d.line} fill="none"/>`)}${timeLabels()}</svg>`:html`<p class="nw-history-empty">Historique de pression indisponible ou insuffisant</p>`}<p class="nw-history-caption">Moyennes 10 min · échelle ajustée à la période</p></div></details>
     </section>`:nothing}
@@ -184,6 +203,8 @@ export const recentDetailsStyles=css`
   .nw-history-card h3 ha-icon { color:rgb(var(--history-accent));--mdc-icon-size:24px; }
   .nw-history-source { border:1px solid var(--divider-color,rgba(150,150,150,.2));border-radius:999px;padding:4px 8px;font-size:10px;color:var(--secondary-text-color);white-space:nowrap; }
   .nw-history-headline { margin:16px 0 12px;min-height:60px; }
+  .nw-history-status { display:inline-flex;align-self:flex-start;align-items:center;gap:7px;margin:10px 0 -4px;padding:4px 10px;border-radius:999px;border:1px solid rgba(var(--history-accent),.45);background:rgba(var(--history-accent),.12);font-size:11px;font-weight:600;color:var(--primary-text-color); }
+  .nw-history-status i { width:7px;height:7px;border-radius:50%;background:rgb(var(--history-accent)); }
   .nw-history-value { display:flex;flex-direction:column;align-items:flex-start;text-align:left;font:inherit;border:0;background:transparent;padding:0;color:var(--primary-text-color);cursor:pointer;min-width:0; }
   .nw-history-value strong { font-size:21px;letter-spacing:-.6px;line-height:1.2; }
   .nw-history-value small { font-size:11px;font-weight:500;margin-left:4px;letter-spacing:0;color:var(--secondary-text-color); }
