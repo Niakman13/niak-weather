@@ -60,7 +60,10 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
     { key:'environment', title:'Air et pollens', description:'Indices de votre zone, pour aujourd’hui ou demain selon le libellé.' },
   ];
   const season=currentSeason(hass,config,now),daylight=daylightText(season);
-  const seasonPill=html`<span class=${`nw-season nw-season--${season.season}`} title=${`${season.label}${season.source==='sensor'?' (capteur de saison)':' (d’après la date)'}${daylight?` · ${daylight}`:''}`}><ha-icon icon=${season.icon}></ha-icon>${season.label}</span>`;
+  // Announced only during the first week of a new season, then the sky alone carries it.
+  const seasonNews={spring:'C’est le printemps',summer:'C’est l’été',autumn:'C’est l’automne',winter:'C’est l’hiver'}[season.season];
+  const seasonSince=season.start?new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(Date.UTC(2000,season.start.month-1,season.start.day))):'';
+  const seasonPill=season.daysIn!==undefined&&season.daysIn<7?html`<span class=${`nw-season nw-season--${season.season}`} title=${`${season.label} depuis le ${seasonSince}${daylight?` · ${daylight}`:''}`}><ha-icon icon=${season.icon}></ha-icon>${seasonNews}</span>`:nothing;
   const synthesisInfo=brief?html`<div class="nw-brief-details"><h2 id="nw-synthesis-title">Synthèse</h2><button class="nw-synthesis-info-button" aria-label="Consulter les points à retenir de la synthèse" aria-expanded="false" aria-controls="nw-synthesis-info" @click=${toggleSynthesisInfo}><span class="nw-info-icon" aria-hidden="true">i</span></button><span class="nw-synthesis-location">${location}</span>${seasonPill}
     <div id="nw-synthesis-info" class="nw-brief-panel" popover="auto" role="region" aria-label="Les points à retenir" @toggle=${(event:Event)=>{
       const panel=event.currentTarget as HTMLElement;

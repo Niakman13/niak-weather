@@ -1,7 +1,9 @@
 import type { HomeAssistant, WeatherCardConfig } from './types';
 
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
-export interface SeasonInfo { season: Season; source: 'sensor' | 'date'; label: string; icon: string; dayLength?: number; dayChange?: number }
+export interface SeasonInfo { season: Season; source: 'sensor' | 'date'; label: string; icon: string; dayLength?: number; dayChange?: number;
+  /** Days since the season began (0 on its first day), when its start can be dated. */
+  daysIn?: number; start?: { month: number; day: number } }
 
 const order: Season[] = ['spring', 'summer', 'autumn', 'winter'];
 const names: Record<Season, string> = { spring: 'Printemps', summer: 'Été', autumn: 'Automne', winter: 'Hiver' };
@@ -20,6 +22,18 @@ export function seasonFromDate(now: Date, timeZone?: string, latitude = 45): Sea
   const { month, day } = localDate(now, timeZone), md = month * 100 + day;
   const north: Season = md >= 1221 || md < 320 ? 'winter' : md < 621 ? 'spring' : md < 922 ? 'summer' : 'autumn';
   return latitude < 0 ? order[(order.indexOf(north) + 2) % 4] : north;
+}
+
+const astronomical: Array<[number, number, Season]> = [[3, 20, 'spring'], [6, 21, 'summer'], [9, 22, 'autumn'], [12, 21, 'winter']];
+const meteorological: Array<[number, number, Season]> = [[3, 1, 'spring'], [6, 1, 'summer'], [9, 1, 'autumn'], [12, 1, 'winter']];
+/** Most recent start of `season` on or before the local date, on one calendar (seasons flipped south of the equator). */
+function startOf(season: Season, calendar: typeof astronomical, year: number, month: number, day: number, south: boolean) {
+  const flip = (s: Season) => south ? order[(order.indexOf(s) + 2) % 4] : s, today = Date.UTC(year, month - 1, day);
+  const latest = [year - 1, year].flatMap(y => calendar.filter(([, , s]) => flip(s) === season).map(([m, d]) => ({ m, d, t: Date.UTC(y, m - 1, d) })))
+    .filter(x => x.t <= today).sort((a, b) => b.t - a.t)[0];
+  // The season must still be running on that calendar: its next boundary is after today.
+  const next = latest && [year, year + 1].flatMap(y => calendar.map(([m, d]) => Date.UTC(y, m - 1, d))).filter(t => t > latest.t).sort((a, b) => a - b)[0];
+  return latest && next !== undefined && today < next ? { month: latest.m, day: latest.d, days: Math.round((today - latest.t) / 86400000) } : undefined;
 }
 
 /**
@@ -42,6 +56,11 @@ export function currentSeason(hass: HomeAssistant, config: WeatherCardConfig, no
   const latitude = Number(hass.config?.latitude);
   const season = fromSensor ?? seasonFromDate(now, hass.config?.time_zone, Number.isFinite(latitude) ? latitude : 45);
   const info: SeasonInfo = { season, source: fromSensor ? 'sensor' : 'date', label: names[season], icon: icons[season] };
+  // A Season sensor may follow astronomical (21 March…) or meteorological (1 March…) seasons: date the start on the calendar that matches.
+  const today = localDate(now, hass.config?.time_zone), south = Number.isFinite(latitude) && latitude < 0;
+  const start = startOf(season, astronomical, today.year, today.month, today.day, south)
+    ?? (fromSensor ? startOf(season, meteorological, today.year, today.month, today.day, south) : undefined);
+  if (start) { info.daysIn = start.days; info.start = { month: start.month, day: start.day }; }
   if (Number.isFinite(latitude)) {
     const { year, month, day } = localDate(now, hass.config?.time_zone);
     const elevation = Number(hass.config?.elevation) || 0;

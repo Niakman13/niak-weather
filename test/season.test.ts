@@ -22,6 +22,15 @@ describe('Seasons', () => {
     expect(currentSeason(hass({ 'sensor.saison': sensor('unavailable') }), { ...config, season_entity: 'sensor.saison' }, july)).toMatchObject({ season: 'summer', source: 'date' });
     expect(currentSeason(hass(), config, july)).toMatchObject({ season: 'summer', source: 'date', icon: 'mdi:white-balance-sunny' });
   });
+  it('dates the start of the season, on the astronomical or the meteorological calendar', () => {
+    const dated = (iso: string, extra: Partial<WeatherCardConfig> = {}, states: Record<string, HassEntity> = {}, latitude = 43.45) => currentSeason(hass(states, latitude), { ...config, ...extra }, at(iso));
+    expect(dated('2026-09-23')).toMatchObject({ season: 'autumn', daysIn: 1, start: { month: 9, day: 22 } });
+    expect(dated('2026-10-07').daysIn).toBe(15);
+    expect(dated('2027-01-03')).toMatchObject({ season: 'winter', daysIn: 13, start: { month: 12, day: 21 } });
+    // A meteorological Season sensor turns to autumn on 1 September, before the equinox.
+    expect(dated('2026-09-05', { season_entity: 'sensor.saison' }, { 'sensor.saison': sensor('autumn') })).toMatchObject({ season: 'autumn', daysIn: 4, start: { month: 9, day: 1 } });
+    expect(dated('2026-09-25', {}, {}, -33.9)).toMatchObject({ season: 'spring', daysIn: 3 });
+  });
   it('tells the day length and how fast it changes', () => {
     // Gardanne, 7 October: about 11 h 25 of daylight, shrinking by about 2.7 min a day.
     const info = currentSeason(hass(), config, at('2026-10-07'));

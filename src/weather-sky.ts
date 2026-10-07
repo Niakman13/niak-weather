@@ -48,15 +48,40 @@ export class NiakWeatherSky extends LitElement {
     return html`${this.phase==='day'||this.phase==='twilight'?html`<div class="fog-sun"></div>`:nothing}
       ${Array.from({length:bands},(_,i)=>html`<svg class=${`fog-band depth-${i%3}`} viewBox="0 0 600 60" preserveAspectRatio="none" style=${`--fy:${6+i*16}%;--fl:${[-10,18,-25,30,0][i]}%;--fw:${[120,95,140,85,130][i]}%;--fd:${13+i*3}s;--fdelay:${-i*2.7}s;--dir:${i%2?-1:1}`}><path d="M0 34C60 16 130 20 190 30S330 48 400 32 520 14 600 28V60H0Z"/></svg>`)}`;
   }
+  /** Frost on a window pane in the top-right corner: a frosty veil, crystalline texture and ice ferns grown from the corner. */
+  private frostPane() {
+    const ferns:string[]=[];
+    [[118,150],[132,120],[146,95],[160,140],[172,70],[186,110],[200,60],[214,85]].forEach(([deg,len],k)=>{
+      const a=deg*Math.PI/180,x0=260,y0=0,ex=x0+Math.cos(a)*len,ey=y0+Math.sin(a)*len;
+      let d=`M${x0} ${y0}L${ex.toFixed(1)} ${ey.toFixed(1)}`;
+      for(let t=14;t<len-6;t+=11+(k%3)*2){
+        const px=x0+Math.cos(a)*t,py=y0+Math.sin(a)*t,twig=(len-t)*.28;
+        for(const side of [-1,1]){const b=a+side*.75;d+=`M${px.toFixed(1)} ${py.toFixed(1)}l${(Math.cos(b)*twig).toFixed(1)} ${(Math.sin(b)*twig).toFixed(1)}`;}
+      }
+      ferns.push(d);
+    });
+    return html`<svg class="frost-pane" viewBox="0 0 260 160" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
+      <defs>
+        <filter id="nw-frost-texture" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="3" seed="11"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.8 0 0 0 -.62"/></filter>
+        <radialGradient id="nw-frost-fade" cx="260" cy="0" r="230" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+        <mask id="nw-frost-mask"><rect width="260" height="160" fill="url(#nw-frost-fade)"/></mask>
+      </defs>
+      <g mask="url(#nw-frost-mask)">
+        <rect class="frost-veil" width="260" height="160"/>
+        <rect width="260" height="160" filter="url(#nw-frost-texture)" opacity=".6"/>
+        ${ferns.map(d=>svg`<path class="frost-fern" d=${d}/>`)}
+      </g>
+    </svg>`;
+  }
   /** Seasonal touches, layered over the weather: petals, heat haze, falling leaves, frost. */
   private seasonal(precip:boolean,storm:boolean,fog:boolean) {
     const few=this.quality==='low';
     const drift=(count:number,art:(i:number)=>unknown)=>Array.from({length:few?2:count},(_,i)=>html`<div class="drift" style=${`--dx:${46+(i*23)%50}%;--dt:${11+(i*7)%7}s;--dd:${-(i*3.1)%11}s;--rest:${12+(i*29)%70}%;--sw:${2.6+(i%3)*.5}s`}><i>${art(i)}</i></div>`);
     if(this.season==='spring'&&!precip&&!storm&&!fog) return drift(6,i=>html`<svg class=${`petal petal-${i%2}`} viewBox="0 0 12 12"><path d="M6 0C10 3 10 9 6 12C2 9 2 3 6 0Z"/></svg>`);
     if(this.season==='autumn'&&!storm&&!['snowy','snowy-rainy','hail'].includes(this.condition)) return drift(5,i=>html`<svg class=${`maple maple-${i%3}`} viewBox="0 0 24 24"><path d="M12 1l2 5 4-2-1 5 4 1-4 3 2 4-5-1-1 7h-2l-1-7-5 1 2-4-4-3 4-1-1-5 4 2z"/></svg>`);
-    if(this.season==='summer'&&this.phase==='day'&&['sunny','partlycloudy'].includes(this.condition)) return html`<div class="haze"></div>`;
-    if(this.season==='winter') return html`<svg class="frost" viewBox="0 0 160 100" aria-hidden="true">${[[132,18,13],[104,10,8],[148,48,9],[118,40,6],[86,22,5]].map(([x,y,r])=>svg`<g transform=${`translate(${x} ${y})`}>${[0,60,120].map(a=>svg`<path transform=${`rotate(${a})`} d=${`M0 ${-r}V${r}M${-r*.35} ${-r*.65}L0 ${-r*.4}L${r*.35} ${-r*.65}M${-r*.35} ${r*.65}L0 ${r*.4}L${r*.35} ${r*.65}`}/>`)}</g>`)}</svg>
-      ${this.phase==='night'?nothing:Array.from({length:few?2:5},(_,i)=>html`<i class="glint" style=${`--gx:${62+(i*13)%34}%;--gy:${8+(i*17)%30}%;--gd:${-(i*.9)}s`}></i>`)}`;
+    if(this.season==='summer'&&this.phase==='day'&&['sunny','partlycloudy'].includes(this.condition)) return html`<div class="heat">${Array.from({length:few?2:5},(_,i)=>html`<svg class="heat-wave" viewBox="0 0 120 12" preserveAspectRatio="none" style=${`--hx:${48+(i*11)%42}%;--hw:${70+(i*23)%60}px;--hd:${-i*.8}s`}><path d="M0 6Q7.5 0 15 6T30 6T45 6T60 6T75 6T90 6T105 6T120 6"/></svg>`)}</div>`;
+    if(this.season==='winter') return html`${this.frostPane()}
+      ${Array.from({length:few?2:4},(_,i)=>html`<i class="glint" style=${`--gx:${84+(i*5)%14}%;--gy:${4+(i*9)%26}%;--gd:${-(i*.9)}s`}></i>`)}`;
     return nothing;
   }
   protected render() {
@@ -110,10 +135,15 @@ export class NiakWeatherSky extends LitElement {
     .petal {width:14px;height:14px;filter:drop-shadow(0 1px 1px #0002);}.petal-0 {fill:#f2a9c6;}.petal-1 {fill:#fbe3ec;}
     .maple {width:17px;height:17px;filter:drop-shadow(0 1px 1px #0003);}.maple-0 {fill:#d9772b;}.maple-1 {fill:#b9472c;}.maple-2 {fill:#dca33a;}
     .night .drift {filter:brightness(.6);}
-    /* Above the banner's bottom fade, on the artwork side: warm wavering stripes. */
-    .haze {position:absolute;left:45%;right:0;top:48%;height:30%;background:repeating-linear-gradient(180deg,rgba(255,190,110,0) 0 6px,rgba(255,190,110,.32) 7px 9px);filter:blur(2px);mask-image:linear-gradient(90deg,transparent,#000 30%,#000),linear-gradient(transparent,#000 35%,#000 65%,transparent);mask-composite:intersect;animation:haze 2.6s ease-in-out infinite alternate;}
+    /* Heat rising over the artwork side, above the banner's bottom fade: warm wavy lines that climb and fade. */
+    .heat {position:absolute;left:0;right:0;top:28%;height:46%;background:radial-gradient(ellipse 45% 70% at 75% 100%,rgba(255,170,80,.22),transparent 70%);}
+    .heat-wave {position:absolute;left:var(--hx);bottom:0;width:var(--hw);height:12px;fill:none;stroke:rgba(255,160,70,.85);stroke-width:2;stroke-linecap:round;filter:blur(.4px);opacity:0;animation:heat-rise 3.4s ease-in var(--hd) infinite;}
     /* Clear of the "En ce moment" column on wide cards; the corner is free on mobile. */
-    .frost {position:absolute;right:150px;top:0;width:200px;height:125px;fill:none;stroke:#9fcdf2;stroke-width:1.3;stroke-linecap:round;filter:drop-shadow(0 0 1.5px #ffffff) drop-shadow(0 0 4px #cfe8ff);opacity:.9;}
+    /* A faint blue rim, as light catches real frost: keeps the white crystals visible on a light card. */
+    .frost-pane {position:absolute;right:0;top:0;width:300px;height:185px;filter:drop-shadow(0 0 1px rgba(80,140,200,.6)) drop-shadow(0 0 3px rgba(150,195,235,.35));}
+    /* Like the fog: a touch of the theme's text colour, so frost reads as bluish grey on a light card and white on a dark one. */
+    .frost-veil {fill:color-mix(in srgb,var(--primary-text-color,#253047) 14%,#e8f4ff);opacity:.6;}
+    .frost-fern {fill:none;stroke:color-mix(in srgb,var(--primary-text-color,#253047) 30%,#ffffff);stroke-width:1.2;stroke-linecap:round;opacity:.95;}
     .glint {position:absolute;left:var(--gx);top:var(--gy);width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 6px 2px #eaf6ff;animation:twinkle 2.8s ease-in-out var(--gd) infinite;}
     .weather-art {display:contents;}
     .scene.night {--sky:linear-gradient(145deg,#0b1430,#1f3358 70%,#3a5274);--tint:.72;}
@@ -187,7 +217,7 @@ export class NiakWeatherSky extends LitElement {
     @keyframes fog-sun {from{opacity:.55;}to{opacity:.9;}}
     @keyframes drift-fall {from{top:-8%;translate:0 0;}to{top:108%;translate:-40px 0;}}
     @keyframes sway {from{translate:-10px 0;rotate:-25deg;}to{translate:10px 0;rotate:35deg;}}
-    @keyframes haze {from{translate:0 0;transform:skewX(-2deg) scaleY(1);}to{translate:6px -2px;transform:skewX(2deg) scaleY(1.06);}}
+    @keyframes heat-rise {0%{translate:0 0;opacity:0;scale:.85 1;}25%{opacity:.9;}100%{translate:-8px -70px;opacity:0;scale:1.15 1.6;}}
     @keyframes fog-breathe {from{opacity:calc(var(--fo) * .6);}to{opacity:var(--fo);}}
     @keyframes gust {0%{translate:-110% 0;opacity:0;}20%,75%{opacity:.75;}100%{translate:160% -15px;opacity:0;}}
     @keyframes leaves {from{translate:-5% 0;}to{translate:110% -18px;}}
@@ -200,7 +230,7 @@ export class NiakWeatherSky extends LitElement {
       .bolt.b1 {left:auto;right:18%;}.bolt.b2 {left:auto;right:2%;}.bolt.b3 {left:auto;right:42%;}
       .flash.f1 {--fx:70%;}.flash.f2 {--fx:94%;}.flash.f3 {--fx:48%;}
       .fog-sun {left:auto;right:14%;}
-      .frost {right:0;}
+      .frost-pane {width:220px;height:135px;}
     }
     @media(prefers-reduced-motion:reduce) {.scene *{animation:none!important;}.particle{translate:0 var(--rest);}.drift{top:var(--rest);}.bolt.b1{opacity:.8;}.flash{opacity:0;}}
   `;
