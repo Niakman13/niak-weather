@@ -61,7 +61,9 @@ describe('History-derived station measurements',()=>{
     for(let h=Date.parse('2025-11-30T23:00:00Z');h+H<=N;h+=H){sum+=rainIn(h);hourly.push({start:h,end:h+H,sum,state:sum});}
     const fmt=new Intl.DateTimeFormat('en-CA',{timeZone:tz}),key=(t:number)=>fmt.format(new Date(t));
     const daily=new Map<string,{start:number;end:number;sum:number;state:number}>();
-    for(const r of hourly){const [y,m,d]=key(r.start).split('-').map(Number);daily.set(key(r.start),{start:calendarMidnight(y,m,d,tz),end:calendarMidnight(y,m,d+1,tz),sum:r.sum,state:r.state});}
+    // Midnights are computed once per day: per hour, this test exceeded vitest's 5 s timeout on CI runners.
+    for(const r of hourly){const k=key(r.start),day=daily.get(k);if(day){day.sum=r.sum;day.state=r.state;continue;}
+      const [y,m,d]=k.split('-').map(Number);daily.set(k,{start:calendarMidnight(y,m,d,tz),end:calendarMidnight(y,m,d+1,tz),sum:r.sum,state:r.state});}
     const hourStart=periodStarts(new Date(N-9*86400_000),tz).day;
     const rows=[...daily.values(),...hourly.filter(r=>r.start>=hourStart)];
     const ordered=[...new Map(rows.sort((a,b)=>(b.end-b.start)-(a.end-a.start)).map(r=>[r.end,r])).values()].sort((a,b)=>a.end-b.end);
