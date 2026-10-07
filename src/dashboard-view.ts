@@ -74,8 +74,8 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
     })}</div>
     ${!brief.signals.some(s=>s.severity>0)?html`<p>Pas de point d’attention renforcé parmi les données disponibles.</p>`:nothing}
     ${brief.caveats.length?html`<details class="nw-brief-limits"><summary>Données à vérifier · ${brief.caveats.length}</summary><ul>${brief.caveats.map(c=>html`<li>${c}</li>`)}</ul></details>`:nothing}</div></div>`:nothing;
-  // Night, storm and downpour skies stay dark whatever the theme: their text stays white, as on the sky itself.
-  const darkSky=weatherNow.phase==='night'||['lightning','lightning-rainy','pouring'].includes(weatherNow.condition);
+  // Storm and downpour clouds stay dark whatever the theme: their text stays white. Softened night skies follow the theme like daytime.
+  const darkSky=['lightning','lightning-rainy','pouring'].includes(weatherNow.condition);
   return html`
     ${config.show_synthesis===false?nothing:html`<section id="heros" class=${`nw-section nw-synthesis${headline?'':' nw-synthesis--weather-only'}`} aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
       <div class="nw-sky-backdrop" aria-hidden="true"><niak-weather-sky .condition=${weatherNow.condition} .phase=${weatherNow.phase}
@@ -135,7 +135,7 @@ export const dashboardStyles = css`
   .nw-sky-backdrop { position:absolute; inset:0; z-index:-2; pointer-events:none; }
   .nw-synthesis::after { content:''; position:absolute; inset:auto 0 0; height:80px; max-height:35%; z-index:-1; pointer-events:none; background:linear-gradient(180deg,transparent,var(--card-background-color,#fff)); }
   .nw-synthesis+#today { border-top:0; }
-  .nw-synthesis::before { content:''; position:absolute; inset:0; z-index:-1; pointer-events:none; background:linear-gradient(90deg,var(--card-background-color,#fff) 0%,color-mix(in srgb,var(--card-background-color,#fff) 94%,transparent) 30%,color-mix(in srgb,var(--card-background-color,#fff) 62%,transparent) 44%,transparent 60%); }
+  .nw-synthesis::before { content:''; position:absolute; inset:0; z-index:-1; pointer-events:none; background:linear-gradient(90deg,var(--card-background-color,#fff) 0%,color-mix(in srgb,var(--card-background-color,#fff) 96%,transparent) 26%,color-mix(in srgb,var(--card-background-color,#fff) 82%,transparent) 36%,color-mix(in srgb,var(--card-background-color,#fff) 55%,transparent) 47%,color-mix(in srgb,var(--card-background-color,#fff) 25%,transparent) 59%,transparent 74%); }
   .nw-synthesis>.nw-section-heading { grid-column:1 / 3; grid-row:1; position:relative; z-index:1; }
   .nw-summary-emblem { grid-column:1; grid-row:2; align-self:start; margin-top:3px; width:76px; height:76px; pointer-events:none; }
   .nw-synthesis .me-rond { background:radial-gradient(circle at 35% 25%,rgba(var(--vc),.22),rgba(var(--vc),.06)); border:1.5px solid rgba(var(--vc),.62); animation:nwEmblemGlow 5.2s ease-in-out infinite; }

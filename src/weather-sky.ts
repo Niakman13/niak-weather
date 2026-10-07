@@ -98,11 +98,11 @@ export class NiakWeatherSky extends LitElement {
     const clearSky=['sunny','clear-night','partlycloudy','windy'].includes(this.condition);
     const windy=['windy','windy-variant'].includes(this.condition);
     const heavy=this.condition==='pouring';
-    const n=this.quality==='low' ? 8 : heavy ? 80 : rain ? 44 : 20;
+    const n=this.quality==='low' ? 8 : heavy ? 80 : rain ? 44 : snow ? 34 : 20;
     const particles=(kind:string)=>Array.from({length:n},(_,i)=>{
       const depth=i%3;
       const duration=kind==='rain' ? (heavy ? .45 : .8)+depth*.22 : 3+depth;
-      return html`<i class=${`particle ${kind} depth-${depth}`} style=${`--x:${(i*37+7)%100}%;--delay:${-((i*13)%37)/37*duration}s;--duration:${duration}s;--size:${2+depth}px;--rest:${(i*19+8)%88}%;--drift:${heavy ? -85 : -38}px`}></i>`;
+      return html`<i class=${`particle ${kind} depth-${depth}`} style=${`--x:${(i*37+7)%100}%;--delay:${-((i*13)%37)/37*duration}s;--duration:${duration}s;--size:${kind==='snow'?3+depth*1.2:2+depth}px;--rest:${(i*19+8)%88}%;--drift:${heavy ? -85 : -38}px`}></i>`;
     });
     return html`<div class=${`scene ${this.phase} ${this.condition}${this.season?` season-${this.season}`:''}`} style=${`--play:${this.animated&&this.visible&&this.pageVisible?'running':'paused'};--cloud-duration:${windy?6:Math.max(11,28-Math.min(Math.max(this.wind,0),60)/2.5)}s`} ?data-still=${!this.animated}>
       <div class="weather-art">${this.condition!=='unknown'&&this.condition!=='exceptional' ? html`
@@ -154,16 +154,16 @@ export class NiakWeatherSky extends LitElement {
     .frost-bokeh {opacity:.6;animation:bokeh-cycle 16s ease-in-out var(--fd) infinite;}
     .frost-spark {fill:#fff;filter:drop-shadow(0 0 3px #dff1ff);transform-box:fill-box;transform-origin:center;opacity:0;animation:spark-cycle 16s ease-in-out var(--fd) infinite;}
     .weather-art {display:contents;}
-    .scene.night {--sky:linear-gradient(145deg,#0b1430,#1f3358 70%,#3a5274);--tint:.72;}
+    .scene.night {--sky:linear-gradient(145deg,#0b1430,#1f3358 70%,#3a5274);--tint:.46;}
     .scene.twilight {--sky:linear-gradient(155deg,#404c8d,#d18d9b 65%,#f2c599);--tint:.5;}
     .scene.cloudy,.scene.windy-variant {--sky:linear-gradient(155deg,#4c657b,#8aa3b7 75%,#becbd4);}
     .scene.fog {--sky:linear-gradient(180deg,#8d9ba6,#b9c4cb 60%,#d3dade);--tint:.4;}
-    .scene.rainy {--sky:linear-gradient(150deg,#263e56,#486580 65%,#6c8aa1);--tint:.55;}
-    .scene.pouring {--sky:linear-gradient(150deg,#17293f,#35485e 65%,#536c83);--tint:.62;}
-    .scene.lightning,.scene.lightning-rainy {--sky:linear-gradient(150deg,#070f1c,#162336 65%,#2a3a50);--tint:.82;}
+    .scene.rainy {--sky:linear-gradient(150deg,#263e56,#486580 65%,#6c8aa1);--tint:.45;}
+    .scene.pouring {--sky:linear-gradient(150deg,#17293f,#35485e 65%,#536c83);--tint:.45;}
+    .scene.lightning,.scene.lightning-rainy {--sky:linear-gradient(150deg,#0b1626,#1d2c40 65%,#32435a);--tint:.52;}
     .scene.snowy,.scene.snowy-rainy,.scene.hail {--sky:linear-gradient(150deg,#476784,#8baac1 75%,#cbdee6);}
-    .scene.night:not(.clear-night):not(.sunny):not(.partlycloudy) {--sky:linear-gradient(150deg,#111c2c,#334457 80%,#506276);--tint:.68;}
-    .scene.night.lightning,.scene.night.lightning-rainy {--tint:.86;}
+    .scene.night:not(.clear-night):not(.sunny):not(.partlycloudy) {--sky:linear-gradient(150deg,#111c2c,#334457 80%,#506276);--tint:.44;}
+    .scene.night.lightning,.scene.night.lightning-rainy {--tint:.56;}
     .scene.unknown,.scene.exceptional {--sky:linear-gradient(145deg,#697782,#87949e);--tint:.3;}
     .orb {position:absolute;left:73%;top:36px;width:76px;height:76px;border-radius:50%;}
     .sun {background:radial-gradient(circle at 35% 35%,#fffce4,#ffe38a 60%,#edb65c);box-shadow:0 0 42px 16px #ffdf7d55;}
@@ -181,7 +181,7 @@ export class NiakWeatherSky extends LitElement {
     .cloud.front {left:73%;top:90px;animation-delay:-4s;}
     .cloud.small {left:93%;top:6px;width:150px;height:95px;opacity:.7;animation-delay:-22s;}
     /* Storms and downpours: a dark ceiling and two extra banks of cloud, so the sky reads thick and closed. */
-    .overcast {position:absolute;left:30%;right:0;top:0;height:46%;background:linear-gradient(180deg,rgba(28,38,52,.55),rgba(28,38,52,0));filter:blur(6px);}
+    .overcast {position:absolute;left:30%;right:0;top:0;height:46%;background:linear-gradient(180deg,rgba(28,38,52,.32),rgba(28,38,52,0));filter:blur(10px);}
     .cloud.heavy-left {left:40%;top:-34px;width:300px;height:180px;opacity:.9;animation-delay:-8s;}
     .cloud.heavy-right {left:80%;top:-40px;width:320px;height:190px;opacity:.85;animation-delay:-17s;}
     .night .cloud-rear {fill:#73869f;}.night .cloud-near {fill:#a0aec1;}
@@ -193,8 +193,8 @@ export class NiakWeatherSky extends LitElement {
     .rain::before {width:1.8px;height:23px;border-radius:2px;background:linear-gradient(#e4f3ff38,#eef8fff5);rotate:9deg;}
     .rain.depth-0 {opacity:.55;}.rain.depth-1 {opacity:.82;}.rain.depth-2::before {width:2.3px;height:30px;}
     .pouring .rain::before {height:34px;rotate:15deg;}.pouring .rain.depth-2::before {height:44px;width:2.6px;}
-    .snow {animation-name:snow;}.snow::before {width:var(--size);height:var(--size);border-radius:50%;background:#ffffffdb;box-shadow:0 0 3px #fff5;}
-    .hailstone {animation-name:hail;}.hailstone::before {width:5px;height:5px;border-radius:50%;background:#e9f4ff;}
+    .snow {animation-name:snow;}.snow::before {width:var(--size);height:var(--size);border-radius:50%;background:#ffffffdb;box-shadow:0 0 0 .6px rgba(70,110,150,.45),0 0 3px #fff5;}
+    .hailstone {animation-name:hail;}.hailstone::before {width:5px;height:5px;border-radius:50%;background:#e9f4ff;box-shadow:0 0 0 .6px rgba(70,110,150,.5);}
     .fog-sun {position:absolute;left:70%;top:30px;width:84px;height:84px;border-radius:50%;background:radial-gradient(circle,#fffbeae6,#fff4d080 45%,transparent 70%);filter:blur(1.5px);animation:fog-sun 9s ease-in-out infinite alternate;}
     /* Mist takes a little of the theme's text colour: pale grey on a light card, near white on a dark one. */
     .fog-band {position:absolute;left:var(--fl);top:var(--fy);width:var(--fw);height:24%;fill:color-mix(in srgb,var(--primary-text-color,#253047) 30%,#eef3f6);filter:blur(10px);animation:fog-drift var(--fd) ease-in-out var(--fdelay) infinite alternate,fog-breathe calc(var(--fd) * .7) ease-in-out var(--fdelay) infinite alternate;}
