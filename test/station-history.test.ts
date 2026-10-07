@@ -52,6 +52,26 @@ describe('History-derived station measurements',()=>{
     const missing=deriveStation({...hass,states:{[id]:{...hass.states[id],state:'unavailable'}}},{type:'custom:niak-weather-card',weather_entity:'weather.x',rain_total_entity:id},{rain:stats,rainUnit:'in',counter:{}},{},now);
     expect(missing.rain.day).toMatchObject({value:12.7,partial:true});
   });
+  it('matches HA-shaped statistics: local daily rows joined to hourly rows from a midnight',async()=>{
+    const {deriveStation,calendarMidnight,periodStarts}=await import('../src/station-history');
+    // Mirrors recorder/statistics_during_period: ms timestamps, cumulative sum, days reduced on HA local midnights.
+    const tz='Europe/Paris',now=new Date('2026-10-20T12:20:00Z'),N=now.getTime(),H=3600_000,id='sensor.rain';
+    const rainIn=(h:number)=>[5,6].includes(new Date(h).getUTCHours())?.5:0;
+    const hourly:Array<{start:number;end:number;sum:number;state:number}>=[];let sum=0;
+    for(let h=Date.parse('2025-11-30T23:00:00Z');h+H<=N;h+=H){sum+=rainIn(h);hourly.push({start:h,end:h+H,sum,state:sum});}
+    const fmt=new Intl.DateTimeFormat('en-CA',{timeZone:tz}),key=(t:number)=>fmt.format(new Date(t));
+    const daily=new Map<string,{start:number;end:number;sum:number;state:number}>();
+    for(const r of hourly){const [y,m,d]=key(r.start).split('-').map(Number);daily.set(key(r.start),{start:calendarMidnight(y,m,d,tz),end:calendarMidnight(y,m,d+1,tz),sum:r.sum,state:r.state});}
+    const hourStart=periodStarts(new Date(N-9*86400_000),tz).day;
+    const rows=[...daily.values(),...hourly.filter(r=>r.start>=hourStart)];
+    const ordered=[...new Map(rows.sort((a,b)=>(b.end-b.start)-(a.end-a.start)).map(r=>[r.end,r])).values()].sort((a,b)=>a.end-b.end);
+    const hass={states:{[id]:{entity_id:id,state:String(sum),attributes:{unit_of_measurement:'mm'}}},config:{time_zone:tz}} as any;
+    const result=deriveStation(hass,{type:'custom:niak-weather-card',weather_entity:'weather.x',rain_total_entity:id},{rain:ordered,rainUnit:'mm',counter:{}},{},now);
+    const truth=(start:number)=>hourly.filter(r=>r.start>=start).reduce((a,r)=>a+rainIn(r.start),0);
+    const starts=periodStarts(now,tz);
+    for(const k of ['day','week','month','year'] as const)expect(result.rain[k]).toEqual({value:truth(starts[k]),partial:false});
+    expect(result.days.map(d=>d.value)).toEqual([1,1,1,1,1,1,1]);
+  });
   it('identifies a manual or GW2000A profile without depending on Ecowitt integration',async()=>{
     const {stationProfile}=await import('../src/station-profiles');
     expect(stationProfile({states:{}},{entities:[],devices:[]},{station_device_id:''})).toContain('configuration manuelle');

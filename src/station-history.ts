@@ -48,7 +48,8 @@ export function deriveStation(hass:HomeAssistant,config:WeatherCardConfig,archiv
   const counter=(archive.counter[id]??[]).map(p=>({t:(p.lu??p.lc??0)*1000,v:measurement(p.s,e?.attributes.unit_of_measurement,'rain')}));
   const live=measurement(e?.state,e?.attributes.unit_of_measurement,'rain');
   if(live!==undefined)counter.push({t:end,v:live});
-  const stats=archive.rain.map(p=>({...p,sum:measurement(p.sum,archive.rainUnit,'rain'),state:measurement(p.state,archive.rainUnit,'rain')})).sort((a,b)=>a.end-b.end);
+  // HA reduces the current day/month into a row ending in the future; only completed boundaries are usable.
+  const stats=archive.rain.filter(p=>p.end<=end).map(p=>({...p,sum:measurement(p.sum,archive.rainUnit,'rain'),state:measurement(p.state,archive.rainUnit,'rain')})).sort((a,b)=>a.end-b.end);
   const last=stats.at(-1);
   if(last&&live!==undefined&&last.state!==undefined&&last.sum!==undefined&&last.end<end){
     const tail=counterIncrease([{t:last.end,v:last.state},...counter.filter(p=>p.t>last.end)],last.end,end);
