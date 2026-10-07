@@ -1,4 +1,4 @@
-import { css, html, LitElement, nothing } from 'lit';
+import { css, html, LitElement, nothing, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 /** Bolt artwork and phase offset in the 6 s storm cycle. Offsets keep successive strikes ≥ 1.8 s apart. */
@@ -16,6 +16,8 @@ export class NiakWeatherSky extends LitElement {
   @property() quality:'low'|'standard'='standard';
   @property({type:Boolean}) animated=true;
   @property({type:Number}) wind=0;
+  /** spring | summer | autumn | winter: small seasonal touches that never contradict the weather. */
+  @property() season='';
   @state() private visible=false;
   @state() private pageVisible=true;
   private observer?:IntersectionObserver;
@@ -46,6 +48,17 @@ export class NiakWeatherSky extends LitElement {
     return html`${this.phase==='day'||this.phase==='twilight'?html`<div class="fog-sun"></div>`:nothing}
       ${Array.from({length:bands},(_,i)=>html`<svg class=${`fog-band depth-${i%3}`} viewBox="0 0 600 60" preserveAspectRatio="none" style=${`--fy:${6+i*16}%;--fl:${[-10,18,-25,30,0][i]}%;--fw:${[120,95,140,85,130][i]}%;--fd:${13+i*3}s;--fdelay:${-i*2.7}s;--dir:${i%2?-1:1}`}><path d="M0 34C60 16 130 20 190 30S330 48 400 32 520 14 600 28V60H0Z"/></svg>`)}`;
   }
+  /** Seasonal touches, layered over the weather: petals, heat haze, falling leaves, frost. */
+  private seasonal(precip:boolean,storm:boolean,fog:boolean) {
+    const few=this.quality==='low';
+    const drift=(count:number,art:(i:number)=>unknown)=>Array.from({length:few?2:count},(_,i)=>html`<div class="drift" style=${`--dx:${46+(i*23)%50}%;--dt:${11+(i*7)%7}s;--dd:${-(i*3.1)%11}s;--rest:${12+(i*29)%70}%;--sw:${2.6+(i%3)*.5}s`}><i>${art(i)}</i></div>`);
+    if(this.season==='spring'&&!precip&&!storm&&!fog) return drift(6,i=>html`<svg class=${`petal petal-${i%2}`} viewBox="0 0 12 12"><path d="M6 0C10 3 10 9 6 12C2 9 2 3 6 0Z"/></svg>`);
+    if(this.season==='autumn'&&!storm&&!['snowy','snowy-rainy','hail'].includes(this.condition)) return drift(5,i=>html`<svg class=${`maple maple-${i%3}`} viewBox="0 0 24 24"><path d="M12 1l2 5 4-2-1 5 4 1-4 3 2 4-5-1-1 7h-2l-1-7-5 1 2-4-4-3 4-1-1-5 4 2z"/></svg>`);
+    if(this.season==='summer'&&this.phase==='day'&&['sunny','partlycloudy'].includes(this.condition)) return html`<div class="haze"></div>`;
+    if(this.season==='winter') return html`<svg class="frost" viewBox="0 0 160 100" aria-hidden="true">${[[132,18,13],[104,10,8],[148,48,9],[118,40,6],[86,22,5]].map(([x,y,r])=>svg`<g transform=${`translate(${x} ${y})`}>${[0,60,120].map(a=>svg`<path transform=${`rotate(${a})`} d=${`M0 ${-r}V${r}M${-r*.35} ${-r*.65}L0 ${-r*.4}L${r*.35} ${-r*.65}M${-r*.35} ${r*.65}L0 ${r*.4}L${r*.35} ${r*.65}`}/>`)}</g>`)}</svg>
+      ${this.phase==='night'?nothing:Array.from({length:few?2:5},(_,i)=>html`<i class="glint" style=${`--gx:${62+(i*13)%34}%;--gy:${8+(i*17)%30}%;--gd:${-(i*.9)}s`}></i>`)}`;
+    return nothing;
+  }
   protected render() {
     const rain=['rainy','pouring','lightning-rainy','snowy-rainy'].includes(this.condition);
     const snow=['snowy','snowy-rainy','hail'].includes(this.condition);
@@ -61,12 +74,13 @@ export class NiakWeatherSky extends LitElement {
       const duration=kind==='rain' ? (heavy ? .45 : .8)+depth*.22 : 3+depth;
       return html`<i class=${`particle ${kind} depth-${depth}`} style=${`--x:${(i*37+7)%100}%;--delay:${-((i*13)%37)/37*duration}s;--duration:${duration}s;--size:${2+depth}px;--rest:${(i*19+8)%88}%;--drift:${heavy ? -85 : -38}px`}></i>`;
     });
-    return html`<div class=${`scene ${this.phase} ${this.condition}`} style=${`--play:${this.animated&&this.visible&&this.pageVisible?'running':'paused'};--cloud-duration:${windy?6:Math.max(11,28-Math.min(Math.max(this.wind,0),60)/2.5)}s`} ?data-still=${!this.animated}>
+    return html`<div class=${`scene ${this.phase} ${this.condition}${this.season?` season-${this.season}`:''}`} style=${`--play:${this.animated&&this.visible&&this.pageVisible?'running':'paused'};--cloud-duration:${windy?6:Math.max(11,28-Math.min(Math.max(this.wind,0),60)/2.5)}s`} ?data-still=${!this.animated}>
       <div class="weather-art">${this.condition!=='unknown'&&this.condition!=='exceptional' ? html`
         ${this.phase==='night'&&!fog?this.stars(this.quality==='low'?8:clearSky?24:12):nothing}
         ${clearSky?html`<div class=${`orb ${this.phase==='night'?'moon':'sun'}`}><i></i></div>`:nothing}
         ${cloudy?html`${this.cloud('back')}${this.cloud('front')}${this.quality==='low'?nothing:this.cloud('small')}`:nothing}
         ${fog?this.fog():nothing}
+        ${this.condition!=='unknown'?this.seasonal(rain||snow,storm,fog):nothing}
         ${rain?particles('rain'):nothing}${snow?particles(this.condition==='hail'?'hailstone':'snow'):nothing}
         ${windy?html`
           <svg class="gust" viewBox="0 0 420 100"><path d="M0 32h270c50 0 50-28 18-28M65 59h290c48 0 50 33 18 33M130 80h90"/></svg>
@@ -84,6 +98,23 @@ export class NiakWeatherSky extends LitElement {
        Night and storm keep more of their colour, because their artwork (stars, moon, bolts) needs a dark sky. */
     .scene {position:absolute;inset:0;overflow:hidden;--sky:linear-gradient(150deg,#5689b8,#6cb4df 65%,#a3d0e6);--tint:.42;}
     .scene::before {content:'';position:absolute;inset:0;background:var(--sky);opacity:var(--tint);}
+    /* Seasonal light: a faint wash on the artwork side, under everything else. */
+    .scene::after {content:'';position:absolute;inset:0;pointer-events:none;background:var(--season-light,none);}
+    .season-spring {--season-light:radial-gradient(ellipse 60% 90% at 80% 100%,rgba(150,210,120,.14),transparent 70%);}
+    .season-summer {--season-light:radial-gradient(ellipse 55% 80% at 78% 20%,rgba(255,196,110,.16),transparent 70%);}
+    .season-autumn {--season-light:radial-gradient(ellipse 65% 90% at 85% 90%,rgba(230,140,60,.14),transparent 70%);}
+    .season-winter {--season-light:radial-gradient(ellipse 60% 90% at 85% 10%,rgba(190,225,255,.18),transparent 70%);}
+    .season-summer .sun {box-shadow:0 0 50px 22px #ffc96a66;}
+    .drift {position:absolute;left:var(--dx);top:-8%;animation:drift-fall var(--dt) linear var(--dd) infinite;}
+    .drift>i {display:block;animation:sway var(--sw) ease-in-out infinite alternate;}
+    .petal {width:14px;height:14px;filter:drop-shadow(0 1px 1px #0002);}.petal-0 {fill:#f2a9c6;}.petal-1 {fill:#fbe3ec;}
+    .maple {width:17px;height:17px;filter:drop-shadow(0 1px 1px #0003);}.maple-0 {fill:#d9772b;}.maple-1 {fill:#b9472c;}.maple-2 {fill:#dca33a;}
+    .night .drift {filter:brightness(.6);}
+    /* Above the banner's bottom fade, on the artwork side: warm wavering stripes. */
+    .haze {position:absolute;left:45%;right:0;top:48%;height:30%;background:repeating-linear-gradient(180deg,rgba(255,190,110,0) 0 6px,rgba(255,190,110,.32) 7px 9px);filter:blur(2px);mask-image:linear-gradient(90deg,transparent,#000 30%,#000),linear-gradient(transparent,#000 35%,#000 65%,transparent);mask-composite:intersect;animation:haze 2.6s ease-in-out infinite alternate;}
+    /* Clear of the "En ce moment" column on wide cards; the corner is free on mobile. */
+    .frost {position:absolute;right:150px;top:0;width:200px;height:125px;fill:none;stroke:#9fcdf2;stroke-width:1.3;stroke-linecap:round;filter:drop-shadow(0 0 1.5px #ffffff) drop-shadow(0 0 4px #cfe8ff);opacity:.9;}
+    .glint {position:absolute;left:var(--gx);top:var(--gy);width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 6px 2px #eaf6ff;animation:twinkle 2.8s ease-in-out var(--gd) infinite;}
     .weather-art {display:contents;}
     .scene.night {--sky:linear-gradient(145deg,#0b1430,#1f3358 70%,#3a5274);--tint:.72;}
     .scene.twilight {--sky:linear-gradient(155deg,#404c8d,#d18d9b 65%,#f2c599);--tint:.5;}
@@ -142,7 +173,7 @@ export class NiakWeatherSky extends LitElement {
     .flash {position:absolute;inset:0;--fx:76%;--fy:30%;background:radial-gradient(ellipse 48% 105% at var(--fx) var(--fy),#f4f9ff,#c9dff7a6 30%,transparent 68%);mix-blend-mode:screen;opacity:0;animation:storm-flash 6s linear infinite;}
     .flash.f2 {--fx:92%;--fy:22%;}.flash.f3 {--fx:62%;--fy:18%;}
     .scene *, .scene *::after, .scene *::before {animation-play-state:var(--play,paused);}
-    .scene[data-still] * {animation:none;}.scene[data-still] .particle {translate:0 var(--rest);}
+    .scene[data-still] * {animation:none;}.scene[data-still] .particle {translate:0 var(--rest);}.scene[data-still] .drift {top:var(--rest);}
     .scene[data-still] .bolt.b1 {opacity:.8;}.scene[data-still] .flash {opacity:0;}
     @keyframes clouds {from{translate:-24px 0;}to{translate:32px 4px;}}
     @keyframes wind-clouds {from{translate:-75px -3px;}to{translate:90px 6px;}}
@@ -154,6 +185,9 @@ export class NiakWeatherSky extends LitElement {
     @keyframes hail {0%{translate:0 0;}85%{translate:-12px 85%;}100%{translate:5px 75%;}}
     @keyframes fog-drift {from{translate:calc(var(--dir) * -7%) 0;}to{translate:calc(var(--dir) * 7%) 6px;}}
     @keyframes fog-sun {from{opacity:.55;}to{opacity:.9;}}
+    @keyframes drift-fall {from{top:-8%;translate:0 0;}to{top:108%;translate:-40px 0;}}
+    @keyframes sway {from{translate:-10px 0;rotate:-25deg;}to{translate:10px 0;rotate:35deg;}}
+    @keyframes haze {from{translate:0 0;transform:skewX(-2deg) scaleY(1);}to{translate:6px -2px;transform:skewX(2deg) scaleY(1.06);}}
     @keyframes fog-breathe {from{opacity:calc(var(--fo) * .6);}to{opacity:var(--fo);}}
     @keyframes gust {0%{translate:-110% 0;opacity:0;}20%,75%{opacity:.75;}100%{translate:160% -15px;opacity:0;}}
     @keyframes leaves {from{translate:-5% 0;}to{translate:110% -18px;}}
@@ -166,7 +200,8 @@ export class NiakWeatherSky extends LitElement {
       .bolt.b1 {left:auto;right:18%;}.bolt.b2 {left:auto;right:2%;}.bolt.b3 {left:auto;right:42%;}
       .flash.f1 {--fx:70%;}.flash.f2 {--fx:94%;}.flash.f3 {--fx:48%;}
       .fog-sun {left:auto;right:14%;}
+      .frost {right:0;}
     }
-    @media(prefers-reduced-motion:reduce) {.scene *{animation:none!important;}.particle{translate:0 var(--rest);}.bolt.b1{opacity:.8;}.flash{opacity:0;}}
+    @media(prefers-reduced-motion:reduce) {.scene *{animation:none!important;}.particle{translate:0 var(--rest);}.drift{top:var(--rest);}.bolt.b1{opacity:.8;}.flash{opacity:0;}}
   `;
 }

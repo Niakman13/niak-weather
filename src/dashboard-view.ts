@@ -9,6 +9,7 @@ import { comfortColor } from './comfort-color';
 import { buildCurrentWeather } from './current-weather';
 import { currentMetrics, meaningfulComfort, weatherSourceLabel } from './current-measurements';
 import { renderForecastChart } from './forecast-chart';
+import { currentSeason, daylightText } from './season';
 import './weather-sky';
 import type { WeatherBrief } from './weather-brief';
 import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
@@ -58,7 +59,9 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
     { key:'future', title:'À venir', description:'Prévisions du fournisseur météo pour la période indiquée ; elles peuvent évoluer.' },
     { key:'environment', title:'Air et pollens', description:'Indices de votre zone, pour aujourd’hui ou demain selon le libellé.' },
   ];
-  const synthesisInfo=brief?html`<div class="nw-brief-details"><h2 id="nw-synthesis-title">Synthèse</h2><button class="nw-synthesis-info-button" aria-label="Consulter les points à retenir de la synthèse" aria-expanded="false" aria-controls="nw-synthesis-info" @click=${toggleSynthesisInfo}><span class="nw-info-icon" aria-hidden="true">i</span></button><span class="nw-synthesis-location">${location}</span>
+  const season=currentSeason(hass,config,now),daylight=daylightText(season);
+  const seasonPill=html`<span class=${`nw-season nw-season--${season.season}`} title=${`${season.label}${season.source==='sensor'?' (capteur de saison)':' (d’après la date)'}${daylight?` · ${daylight}`:''}`}><ha-icon icon=${season.icon}></ha-icon>${season.label}</span>`;
+  const synthesisInfo=brief?html`<div class="nw-brief-details"><h2 id="nw-synthesis-title">Synthèse</h2><button class="nw-synthesis-info-button" aria-label="Consulter les points à retenir de la synthèse" aria-expanded="false" aria-controls="nw-synthesis-info" @click=${toggleSynthesisInfo}><span class="nw-info-icon" aria-hidden="true">i</span></button><span class="nw-synthesis-location">${location}</span>${seasonPill}
     <div id="nw-synthesis-info" class="nw-brief-panel" popover="auto" role="region" aria-label="Les points à retenir" @toggle=${(event:Event)=>{
       const panel=event.currentTarget as HTMLElement;
       panel.parentElement!.querySelector('.nw-synthesis-info-button')!.setAttribute('aria-expanded',String(panel.matches(':popover-open')));
@@ -73,8 +76,8 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   return html`
     ${config.show_synthesis===false?nothing:html`<section id="heros" class=${`nw-section nw-synthesis${headline?'':' nw-synthesis--weather-only'}`} aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
       <div class="nw-sky-backdrop" aria-hidden="true"><niak-weather-sky .condition=${weatherNow.condition} .phase=${weatherNow.phase}
-        .animated=${config.weather_animations!==false} .quality=${config.weather_animation_quality ?? 'standard'} .wind=${weatherNow.wind ?? 0}></niak-weather-sky></div>
-      <header class="nw-section-heading">${brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>`}</header>
+        .animated=${config.weather_animations!==false} .quality=${config.weather_animation_quality ?? 'standard'} .wind=${weatherNow.wind ?? 0} .season=${season.season}></niak-weather-sky></div>
+      <header class="nw-section-heading">${brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`}</header>
       ${brief&&headline?html`<div class="nw-summary-emblem me-bulle" aria-hidden="true"><div class="me-halo"></div>
         <div class="me-rond"><ha-icon icon=${preview?.icon ?? 'mdi:information-outline'}></ha-icon></div></div>
       <div class="nw-summary-lead"><h3>${headline}</h3>
@@ -147,6 +150,9 @@ export const dashboardStyles = css`
   .nw-synthesis-info-button:focus-visible { outline:2px solid var(--primary-color);outline-offset:2px;border-radius:50%; }
   .nw-synthesis-info-button[aria-expanded="true"] .nw-info-icon { color:var(--primary-color);border-color:currentColor; }
   .nw-synthesis-location { font-size:11px;color:var(--secondary-text-color); }
+  .nw-season { display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:2px 8px 2px 5px;border:1px solid var(--divider-color,rgba(150,150,150,.2));border-radius:999px;font-size:11px;color:var(--secondary-text-color);white-space:nowrap; }
+  .nw-season ha-icon { --mdc-icon-size:14px; }
+  .nw-season--spring ha-icon { color:#d9779b; }.nw-season--summer ha-icon { color:#e0a420; }.nw-season--autumn ha-icon { color:#cf6a2b; }.nw-season--winter ha-icon { color:#5aa9e6; }
   .nw-brief-panel { position:fixed;inset:auto;margin:0;padding:16px;box-sizing:border-box;border:1px solid var(--divider-color,rgba(150,150,150,.2));border-radius:14px;background:var(--card-background-color,#fff);color:var(--primary-text-color);box-shadow:0 14px 40px #0004;line-height:1.5;overflow:auto;overscroll-behavior:contain; }
   .nw-brief-panel::backdrop { background:transparent; }
   .nw-brief-panel-heading { position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:6px 0;background:var(--card-background-color,#fff); }

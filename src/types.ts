@@ -12,7 +12,7 @@ export interface HomeAssistant {
   formatEntityState(state: HassEntity): string;
   formatEntityName(state: HassEntity): string;
   callWS<T>(message: Record<string, unknown>): Promise<T>;
-  config?: { time_zone?: string };
+  config?: { time_zone?: string; latitude?: number; elevation?: number };
   entities?: Record<string, HomeAssistantEntityRegistryEntry>;
 }
 
@@ -75,6 +75,8 @@ export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   max_daily_gust_entity?: string;
   temperature_trend_entity?: string;
   sun_entity?: string;
+  /** Season sensor (Season integration); without it the card uses the date and the hemisphere. */
+  season_entity?: string;
   sun_elevation_entity?: string;
   forecast_source?: string;
   weather_path?: string;

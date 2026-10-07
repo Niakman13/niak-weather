@@ -4,7 +4,7 @@ import type { HassEntity, HomeAssistant, WeatherCardConfig } from './types';
 
 export type SourceCategory = 'general' | 'weather' | 'station' | 'atmo';
 export const categoryFields: Record<SourceCategory, Array<keyof WeatherCardConfig>> = {
-  general: [], weather: ['weather_entity', 'vigilance_entity', 'sun_entity', 'sun_elevation_entity'],
+  general: [], weather: ['weather_entity', 'vigilance_entity', 'sun_entity', 'sun_elevation_entity', 'season_entity'],
   station: Object.keys(stationRules) as SensorField[], atmo: atmoFields,
 };
 const norm = (v: unknown) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -54,6 +54,12 @@ export function sourceDevices(hass: Pick<HomeAssistant, 'states'>, context: Regi
   return [...ids].map(value => {const d = context.devices.find(d => d.id === value); const r = context.entities.find(r => r.device_id === value && hass.states[r.entity_id ?? '']);
     return {value,label:d?.name_by_user || d?.name || String(hass.states[r?.entity_id ?? '']?.attributes.friendly_name || value)};}).sort((a,b)=>a.label.localeCompare(b.label));
 }
+/** Season sensors: the Season integration, or any sensor whose options are exactly the four seasons. */
+export function seasonCandidates(hass: Pick<HomeAssistant,'states'>, context: RegistryContext): string[] {
+  return Object.values(hass.states).filter(e=>{const r=context.entities.find(r=>r.entity_id===e.entity_id);
+    const options=Array.isArray(e.attributes.options)?[...e.attributes.options].map(String).sort().join(','):'';
+    return !r?.disabled_by && e.entity_id.startsWith('sensor.') && (r?.platform==='season'||options==='autumn,spring,summer,winter');}).map(e=>e.entity_id);
+}
 export function vigilanceCandidates(hass: Pick<HomeAssistant,'states'>, context: RegistryContext): string[] {
   return Object.values(hass.states).filter(e=>{const r=context.entities.find(r=>r.entity_id===e.entity_id);
     return !r?.disabled_by && e.entity_id.startsWith('sensor.') && (r?.platform==='meteo_france'||/meteo.france/.test(norm(e.attributes.attribution)))
@@ -83,6 +89,8 @@ export function fillCategory(hass: HomeAssistant, context: RegistryContext, conf
     if (search.vigilance_entity===undefined && local.length===1) detected.vigilance_entity=local[0];
     const suns=Object.keys(hass.states).filter(id=>id.startsWith('sun.'));
     if (search.sun_entity===undefined && suns.length===1) detected.sun_entity=suns[0];
+    const seasons=seasonCandidates(hass,context);
+    if (search.season_entity===undefined && seasons.length===1) detected.season_entity=seasons[0];
   } else {
     const all=detectEcowittStation(hass,context,search);
     const keys: Array<keyof WeatherCardConfig> = [...fields];

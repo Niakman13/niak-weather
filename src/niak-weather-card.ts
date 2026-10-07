@@ -87,7 +87,7 @@ export class NiakWeatherCard extends LitElement {
   protected shouldUpdate(changed: Map<PropertyKey, unknown>): boolean {
     if (!this.hass || !this.config) return true;
     const ids = Object.values(this.config).filter((v): v is string => typeof v === 'string' && /^(sensor|weather|sun|binary_sensor)\./.test(v));
-    ids.push(this.config.sun_entity || 'sun.sun', ...(this.config.pollens ?? []).map(p=>p.id));
+    ids.push(this.config.sun_entity || 'sun.sun', ...(this.config.season_entity ? [this.config.season_entity] : []), ...(this.config.pollens ?? []).map(p=>p.id));
     const snapshot = JSON.stringify([this.hass.language,this.hass.config?.time_zone,...ids.map(id=>this.hass!.states[id])]);
     const different = snapshot !== this.hassSnapshot; this.hassSnapshot = snapshot;
     return changed.size !== 1 || !changed.has('hass') || different;

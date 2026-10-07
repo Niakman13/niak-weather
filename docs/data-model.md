@@ -45,6 +45,8 @@ Niak Weather **ne génère pas son propre bulletin météo**, ne corrige pas les
 
 L’humidex, le point de rosée et le point de gelée sont **calculés par la carte** à partir de la température et de l’humidité (station, sinon bulletin). Les anciens réglages Thermal Comfort (`humidex_entity`, `humidex_perception_entity`, `thermal_dew_point_entity`, `heat_index_entity`, `absolute_humidity_entity`, `thermal_perception_entity`, `thermal_device_id`) sont ignorés et retirés à l’enregistrement.
 
+`season_entity` (facultatif) désigne le capteur de l’intégration Saison ; sans lui, ou s’il est indisponible, la saison astronomique est calculée d’après la date et l’hémisphère. La durée du jour tient compte de la latitude et de l’altitude de Home Assistant.
+
 `location` personnalise le lieu, sinon le nom de l’entité météo est utilisé. `forecast_source` personnalise le fournisseur. `weather_path` configure la navigation sur appui long.
 
 Atmo France est désormais proposé en priorité. L’air extérieur, les polluants, les niveaux de pollens et leurs concentrations sont traités séparément du modèle météo : aucun indice Atmo n’entre dans le calcul du ressenti. La détection utilise le registre et les attributs géographiques ; un choix ambigu reste vide. Les 38 champs (19 mesures × aujourd’hui/demain) sont disponibles dans l’éditeur. [Contrat des données et guide](atmo-france.md).

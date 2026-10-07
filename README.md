@@ -45,6 +45,8 @@ Quand Atmo France est configuré, **Air extérieur** et **Pollens** sont présen
 
 Dans **Prévisions**, deux cadres séparent la courbe des prochaines heures du tableau de la semaine. Les unités **Min °C**, **Max °C** et **Pluie mm** sont rappelées en tête du tableau. Les statistiques historiques des capteurs locaux ne se confondent pas avec ces prévisions. [Sources des graphiques et limites](docs/recent-details.md).
 
+**Les saisons** se devinent dans le ciel animé, par petites touches qui ne contredisent jamais la météo : pétales au printemps, chaleur qui ondule l’été, feuilles rousses en automne, givre en hiver. Une pastille rappelle la saison et, au survol, la durée du jour et son évolution. La saison vient de l’intégration **Saison** de Home Assistant si un capteur est choisi, sinon de la date et de l’hémisphère.
+
 Le rendu s’adapte à la largeur disponible et au thème Home Assistant. Les colonnes se réorganisent sur mobile et les interrupteurs des sections permettent de choisir les informations affichées, sans mode compact séparé.
 
 Les sections Synthèse / météo actuelle, Aujourd’hui et Prévisions peuvent être activées séparément. Sans station, les cadres s’appuient sur les données météo disponibles et indiquent leur source. Si un capteur local configuré devient indisponible et que la météo fournit une valeur de remplacement, ce repli est signalé. La jauge du ressenti s’appuie sur la température locale ou, sans station, sur la température et l’humidité du bulletin, en le signalant. [Affichage et priorité des sources](docs/display-options.md).

@@ -1,7 +1,7 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { getRegistry, stationRules, type RegistryContext, type SensorField } from './station-detection';
-import { categoryFields, fillCategory, manualCandidates, measurementMatches, sourceDevices, sourceStatus, vigilanceCandidates, type SourceCategory } from './config-sources';
+import { categoryFields, fillCategory, manualCandidates, measurementMatches, seasonCandidates, sourceDevices, sourceStatus, vigilanceCandidates, type SourceCategory } from './config-sources';
 import type { HomeAssistant, WeatherCardConfig } from './types';
 import { atmoAreas, atmoCandidates, atmoFields, atmoField, atmoMetrics } from './atmo';
 import { cleanConfig } from './config';
@@ -26,7 +26,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   weekly_rain_entity: 'Pluie de la semaine', monthly_rain_entity: 'Pluie du mois', yearly_rain_entity: 'Pluie de l’année', event_rain_entity: 'Pluie de l’épisode',
   pressure_entity: 'Pression (relative recommandée)', solar_radiation_entity: 'Rayonnement solaire', dew_point_entity: 'Point de rosée de la station',
   uv_index_entity: 'Indice UV', illuminance_entity: 'Luminosité', max_daily_gust_entity: 'Rafale maximale du jour', temperature_trend_entity: 'Tendance température (°C/h)',
-  sun_entity: 'Soleil (lever, coucher, élévation)', sun_elevation_entity: 'Élévation solaire (capteur complémentaire)',
+  sun_entity: 'Soleil (lever, coucher, élévation)', season_entity: 'Saison (intégration Saison, facultatif : sinon d’après la date)', sun_elevation_entity: 'Élévation solaire (capteur complémentaire)',
   station_device_id: 'Votre station dans Home Assistant', weather_path: 'Page météo (appui long)',
   atmo_area: 'Commune / zone Atmo France', pollen_source: 'Source des pollens', show_atmo_details: 'Afficher les polluants, espèces et concentrations', show_atmo_tomorrow: 'Afficher les prévisions Atmo de demain',
 };
@@ -181,10 +181,12 @@ export class NiakWeatherCardEditor extends LitElement {
       weather: ()=>{
         const vigilanceIds=vigilanceCandidates(this.hass!,registry);
         if(this.config!.vigilance_entity&&!vigilanceIds.includes(this.config!.vigilance_entity))vigilanceIds.push(this.config!.vigilance_entity);
+        const seasonIds=seasonCandidates(this.hass!,registry);
+        if(this.config!.season_entity&&!seasonIds.includes(this.config!.season_entity))seasonIds.push(this.config!.season_entity);
         const elevationIds=Object.values(this.hass!.states).filter(e=>e.entity_id.startsWith('sensor.')&&measurementMatches(e,'sun_elevation_entity')).map(e=>e.entity_id);
         if(this.config!.sun_elevation_entity&&!elevationIds.includes(this.config!.sun_elevation_entity))elevationIds.push(this.config!.sun_elevation_entity);
         return [entity('weather_entity','weather',true), {name:'vigilance_entity',selector:{entity:{filter:{domain:'sensor'},include_entities:vigilanceIds}}}, entity('sun_entity','sun'),
-        {name:'sun_elevation_entity',selector:{entity:{filter:{domain:'sensor'},include_entities:elevationIds}}}, {name:'forecast_source',selector:{text:{}}}];
+        {name:'sun_elevation_entity',selector:{entity:{filter:{domain:'sensor'},include_entities:elevationIds}}}, {name:'season_entity',selector:{entity:{filter:{domain:'sensor'},include_entities:seasonIds}}}, {name:'forecast_source',selector:{text:{}}}];
       },
       station: ()=>{
         const model=selectedStationModel(this.config!);
