@@ -12,6 +12,7 @@ import './niak-weather-card-editor';
 import { atmoStyles, usesAtmoPollens } from './atmo-view';
 import { dashboardStyles, renderDashboard } from './dashboard-view';
 import { recentDetailsStyles } from './recent-details';
+import { forecastChartStyles } from './forecast-chart';
 import type { ForecastResponse, HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
 
 @customElement('niak-weather-card')
@@ -237,7 +238,7 @@ export class NiakWeatherCard extends LitElement {
     .nw-brief-details button { font:inherit; color:var(--primary-text-color); background:transparent; border:1px solid var(--divider-color,#999); border-radius:6px; padding:4px 8px; cursor:pointer; }
     .nw-brief-caveat { border-left:3px solid #be8c23; padding-left:8px; }
     @media (prefers-reduced-motion:reduce) { #container[data-smart-brief] .me-rond, #container[data-smart-brief] .me-cur i { animation:none; } }
-    `, dashboardStyles, recentDetailsStyles];
+    `, dashboardStyles, recentDetailsStyles, forecastChartStyles];
 }
 window.customCards = window.customCards || [];
 window.customCards.push({ type: 'niak-weather-card', name: 'Niak Weather', description: 'Météo locale Ecowitt et prévisions', preview: true,

@@ -79,30 +79,30 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
          + '</span>';
   };
   if (hum !== null) {
-    deco += pastille('mdi:water-percent', V.dashboard ? 'base humidex' : 'humidex', fr(hum, 1) + '°',
+    deco += pastille('mdi:water-percent', V.dashboard ? 'base humidex' : 'humidex', fr(hum, 1) + ' °C',
                      'var(--mush-rgb-cyan, 77,182,172)',
                      A.perception || '', SRC.humidex);
   }
   if (ev !== null && Math.abs(ev) >= 0.1) {
     deco += pastille('mdi:weather-windy', 'vent',
-                     (ev > 0 ? '+' : '−') + fr(Math.abs(ev), 1) + '°', BLEU,
+                     (ev > 0 ? '+' : '−') + fr(Math.abs(ev), 1) + ' °C', BLEU,
                      '', SRC.vent);
   }
   if (es !== null && Math.abs(es) >= 0.1) {
     deco += pastille('mdi:white-balance-sunny', 'soleil',
-                     '+' + fr(es, 1) + '°',
+                     '+' + fr(es, 1) + ' °C',
                      'var(--mush-rgb-amber, 255,193,7)', '', SRC.solaire);
   }
   if (ep !== null && Math.abs(ep) >= 0.1) {
     deco += pastille('mdi:weather-pouring', 'pluie',
-                     '−' + fr(Math.abs(ep), 1) + '°',
+                     '−' + fr(Math.abs(ep), 1) + ' °C',
                      'var(--mush-rgb-blue, 33,150,243)',
                      'peau mouillée : le vent emporte bien plus vite',
                      SRC.pluie_taux);
   }
   if (en !== null && Math.abs(en) >= 0.1) {
     deco += pastille('mdi:weather-night', 'ciel clair',
-                     '−' + fr(Math.abs(en), 1) + '°',
+                     '−' + fr(Math.abs(en), 1) + ' °C',
                      'var(--mush-rgb-indigo, 63,81,181)',
                      'ciel dégagé : le corps rayonne vers le vide',
                      SRC.meteo);
@@ -142,7 +142,7 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   h +=       '<div class="me-p">' + esc(sous) + '</div>';
   h +=     '</div>';
   var duo = (tex !== null && res !== null && Math.abs(res - tex) >= 0.35)
-    ? '<span class="me-hr">' + fr(tex, 1) + '° au thermomètre</span>' : '';
+    ? '<span class="me-hr">' + fr(tex, 1) + ' °C au thermomètre</span>' : '';
   h +=     '<div class="me-hval"' + window.meGeste(SRC.t_ext) + '>'
     +        '<span class="me-hv">' + fr(res, 1) + '<i>°</i></span>'
     +        '<span class="me-hl">ressenti</span>'
@@ -161,13 +161,13 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
       +        '<i></i></span>';
     h +=   '</div>';
     h +=   '<div class="me-jl">'
-      +      '<span>' + fr(jmin, 0) + '°</span>'
+      +      '<span>' + fr(jmin, 0) + ' °C</span>'
       +      '<span class="me-jph">' + esc(A.phrase_ressenti || '') + '</span>'
-      +      '<span>' + fr(jmax, 0) + '°</span>'
+      +      '<span>' + fr(jmax, 0) + ' °C</span>'
       +    '</div>';
     h += '</div>';
   }
-  if (deco) h += '<div class="me-decos">' + deco + '</div>';
+  if (deco) h += (V.dashboard ? '<p class="nw-decos-title">Ce qui fait varier le ressenti</p>' : '') + '<div class="me-decos">' + deco + '</div>';
   h += '</div>';
   return h;
 
@@ -580,10 +580,10 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
            +      (meta ? '<ha-icon icon="' + meta.i + '"></ha-icon>' : '')
            +    '</span>'
            +    '<span class="me-jmin">'
-           +      (m !== null ? esc(fr(m, 0)) + '°' : '') + '</span>'
+           +      (m !== null ? esc(fr(m, 0)) + ' °C' : '') + '</span>'
            +    '<span class="me-jbar">' + seg + '</span>'
            +    '<span class="me-jmax">'
-           +      (t !== null ? esc(fr(t, 0)) + '°' : '—') + '</span>'
+           +      (t !== null ? esc(fr(t, 0)) + ' °C' : '—') + '</span>'
            +    '<span class="me-jp">'
            +      (p >= 0.1 ? esc(fr(p, 1)) + '<i>mm</i>' : '') + '</span>'
            +  '</div>';
@@ -762,17 +762,9 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   var hr = nb(A.hr_ext);
   if (hr !== null) out += pas('mdi:water-percent', esc(fr(hr, 0)) + '<small>%</small>',
                               'humidité', CYAN, window.meGeste(SRC.hr_ext));
-  var tt = nb(A.tend_temp);
-  if (tt !== null && Math.abs(tt) >= 0.05) {
-    out += pas(tt > 0 ? 'mdi:trending-up' : 'mdi:trending-down',
-               (tt > 0 ? '+' : '−') + esc(fr(Math.abs(tt), 1))
-               + '<small>°/h</small>',
-               tt > 0 ? 'ça se réchauffe' : 'ça se rafraîchit',
-               GRIS, window.meGeste(SRC.tend_temp));
-  }
   var ro = nb(A.rosee);
   if (ro !== null) {
-    out += pas('mdi:thermometer-water', esc(fr(ro, 1)) + '<small>°</small>',
+    out += pas('mdi:thermometer-water', esc(fr(ro, 1)) + '<small>°C</small>',
                ro >= 20 ? 'rosée · très lourd'
              : ro >= 18 ? 'rosée · lourd' : 'rosée', CYAN,
                window.meGeste(SRC.rosee));

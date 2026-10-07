@@ -77,30 +77,28 @@ try {
     const layout=await page.evaluate(()=>{
       const root=window.card.shadowRoot, host=window.card.getBoundingClientRect();
       const sections=[...root.querySelectorAll('#container>.nw-section')].map(s=>s.querySelector('h2').textContent);
-      const tiles=[...root.querySelectorAll('.nw-history-card')].map(s=>s.querySelector('h3').textContent);
+      const tiles=[...root.querySelectorAll('#bilan .nw-history-card')].map(s=>s.querySelector('h3').textContent);
+      const forecast=root.querySelector('#courbe .nw-forecast-card h3')?.textContent;
       const order=root.querySelector('#comfort').getBoundingClientRect().top<root.querySelector('#bilan').getBoundingClientRect().top;
       const overflow=[...root.querySelectorAll('.nw-section,.me-tu,.me-bl,.me-graph,.me-j')].some(e=>{const r=e.getBoundingClientRect();return r.width&&(r.left<host.left-1||r.right>host.right+1)});
-      return {sections,tiles,order,overflow};
+      return {sections,tiles,forecast,order,overflow};
     });
     assert.deepEqual(layout.sections,['Météo actuelle','Aujourd’hui','Prévisions']);
     assert.deepEqual(layout.tiles,['Pluie','Vent','Pression']);
+    assert.equal(layout.forecast,'18 prochaines heures','Forecast chart framed like the columns');
     assert.equal(layout.order,true);assert.equal(layout.overflow,false);
     const forecastGeometry=await page.evaluate(()=>{
-      const root=window.card.shadowRoot, curve=root.querySelector('.me-courbe'), days=root.querySelector('.me-jours'), graph=root.querySelector('.me-graph');
-      return {aligned:Math.abs(curve.getBoundingClientRect().bottom-days.getBoundingClientRect().bottom)<2,curveBottom:curve.getBoundingClientRect().bottom,daysBottom:days.getBoundingClientRect().bottom,height:graph.getBoundingClientRect().height,
-        labels:[...root.querySelectorAll('.me-nowl,.me-jourl')].every(e=>e.getBoundingClientRect().top-graph.getBoundingClientRect().top>=7)};
+      const root=window.card.shadowRoot, curve=root.querySelector('#courbe .nw-forecast-card'), days=root.querySelector('#jours'), area=root.querySelector('.nw-fc-area');
+      const tags=[...root.querySelectorAll('.nw-fc-tag')].map(e=>e.getBoundingClientRect()),glyphs=root.querySelectorAll('.nw-fc-icons .nw-glyph').length;
+      const units=[...root.querySelectorAll('.nw-fc-y--t>span,.nw-fc-extreme')].every(e=>e.textContent.trim().endsWith('°C'));
+      return {aligned:Math.abs(curve.getBoundingClientRect().bottom-days.getBoundingClientRect().bottom)<2,height:area.getBoundingClientRect().height,glyphs,units,
+        distinct:tags.length<2||tags[0].bottom<=tags[1].top||tags[1].bottom<=tags[0].top||tags[0].right<=tags[1].left||tags[1].right<=tags[0].left};
     });
     if(width>850) assert.equal(forecastGeometry.aligned,true,`forecast columns fill the same height: ${JSON.stringify(forecastGeometry)}`);
-    assert.ok(forecastGeometry.height>=190,'forecast graph has usable height');
-    assert.equal(forecastGeometry.labels,true,'now/tomorrow labels inset from graph top');
-    const nearbyLabels=await page.evaluate(()=>{
-      const root=window.card.shadowRoot,now=root.querySelector('.me-nowl'),next=root.querySelector('.me-jourl');
-      if(!next)return true;
-      const original=next.style.left;next.style.left=now.style.left;
-      const a=now.getBoundingClientRect(),b=next.getBoundingClientRect();next.style.left=original;
-      return a.bottom<b.top||b.bottom<a.top;
-    });
-    assert.equal(nearbyLabels,true,'now/tomorrow labels remain distinct even with adjacent markers');
+    assert.ok(forecastGeometry.height>=150,'forecast graph has usable height');
+    assert.ok(forecastGeometry.glyphs>=3,'forecast shows weather icons');
+    assert.equal(forecastGeometry.units,true,'temperature axis and extremes carry °C');
+    assert.equal(forecastGeometry.distinct,true,'now/tomorrow labels remain distinct');
     const refinedLayout=await page.evaluate(()=>{
       const root=window.card.shadowRoot,labels=root.querySelector('.nw-week-labels');
       const row=root.querySelector('.me-j:not(.nw-week-labels)');
@@ -572,7 +570,8 @@ try {
     const info=document.querySelector('niak-weather-card').shadowRoot.querySelector('.nw-comfort-info');
     const link=info.querySelector('a');
     link.addEventListener('click',e=>e.preventDefault(),{once:true});link.click();
-    return {brief:info.textContent.includes('Ce n’est pas un indice météo officiel'),
+    return {brief:info.textContent.includes('pas un indice météo officiel'),
+      example:/En ce moment : .* = .* °C ressentis/.test(info.textContent.replace(/\s+/g,' ')),
       link:link.href==='https://github.com/Niakman13/niak-weather#expliquer-le-ressenti'&&link.target==='_blank'&&link.rel.includes('noopener'),
       noPopup:window.comfortInfoPopups===0};
   });

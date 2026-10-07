@@ -8,6 +8,7 @@ import type {StationDerived} from './station-history';
 import { comfortColor } from './comfort-color';
 import { buildCurrentWeather } from './current-weather';
 import { currentMetrics, meaningfulComfort, weatherSourceLabel } from './current-measurements';
+import { renderForecastChart } from './forecast-chart';
 import './weather-sky';
 import type { WeatherBrief } from './weather-brief';
 import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
@@ -36,6 +37,16 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   const comfortWord=String(model.attributes.confort ?? ''),humidityWord=String(model.attributes.humidite_tx ?? '');
   // Where the feel comes from, like the source bubbles of the Rain, Wind and Pressure columns.
   const provider=weatherSourceLabel(hass,config),stationTemperature=!!config.temperature_entity;
+  // The "i" shows the calculation with today's values, so a "vent −0,3 °C" chip reads as what it is.
+  const one=(v:number)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1}).format(v);
+  const comfortBase=model.attributes.base==='humidex'?finite(model.attributes.humidex):finite(model.attributes.t_ext);
+  const comfortTerms=([['effet_vent','vent'],['effet_soleil','soleil'],['effet_pluie','pluie'],['effet_nuit','ciel clair']] as const)
+    .map(([key,label])=>({value:finite(model.attributes[key])??0,label})).filter(t=>Math.abs(t.value)>=.1);
+  const comfortExample=comfortBase===undefined||feels===undefined?'':`${one(comfortBase)} °C (${model.attributes.base==='humidex'?'humidex':'thermomètre'})${comfortTerms.map(t=>` ${t.value>0?'+':'−'} ${one(Math.abs(t.value))} °C (${t.label})`).join('')} = ${one(feels)} °C ressentis`;
+  const trend=finite(model.attributes.tend_temp);
+  const rainIn=finite(model.attributes.pluie_dans),rainMm=finite(model.attributes.pluie_mm);
+  const forecastFooter=rainIn!==undefined&&rainIn>=0?`${rainIn===0?'Pluie dans l’heure':`Pluie dans ${rainIn} h`}${rainMm?` · ${one(rainMm)} mm`:''}`:model.attributes.pluie_dans===-1?'Pas de pluie sur les 18 h':'';
+  const forecastChart=config.show_predictions===false?undefined:renderForecastChart(hass,config.weather_entity,provider,hourly,now,{sunrise:finite(model.attributes.lever),sunset:finite(model.attributes.coucher)},forecastFooter);
   const comfortSource=!stationTemperature?provider:model.attributes.hum_source==='bulletin'?`Station locale · humidité ${provider}`:'Station locale';
   const metrics=currentMetrics(hass,config,model,hourly,now);
   const weatherNow=buildCurrentWeather(hass,config,model);
@@ -75,7 +86,8 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
         <div class="nw-current-content"><span class="nw-current-kicker">En ce moment</span>
           <button class="nw-current-condition" data-entity=${weatherNow.conditionEntity ?? config.weather_entity} title=${weatherNow.source}><ha-icon icon=${weatherNow.icon}></ha-icon>${weatherNow.label}</button>
           ${weatherNow.temperature===undefined ? html`<span class="nw-current-missing">Température indisponible</span>` : html`
-            <button class="nw-current-temperature" data-entity=${weatherNow.temperatureEntity} aria-label=${`${weatherNow.temperatureSource} : ${degrees(weatherNow.temperature)} degrés Celsius`}>${degrees(weatherNow.temperature)}<small>°C</small></button>`}
+            <div class="nw-current-reading"><button class="nw-current-temperature" data-entity=${weatherNow.temperatureEntity} aria-label=${`${weatherNow.temperatureSource} : ${degrees(weatherNow.temperature)} degrés Celsius`}>${degrees(weatherNow.temperature)}<small>°C</small></button>
+            ${trend!==undefined&&Math.abs(trend)>=.1?html`<span class=${`nw-current-trend nw-current-trend--${trend>0?'up':'down'}`} title=${trend>0?'La température monte':'La température baisse'} aria-label=${`Température en ${trend>0?'hausse':'baisse'} de ${one(Math.abs(trend))} degré par heure`}><ha-icon icon=${trend>0?'mdi:arrow-top-right':'mdi:arrow-bottom-right'}></ha-icon><small>${trend>0?'+':'−'}${one(Math.abs(trend))} °C/h</small></span>`:nothing}</div>`}
           <span class="nw-current-temperature-source nw-metric-source">${weatherNow.temperatureSource}</span>
         </div>
       </aside>
@@ -85,8 +97,9 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
       ${showComfort?html`<div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}>
         <span class="nw-comfort-source" title=${`Source du ressenti : ${comfortSource}`}>${comfortSource}</span>
         <details class="nw-comfort-info"><summary aria-label="Comprendre le ressenti"><h3 class="nw-panel-title">Ressenti <span class="nw-info-icon" aria-hidden="true">i</span></h3></summary>
-          <p>Une estimation de l’ambiance extérieure : l’humidex, calculé par la carte à partir de la température et de l’humidité (station, sinon bulletin), est ajusté selon le vent, le soleil, la pluie et la nuit lorsque les données sont disponibles. Le mot reprend l’échelle de stress thermique UTCI. Ce n’est pas un indice météo officiel.
-            <a href="https://github.com/Niakman13/niak-weather#expliquer-le-ressenti" target="_blank" rel="noopener noreferrer">En savoir plus sur GitHub</a>.</p>
+          <p>Le ressenti part de l’<b>humidex</b> (température et humidité combinées), ou du thermomètre quand l’humidité ne joue pas. Chaque bulle ajoute (+) ou retire (−) des degrés : « vent −0,3 °C » veut dire que le vent vous fait sentir 0,3 °C plus frais.
+            ${comfortExample?html`<span class="nw-comfort-example">En ce moment : ${comfortExample}.</span>`:nothing}
+            Le mot reprend l’échelle de stress thermique UTCI. C’est une estimation, pas un indice météo officiel. <a href="https://github.com/Niakman13/niak-weather#expliquer-le-ressenti" target="_blank" rel="noopener noreferrer">En savoir plus</a>.</p>
         </details>
         ${comfortWord?html`<p class="nw-comfort-word"><i aria-hidden="true"></i><strong>${comfortWord}</strong>${humidityWord?html`<span>· ${humidityWord}</span>`:nothing}</p>`:nothing}
         ${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>`:nothing}
@@ -96,7 +109,8 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
     </section>`}
     ${config.show_predictions===false ? nothing : html`<section id="predictions" class="nw-section" aria-labelledby="nw-predictions-title">
       <header class="nw-section-heading"><h2 id="nw-predictions-title">Prévisions</h2><span>${config.forecast_source ?? (/france/i.test(String(hass.states[config.weather_entity]?.attributes.attribution)) ? 'Météo-France' : 'Prévisions météo')}</span></header>
-      <div class="nw-forecast-grid"><div id="courbe">${unsafeHTML(rendered.courbe)}</div><div id="jours">${unsafeHTML(rendered.jours)}</div></div>
+      <div class="nw-forecast-grid">${forecastChart?html`<div id="courbe" class="nw-fc-host">${forecastChart}</div>`:html`<div id="courbe">${unsafeHTML(rendered.courbe)}</div>`}${rendered.jours?html`<div id="jours">
+        <header class="nw-history-card-head nw-jours-head"><h3><ha-icon icon="mdi:calendar-week"></ha-icon>7 prochains jours</h3><span class="nw-history-source">${provider}</span></header>${unsafeHTML(rendered.jours)}</div>`:nothing}</div>
       ${renderAtmo(hass, config, now, 'tomorrow')}
     </section>`}`;
 }
@@ -145,6 +159,10 @@ export const dashboardStyles = css`
   .nw-current-condition { display:flex; align-items:center; justify-content:flex-end; gap:7px; font-size:16px !important; font-weight:650 !important; }
   .nw-current-condition ha-icon { --mdc-icon-size:22px; }
   .nw-current-temperature { font-size:46px !important; line-height:1.1; font-weight:700 !important; letter-spacing:-1.5px; margin-top:4px; }
+  .nw-current-reading { display:flex; align-items:center; justify-content:flex-end; gap:8px; }
+  .nw-current-trend { display:flex; flex-direction:column; align-items:center; gap:1px; line-height:1; }
+  .nw-current-trend ha-icon { --mdc-icon-size:22px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; border:1.5px solid currentColor; box-sizing:border-box; }
+  .nw-current-trend small { font-size:10px; font-weight:600; white-space:nowrap; }
   .nw-current-temperature small { font-size:20px; font-weight:400; margin-left:3px; vertical-align:super; letter-spacing:0; }
   .nw-current-temperature-source { font-size:10px; opacity:.8; }
   .nw-current-missing { font-size:13px; margin-top:8px; }
@@ -167,6 +185,8 @@ export const dashboardStyles = css`
   .nw-comfort-info[open] .nw-info-icon { color:var(--primary-color); border-color:currentColor; }
   .nw-comfort-info p { margin:10px 0 14px; padding:10px 12px; border:1px solid var(--divider-color,rgba(150,150,150,.2)); border-radius:10px; background:rgba(150,150,150,.04); color:var(--primary-text-color); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
   .nw-comfort-info a { color:var(--primary-color); text-decoration:underline; }
+  .nw-comfort-example { display:block; margin:6px 0; padding:6px 9px; border-radius:8px; background:rgba(var(--vc),.1); font-weight:600; }
+  #comfort .nw-decos-title { margin:4px 0 8px; text-align:center; font-size:10px; font-weight:650; letter-spacing:.6px; text-transform:uppercase; color:var(--secondary-text-color); }
   .nw-comfort-word { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px; margin:8px 0 0; font-size:13px; color:var(--secondary-text-color); }
   .nw-comfort-word i { align-self:center; width:9px; height:9px; border-radius:50%; background:color-mix(in srgb,rgb(var(--vc)) 65%,var(--primary-text-color) 35%); }
   .nw-comfort-word strong { font-size:18px; font-weight:700; letter-spacing:-.3px; color:var(--primary-text-color); }
@@ -213,11 +233,16 @@ export const dashboardStyles = css`
   .nw-brief-limits li { padding:4px 0; line-height:1.5; }
   #pastilles .me-pas { padding:16px 0 4px; margin-top:0; gap:8px; border:0; justify-content:center; }
   #pastilles .me-pa b { font-size:11px; font-weight:650; }
+  #jours .me-jmin, #jours .me-jmax { flex:0 0 42px; white-space:nowrap; }
   #jours .nw-week-labels { min-height:22px; padding:4px 0 7px; }
   #jours .nw-week-labels .me-jmin, #jours .nw-week-labels .me-jmax, #jours .nw-week-labels .me-jp { display:flex; flex-direction:column; align-items:center; font-size:9px; font-weight:600; color:var(--secondary-text-color); opacity:1; line-height:1.35; }
   #jours .nw-week-labels small { font-size:8px; font-weight:400; }
   #jours .nw-week-labels .me-jbar { background:none; }
   .nw-forecast-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:22px; }
+  .nw-forecast-grid>:only-child { grid-column:1 / -1; }
+  .nw-jours-head { display:flex;align-items:center;justify-content:space-between;gap:8px; }
+  .nw-jours-head h3 { display:flex;align-items:center;gap:9px;margin:0;font-size:18px;color:var(--primary-text-color); }
+  .nw-jours-head h3 ha-icon { color:rgb(61,155,233);--mdc-icon-size:24px; }
   .nw-forecast-grid>div { min-width:0;padding:20px;border:1px solid var(--divider-color,rgba(150,150,150,.2));border-radius:16px;background:rgba(150,150,150,.035); }
   #courbe .me-courbe, #jours .me-jours { padding:0; border:0; }
   #courbe { display:flex; flex-direction:column; }
