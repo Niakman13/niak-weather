@@ -79,9 +79,12 @@ export class NiakWeatherSky extends LitElement {
   /** Seasonal touches, layered over the weather: petals, rising heat, falling leaves, winter snowflakes. */
   private seasonal(precip:boolean,storm:boolean,fog:boolean) {
     const few=this.quality==='low';
-    const drift=(count:number,art:(i:number)=>unknown)=>Array.from({length:few?2:count},(_,i)=>html`<div class="drift" style=${`--dx:${46+(i*23)%50}%;--dt:${11+(i*7)%7}s;--dd:${-(i*3.1)%11}s;--rest:${12+(i*29)%70}%;--sw:${2.6+(i%3)*.5}s`}><i>${art(i)}</i></div>`);
+    // Storms and strong wind carry leaves and petals faster.
+    const gusty=storm||['windy','windy-variant'].includes(this.condition)||this.wind>=30;
+    const drift=(count:number,art:(i:number)=>unknown)=>Array.from({length:few?2:count},(_,i)=>html`<div class=${`drift${gusty?' drift--gusty':''}`} style=${`--dx:${46+(i*23)%50}%;--dt:${(gusty?5:11)+(i*7)%(gusty?4:7)}s;--dd:${-(i*3.1)%11}s;--rest:${12+(i*29)%70}%;--sw:${2.6+(i%3)*.5}s`}><i>${art(i)}</i></div>`);
     if(this.season==='spring'&&!precip&&!storm&&!fog) return drift(6,i=>html`<svg class=${`petal petal-${i%2}`} viewBox="0 0 12 12"><path d="M6 0C10 3 10 9 6 12C2 9 2 3 6 0Z"/></svg>`);
-    if(this.season==='autumn'&&!storm&&!['snowy','snowy-rainy','hail'].includes(this.condition)) return drift(5,i=>html`<svg class=${`maple maple-${i%3}`} viewBox="0 0 24 24"><path d="M12 1l2 5 4-2-1 5 4 1-4 3 2 4-5-1-1 7h-2l-1-7-5 1 2-4-4-3 4-1-1-5 4 2z"/></svg>`);
+    // Autumn leaves fly in rain and storms too; only snow and hail hide them.
+    if(this.season==='autumn'&&!['snowy','snowy-rainy','hail'].includes(this.condition)) return drift(5,i=>html`<svg class=${`maple maple-${i%3}`} viewBox="0 0 24 24"><path d="M12 1l2 5 4-2-1 5 4 1-4 3 2 4-5-1-1 7h-2l-1-7-5 1 2-4-4-3 4-1-1-5 4 2z"/></svg>`);
     if(this.season==='summer'&&this.phase==='day'&&['sunny','partlycloudy'].includes(this.condition)) return html`<div class="heat">${Array.from({length:few?3:7},(_,i)=>html`<svg class="heat-plume" viewBox="0 0 24 120" preserveAspectRatio="none" style=${`--hx:${47+(i*13)%46}%;--hh:${70+(i*17)%45}px;--hd:${-(i*.9)%4.2}s;--hs:${1.6+(i%3)*.35}s`}><defs><linearGradient id=${`nw-heat-${i}`} x1="0" y1="1" x2="0" y2="0"><stop offset="0" class="heat-stop" stop-opacity="0"/><stop offset=".35" class="heat-stop" stop-opacity=".6"/><stop offset="1" class="heat-stop" stop-opacity="0"/></linearGradient></defs><path stroke=${`url(#nw-heat-${i})`} d="M12 120C4 104 20 92 12 76S4 48 12 32S20 10 12 0"/></svg>`)}</div>`;
     if(this.season==='winter') return this.frostPane();
     return nothing;
@@ -134,6 +137,7 @@ export class NiakWeatherSky extends LitElement {
     .season-summer .sun {box-shadow:0 0 50px 22px #ffc96a66;}
     .drift {position:absolute;left:var(--dx);top:-8%;animation:drift-fall var(--dt) linear var(--dd) infinite;}
     .drift>i {display:block;animation:sway var(--sw) ease-in-out infinite alternate;}
+    .drift--gusty {animation-name:drift-gust;}
     .petal {width:14px;height:14px;filter:drop-shadow(0 1px 1px #0002);}.petal-0 {fill:#f2a9c6;}.petal-1 {fill:#fbe3ec;}
     .maple {width:17px;height:17px;filter:drop-shadow(0 1px 1px #0003);}.maple-0 {fill:#d9772b;}.maple-1 {fill:#b9472c;}.maple-2 {fill:#dca33a;}
     .night .drift {filter:brightness(.6);}
@@ -219,6 +223,7 @@ export class NiakWeatherSky extends LitElement {
     @keyframes fog-drift {from{translate:calc(var(--dir) * -7%) 0;}to{translate:calc(var(--dir) * 7%) 6px;}}
     @keyframes fog-sun {from{opacity:.55;}to{opacity:.9;}}
     @keyframes drift-fall {from{top:-8%;translate:0 0;}to{top:108%;translate:-40px 0;}}
+    @keyframes drift-gust {from{top:-8%;translate:60px 0;}to{top:108%;translate:-160px 0;}}
     @keyframes sway {from{translate:-10px 0;rotate:-25deg;}to{translate:10px 0;rotate:35deg;}}
     @keyframes heat-rise {0%{translate:0 18px;opacity:0;}30%{opacity:.85;}70%{opacity:.55;}100%{translate:0 -40px;opacity:0;}}
     @keyframes heat-sway {from{transform:skewX(-9deg) scaleX(.85);}to{transform:skewX(9deg) scaleX(1.2);}}

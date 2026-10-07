@@ -679,6 +679,14 @@ try {
   });
   for(const [key,value] of Object.entries(weatherEffects))assert.equal(value,true,`Weather animation: ${key}`);
   await page.emulateMedia({reducedMotion:'reduce'});
+  // Autumn leaves fly in storms too; only snow and hail hide them.
+  const autumnLeaves=await page.evaluate(async()=>{
+    const sky=document.createElement('niak-weather-sky');sky.season='autumn';sky.phase='day';document.body.append(sky);
+    const count=async condition=>{sky.condition=condition;await sky.updateComplete;return sky.shadowRoot.querySelectorAll('.maple').length;};
+    const result={storm:await count('lightning-rainy')>0,rain:await count('rainy')>0,snow:await count('snowy')===0,gusty:!!sky.shadowRoot.querySelector('.drift--gusty')||(await count('lightning'),!!sky.shadowRoot.querySelector('.drift--gusty'))};
+    sky.remove();return result;
+  });
+  for(const [key,value] of Object.entries(autumnLeaves))assert.equal(value,true,`Autumn leaves: ${key}`);
   skyMotion.reduced=await page.evaluate(()=>getComputedStyle(window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelector('.cloud')).animationName==='none');assert.equal(skyMotion.reduced,true);
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.evaluate(async()=>{const card=window.skyCard;card.setConfig({...window.fixture.config,weather_animations:false});await card.updateComplete;});
