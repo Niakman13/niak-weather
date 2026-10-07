@@ -145,18 +145,22 @@ export class NiakWeatherCard extends LitElement {
     if(e?.attributes.state_class!=='total_increasing')return;
     this.archivePending=true;this.archiveAt=Date.now();const generation=this.archiveGeneration;
     try{
-      const metadata=await hass.callWS<Array<{statistic_id:string;has_sum:boolean;unit_of_measurement:string}>>({type:'recorder/get_statistics_metadata',statistic_ids:[id]});
+      const metadata=await hass.callWS<Array<{statistic_id:string;has_sum:boolean;statistics_unit_of_measurement?:string|null;display_unit_of_measurement?:string|null}>>({type:'recorder/get_statistics_metadata',statistic_ids:[id]});
       const meta=Array.isArray(metadata)?metadata.find(m=>m.statistic_id===id&&m.has_sum):undefined;
-      if(!meta||!['mm','in','inch'].includes(meta.unit_of_measurement))return;
-      const now=new Date(),year=periodStarts(now,hass.config?.time_zone??'UTC').year;
+      // Without `units`, HA returns values converted to the display unit (the entity's current unit when convertible).
+      const unit=meta?.display_unit_of_measurement??meta?.statistics_unit_of_measurement;
+      if(!meta||!unit||!['mm','in','inch'].includes(unit))return;
+      const now=new Date(),timeZone=hass.config?.time_zone??'UTC',year=periodStarts(now,timeZone).year;
+      // Hourly rows start on a local midnight, where a daily row ends: no false gap at the junction.
+      const hourly=periodStarts(new Date(now.getTime()-9*86400_000),timeZone).day;
       const common={type:'recorder/statistics_during_period',end_time:now.toISOString(),statistic_ids:[id],types:['sum','state']};
       const results=await Promise.allSettled([
         hass.callWS<Record<string,Statistic[]>>({...common,start_time:new Date(Math.min(year,now.getTime()-8*86400_000)-86400_000).toISOString(),period:'day'}),
-        hass.callWS<Record<string,Statistic[]>>({...common,start_time:new Date(now.getTime()-9*86400_000).toISOString(),period:'hour'})]);
+        hass.callWS<Record<string,Statistic[]>>({...common,start_time:new Date(hourly).toISOString(),period:'hour'})]);
       if(generation!==this.archiveGeneration||!this.isConnected)return;
       const rows=results.flatMap(r=>r.status==='fulfilled'&&Array.isArray(r.value[id])?r.value[id]:[]);
       const ordered=[...new Map(rows.sort((a,b)=>(b.end-b.start)-(a.end-a.start)).map(r=>[r.end,r])).values()].sort((a,b)=>a.end-b.end);
-      this.stationArchive={rain:ordered,rainUnit:meta.unit_of_measurement,counter:{}};
+      this.stationArchive={rain:ordered,rainUnit:unit,counter:{}};
     }catch{/* Unsupported statistics/Recorder exclusion: keep missing data honest. */}
     finally{if(generation===this.archiveGeneration)this.archivePending=false;}
   }

@@ -791,7 +791,7 @@ try {
       requests++;
       if(msg.type==='config/entity_registry/list')return entities;
       if(msg.type==='config/device_registry/list')return [{id:'ws90',name:'WS90 MQTT',manufacturer:'Shelly'}];
-      if(msg.type==='recorder/get_statistics_metadata')return [{statistic_id:prefix+'precipitation',has_sum:true,unit_of_measurement:'mm'}];
+      if(msg.type==='recorder/get_statistics_metadata')return [{statistic_id:prefix+'precipitation',has_sum:true,statistics_unit_of_measurement:'mm',display_unit_of_measurement:'mm'}];
       if(msg.type==='recorder/statistics_during_period')return {[prefix+'precipitation']:[{start:day.getTime()-86400_000,end:day.getTime(),sum:10,state:10},{start:day.getTime(),end:time-3600_000,sum:11,state:11}]};
       if(msg.type==='history/history_during_period')return Object.fromEntries(msg.entity_ids.map(id=>[id,id===prefix+'precipitation'?[{s:'10',lu:day.getTime()/1000},{s:'11',lu:(time-3600_000)/1000}]:[{s:states[id]?.state??'0',lu:(time-3600_000)/1000}]]));
       return {};
