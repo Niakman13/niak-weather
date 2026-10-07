@@ -35,7 +35,7 @@ jour future apparaîtra dans HACS et se fera avec le même bouton de télécharg
 
 ## Synthèse intelligente
 
-La version stable est **v1.9.2**. Consulte les [notes de mise à jour](release-1.9.2.md) : animations plus visibles, vraie scène de brouillard, nuit étoilée, orages plus marqués et synthèse ordonnée. Les réglages déjà enregistrés sont conservés. Une mise à jour de la carte ne nécessite pas de redémarrer Home Assistant.
+La version stable est **v1.10.0**. Consulte les [notes de mise à jour](release-1.10.0.md) : ressenti calculé par la carte sans Thermal Comfort, alertes gel et brouillard pour la nuit. Les réglages déjà enregistrés sont conservés. Une mise à jour de la carte ne nécessite pas de redémarrer Home Assistant.
 
 ## Ajouter la carte
 
@@ -89,12 +89,12 @@ Puis recharge le navigateur.
 
 Dans ce mode, les mises à jour sont manuelles : remplacer le fichier par celui de la nouvelle release et recharger le navigateur. Ne charge pas en même temps les ressources `/local/` et `/hacsfiles/` de cette carte.
 
-## Installer ou mettre à jour vers v1.9.2 stable
+## Installer ou mettre à jour vers v1.10.0 stable
 
 La version stable réunit les mesures de la station, le ressenti expliqué, les prévisions et bilans, ainsi que les informations facultatives Atmo France. Une mise à jour conserve les entités et réglages enregistrés.
 
 1. Ouvre **Niak Weather** dans HACS et utilise **Mettre à jour** si proposé, sinon **⋮ → Retélécharger / Redownload**.
-2. Sélectionne **v1.9.2** si le choix d’une version est demandé. Il n’est pas nécessaire d’activer les préversions.
+2. Sélectionne **v1.10.0** si le choix d’une version est demandé. Il n’est pas nécessaire d’activer les préversions.
 3. Télécharge, puis recharge le navigateur avec **Ctrl+F5**. Sur l’application mobile, ferme puis rouvre le tableau de bord et, si nécessaire, vide son cache frontend.
 4. Les choix enregistrés sont conservés. Pour ajouter des mesures ou réparer des références introuvables, ouvre la catégorie concernée et clique **Remplir automatiquement** ; vérifie les propositions avant d’enregistrer.
 
