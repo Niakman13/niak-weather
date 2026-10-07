@@ -1,5 +1,7 @@
 import type { WeatherBrief } from './weather-brief';
 
+const DISPLAY_ORDER=['official','now','future','environment'];
+
 /** Keep the highest attention signal, then diversify. Never change the engine's risk level. */
 export function briefPreview(brief: WeatherBrief) {
   const significant = brief.signals.filter(s => s.severity > 0).sort((a, b) => b.severity - a.severity);
@@ -32,5 +34,6 @@ export function briefSecondarySignals(brief: WeatherBrief) {
   for(const signal of [brief.signals.find(s=>s.key==='comfort-gap'),brief.signals.find(s=>s.key==='pressure'),brief.signals.find(s=>s.group==='future'&&s.key!=='temperature-future')]) {
     if(signal && signal!==preview.selected[0] && signal.key!==preview.contextKey && signal.key!==preview.outlookKey && !signals.includes(signal) && signals.length<3) signals.push(signal);
   }
-  return signals;
+  // Selection is by importance; display reads like the details panel: official warning, then now, then what's coming.
+  return signals.sort((a,b)=>DISPLAY_ORDER.indexOf(a.group)-DISPLAY_ORDER.indexOf(b.group));
 }

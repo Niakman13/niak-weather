@@ -4,6 +4,11 @@ import type { WeatherBrief, BriefSignal } from '../src/weather-brief';
 const signal = (key: string, group: BriefSignal['group'], severity: BriefSignal['severity']): BriefSignal => ({key,group,severity,text:key,explanation:key,icon:'mdi:weather-sunny'});
 const brief = (signals: BriefSignal[]): WeatherBrief => ({signals,title:'',summary:'',label:'',rgb:'',icon:'',available:true,caveats:[]});
 describe('Concise summary presentation', () => {
+  it('lists the secondary lines as vigilance, then now, then what is coming',()=>{
+    // 07/10/2026 at Gardanne: heavy rain headline, storm in 6 h, yellow vigilance, comfort gap.
+    const lines=briefSecondarySignals(brief([signal('rain-soon','future',2),signal('storm-later','future',1),signal('vigilance','official',1),signal('comfort-gap','now',0)]));
+    expect(lines.map(s=>s.group)).toEqual(['official','now','future']);
+  });
   it('shows meaningful pressure alongside pollution, not an empty outlook',()=>{
     expect(briefSecondarySignals(brief([signal('air','environment',2),signal('pressure','now',0)])).map(s=>s.key)).toEqual(['pressure']);
     expect(briefSecondarySignals(brief([]))).toEqual([]);
