@@ -106,8 +106,9 @@ export class NiakWeatherSky extends LitElement {
     });
     return html`<div class=${`scene ${this.phase} ${this.condition}${this.season?` season-${this.season}`:''}`} style=${`--play:${this.animated&&this.visible&&this.pageVisible?'running':'paused'};--cloud-duration:${windy?6:Math.max(11,28-Math.min(Math.max(this.wind,0),60)/2.5)}s`} ?data-still=${!this.animated}>
       <div class="weather-art">${this.condition!=='unknown'&&this.condition!=='exceptional' ? html`
-        ${this.phase==='night'&&!fog?this.stars(this.quality==='low'?8:clearSky?24:12):nothing}
+        ${this.phase==='night'&&clearSky?this.stars(this.quality==='low'?8:this.condition==='partlycloudy'?12:24):nothing}
         ${clearSky?html`<div class=${`orb ${this.phase==='night'?'moon':'sun'}`}><i></i></div>`:nothing}
+        ${heavy||storm?html`<div class="overcast"></div>${this.cloud('heavy-left')}${this.quality==='low'?nothing:this.cloud('heavy-right')}`:nothing}
         ${cloudy?html`${this.cloud('back')}${this.cloud('front')}${this.quality==='low'?nothing:this.cloud('small')}`:nothing}
         ${fog?this.fog():nothing}
         ${this.condition!=='unknown'?this.seasonal(rain||snow,storm,fog):nothing}
@@ -179,9 +180,13 @@ export class NiakWeatherSky extends LitElement {
     .cloud.back {left:55%;top:15px;width:220px;height:140px;opacity:.62;animation-delay:-12s;}
     .cloud.front {left:73%;top:90px;animation-delay:-4s;}
     .cloud.small {left:93%;top:6px;width:150px;height:95px;opacity:.7;animation-delay:-22s;}
+    /* Storms and downpours: a dark ceiling and two extra banks of cloud, so the sky reads thick and closed. */
+    .overcast {position:absolute;left:30%;right:0;top:0;height:46%;background:linear-gradient(180deg,rgba(28,38,52,.55),rgba(28,38,52,0));filter:blur(6px);}
+    .cloud.heavy-left {left:40%;top:-34px;width:300px;height:180px;opacity:.9;animation-delay:-8s;}
+    .cloud.heavy-right {left:80%;top:-40px;width:320px;height:190px;opacity:.85;animation-delay:-17s;}
     .night .cloud-rear {fill:#73869f;}.night .cloud-near {fill:#a0aec1;}
-    .rainy .cloud-rear,.pouring .cloud-rear {fill:#7d90a5;}.lightning .cloud-rear,.lightning-rainy .cloud-rear {fill:#46566a;}
-    .rainy .cloud-near,.pouring .cloud-near {fill:#b0c0cf;}.lightning .cloud-near,.lightning-rainy .cloud-near {fill:#728499;}
+    .rainy .cloud-rear {fill:#7d90a5;}.pouring .cloud-rear {fill:#56677c;}.lightning .cloud-rear,.lightning-rainy .cloud-rear {fill:#46566a;}
+    .rainy .cloud-near {fill:#b0c0cf;}.pouring .cloud-near {fill:#8496aa;}.lightning .cloud-near,.lightning-rainy .cloud-near {fill:#728499;}
     .windy .cloud,.windy-variant .cloud {animation-name:wind-clouds;}
     .particle {position:absolute;left:var(--x);top:-40px;height:calc(100% + 80px);width:3px;animation:fall var(--duration) linear var(--delay) infinite;}
     .particle::before {content:'';position:absolute;top:0;left:0;display:block;}
@@ -239,6 +244,7 @@ export class NiakWeatherSky extends LitElement {
     @keyframes storm-flash {0%,4.5%,100%{opacity:0;}.6%{opacity:.7;}1.6%{opacity:.5;}2.2%{opacity:.1;}3%{opacity:.55;}}
     @container(max-width:650px) {
       .weather-art {display:block;position:absolute;top:0;right:0;width:100%;height:300px;overflow:hidden;}
+      .cloud.heavy-left {left:auto;right:30%;width:220px;}.cloud.heavy-right {left:auto;right:-20%;width:240px;}
       .orb {left:auto;right:12%;top:36px;}.cloud.back {left:auto;right:22%;top:20px;width:170px;}.cloud.front {left:auto;right:0;top:90px;width:150px;}.cloud.small {left:auto;right:-12%;top:6px;width:120px;}
       .bolt.b1 {left:auto;right:18%;}.bolt.b2 {left:auto;right:2%;}.bolt.b3 {left:auto;right:42%;}
       .flash.f1 {--fx:70%;}.flash.f2 {--fx:94%;}.flash.f3 {--fx:48%;}
