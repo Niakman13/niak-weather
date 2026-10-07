@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import gw2000aDailyRain from './fixtures/gw2000a-daily-rain-2026-10-07.json';
 import { columnStatus, rainDays, windPoints, windScale, windChartSeries, windCurvePaths, pressureChartSeries } from '../src/recent-details';
 const now=new Date('2026-10-05T16:00:00Z');
 const p=(date:string,s:string)=>({s,lu:Date.parse(date)/1000});
 describe('Recorded rain days',()=>{
+  it('keeps every day of a real GW2000A week whose station drops out for a few seconds',()=>{
+    // Recorder export of sensor.gw2000a_daily_rain, 29/09 → 07/10/2026. The station goes `unavailable` almost every day;
+    // the published card blanked every such day. The monthly counter (40.6 mm on 07/10) confirms the October values.
+    const at=new Date('2026-10-07T13:20:00Z');
+    const days=rainDays([...gw2000aDailyRain,{s:'19.3',lu:at.getTime()/1000}],'mm',at,'Europe/Paris');
+    expect(days.map(d=>d.value)).toEqual([19.5,.3,1,0,0,.5,19.3]);
+    expect(days.map(d=>d.label)).toEqual(['jeu.','ven.','sam.','dim.','lun.','mar.','Auj.']);
+  });
   it('keeps absent history absent instead of fabricating zero bars',()=>{
     expect(rainDays([], 'mm', now,'Europe/Paris').every(d=>d.value===undefined)).toBe(true);
   });
