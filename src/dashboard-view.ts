@@ -181,7 +181,7 @@ export const dashboardStyles = css`
   @container (max-width:650px) {
     .nw-synthesis { grid-template-columns:60px minmax(0,1fr); column-gap:12px; }
     .nw-current-weather { grid-column:1 / -1; grid-row:4; min-height:172px; margin-top:18px; }
-    .nw-synthesis::before { background:linear-gradient(90deg,var(--card-background-color,#fff),color-mix(in srgb,var(--card-background-color,#fff) 95%,transparent) 32%,color-mix(in srgb,var(--card-background-color,#fff) 68%,transparent) 60%,color-mix(in srgb,var(--card-background-color,#fff) 18%,transparent)); }
+    .nw-synthesis::before { background:linear-gradient(90deg,var(--card-background-color,#fff),color-mix(in srgb,var(--card-background-color,#fff) 90%,transparent) 22%,color-mix(in srgb,var(--card-background-color,#fff) 58%,transparent) 42%,color-mix(in srgb,var(--card-background-color,#fff) 22%,transparent) 62%,transparent 84%); }
   }
   .nw-brief-limits summary, .nw-measure-details summary { cursor:pointer; color:var(--secondary-text-color); font-size:11px; padding:6px 0; }
   #comfort { position:relative; border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:12px; background:rgba(150,150,150,.035); padding:14px 16px; margin-bottom:14px; }
