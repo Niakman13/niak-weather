@@ -33,7 +33,7 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
       ? ` ${effect.name[0].toUpperCase() + effect.name.slice(1)} ${effect.value > 0 ? 'accentue la chaleur' : 'accentue la fraîcheur'}.`
       : finite(a.humidex) !== undefined && (finite(a.humidex)! - temp) >= .6 ? ' L’humidité accentue la chaleur.' : '';
   }
-  if (a.base === 'thermometre' || (feels !== undefined && finite(a.humidex) === undefined)) caveats.push('Humidex absent : le ressenti ne compte pas l’effet de l’humidité.');
+  if (feels !== undefined && !a.hum_source && finite(a.humidex) === undefined) caveats.push('Humidité indisponible : le ressenti ne compte pas son effet.');
   if (feels !== undefined && (feels >= 34 || feels <= 2)) add({ key: 'temperature', group: 'now', severity: feels >= 38 || feels <= -3 ? 2 : 1,
     text: feels >= 34 ? `Forte chaleur ressentie (${format(feels)} °C)` : `Froid marqué (${format(feels)} °C ressentis)`, explanation: 'Estimation du ressenti de la carte, pas une vigilance canicule/grand froid.', entity: source('t_ext'), icon: feels >= 34 ? 'mdi:thermometer-high' : 'mdi:thermometer-low' });
   if(temp!==undefined&&feels!==undefined&&Math.abs(feels-temp)>4&&!signals.some(s=>s.key==='temperature'))add({key:'comfort-gap',group:'now',severity:0,
@@ -67,6 +67,22 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   if (storm) add({ key: 'storm', group: 'future', severity: 2, text: `Orage ou grêle annoncé ${timing(storm.hours)}`, explanation: 'Condition annoncée par le fournisseur sur les 6 prochaines heures, pas une détection de foudre.', entity: config.weather_entity, icon: 'mdi:weather-lightning' });
   const cold = upcoming.find(p => finite(p.temperature) !== undefined && p.temperature! <= 0);
   if (cold) add({ key: 'freeze-future', group: 'future', severity: 1, text: `Température prévue à ${format(cold.temperature!)} °C ${timing(cold.hours)}`, explanation: 'Température prévue par le fournisseur ; le gel du sol n’est pas mesuré.', entity: config.weather_entity, icon: 'mdi:snowflake' });
+  // Tonight: the forecast minimum of the next 18 h against the frost and dew points measured now.
+  const at = (h: number) => `vers ${Number(new Intl.DateTimeFormat('en-GB', { timeZone: hass.config?.time_zone, hour: 'numeric', hourCycle: 'h23' }).format(new Date(now.getTime() + h * 3600_000)))} h`;
+  const night = points.filter(p => Number.isFinite(p.hours) && p.hours >= 0 && p.hours <= 18 && finite(p.temperature) !== undefined);
+  const low = night.length ? night.reduce((m, p) => p.temperature! < m.temperature! ? p : m) : undefined;
+  const frostPoint = finite(a.gelee), dewPoint = finite(a.rosee);
+  // The ground cools 2–3 °C below the sheltered thermometer on a calm night: frost can form with +3 °C forecast.
+  if (low && low.temperature! <= 3) add({ key: 'frost-night', group: 'future', severity: 1,
+    text: low.temperature! <= 0 ? `Gel prévu ${at(low.hours)} (${format(low.temperature!)} °C)`
+      : `${frostPoint !== undefined && frostPoint >= low.temperature! - 3 ? 'Gelée blanche possible' : 'Risque de gel au sol'} ${at(low.hours)} (${format(low.temperature!)} °C prévus)`,
+    explanation: 'Minimum prévu dans les 18 h. Au sol, une nuit calme fait 2 à 3 °C de moins que sous abri : on prévient dès 3 °C. « Gelée blanche » quand l’air est assez humide pour givrer (point de gelée actuel). À protéger : plantes sensibles, pare-brise.', entity: config.weather_entity, icon: 'mdi:snowflake-alert' });
+  // The night's minimum says more than the first freezing hour: keep one frost line.
+  if (signals.some(s => s.key === 'frost-night')) signals.splice(signals.findIndex(s => s.key === 'freeze-future'), signals.some(s => s.key === 'freeze-future') ? 1 : 0);
+  const calm = (wind ?? 0) < 8, dryAt = (p: BriefPoint) => (finite(p.precipitation) ?? 0) < .3;
+  if (low && dewPoint !== undefined && a.condition !== 'fog' && calm && dryAt(low) && low.temperature! <= dewPoint && low.temperature! > 0)
+    add({ key: 'fog-later', group: 'future', severity: 0, text: `Brouillard possible ${at(low.hours)}`,
+      explanation: 'La température prévue descend jusqu’au point de rosée actuel, avec un vent faible et sans pluie : l’air sature. Indication, pas une prévision de visibilité.', entity: config.weather_entity, icon: 'mdi:weather-fog' });
   const validTemps = upcoming.filter(p => finite(p.temperature) !== undefined);
   if (temp !== undefined && validTemps.length && !cold) {
     const maximum=Math.max(...validTemps.map(p=>p.temperature!)),minimum=Math.min(...validTemps.map(p=>p.temperature!));
@@ -128,7 +144,7 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   if (omitted > 0) lines.push(`${omitted} autre${omitted > 1 ? 's' : ''} point${omitted > 1 ? 's' : ''} à consulter dans les explications.`);
   const available = feels !== undefined || signals.length > 0 || upcoming.length > 0;
   const officialSignal = signals.find(s => s.key === 'official');
-  const themes: Record<string, string> = { wind: 'Vent', 'wind-rain': 'Pluie et vent', 'rain-now': 'Pluie', 'rain-future': 'Pluie', storm: 'Orage', temperature: feels !== undefined && feels >= 34 ? 'Chaleur' : 'Froid', 'freeze-future': 'Froid', fog: 'Brouillard', uv: 'UV' };
+  const themes: Record<string, string> = { wind: 'Vent', 'wind-rain': 'Pluie et vent', 'rain-now': 'Pluie', 'rain-future': 'Pluie', storm: 'Orage', temperature: feels !== undefined && feels >= 34 ? 'Chaleur' : 'Froid', 'freeze-future': 'Froid', 'frost-night': 'Gel', fog: 'Brouillard', uv: 'UV' };
   const topics = [...new Set(signals.filter(s => s.severity > 0 && s.group !== 'official').map(s => themes[s.key] ?? (s.key.startsWith('air-') || s.key.startsWith('atmo-event') ? 'Air extérieur' : s.group === 'environment' ? 'Pollens' : 'Météo')))];
   const title = officialSignal && officialSignal.severity === severity ? `Vigilance Météo-France ${['verte', 'jaune', 'orange', 'rouge'][officialSignal.severity]}`
     : topics.length ? topics.slice(0, 3).join(' · ') : 'Votre météo en bref';

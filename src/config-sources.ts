@@ -1,11 +1,11 @@
 import { atmoAreas, atmoFields } from './atmo';
-import { candidates, detectEcowittStation, functionMatches, stationRules, thermalFields, type RegistryContext, type SensorField } from './station-detection';
+import { candidates, detectEcowittStation, functionMatches, stationRules, type RegistryContext, type SensorField } from './station-detection';
 import type { HassEntity, HomeAssistant, WeatherCardConfig } from './types';
 
-export type SourceCategory = 'general' | 'weather' | 'station' | 'thermal' | 'atmo';
+export type SourceCategory = 'general' | 'weather' | 'station' | 'atmo';
 export const categoryFields: Record<SourceCategory, Array<keyof WeatherCardConfig>> = {
   general: [], weather: ['weather_entity', 'vigilance_entity', 'sun_entity', 'sun_elevation_entity'],
-  station: Object.keys(stationRules) as SensorField[], thermal: thermalFields, atmo: atmoFields,
+  station: Object.keys(stationRules) as SensorField[], atmo: atmoFields,
 };
 const norm = (v: unknown) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 export function measurementMatches(e: HassEntity, field: SensorField | 'sun_elevation_entity'): boolean {
@@ -32,7 +32,6 @@ export function measurementMatches(e: HassEntity, field: SensorField | 'sun_elev
   return rule ? (cls && rule[0].length ? rule[0].includes(cls) : rule[1].test(unit)) : false;
 }
 export function manualCandidates(hass: Pick<HomeAssistant, 'states'>, field: SensorField, context: RegistryContext, config: Partial<WeatherCardConfig>): string[] {
-  if (thermalFields.includes(field)) return candidates(hass, field, context, config);
   const semantic = candidates(hass, field, context, config);
   const regs = new Map(context.entities.map(r => [r.entity_id, r]));
   return Object.values(hass.states).filter(e => {
@@ -45,12 +44,12 @@ export function manualCandidates(hass: Pick<HomeAssistant, 'states'>, field: Sen
     return measurementMatches(e, field) || (!typed && semantic.includes(e.entity_id));
   }).map(e => e.entity_id).sort();
 }
-export function sourceDevices(hass: Pick<HomeAssistant, 'states'>, context: RegistryContext, thermal = false): Array<{value:string;label:string}> {
+export function sourceDevices(hass: Pick<HomeAssistant, 'states'>, context: RegistryContext): Array<{value:string;label:string}> {
   const ids = new Set<string>();
   const semantic = new Set(Object.keys(stationRules).flatMap(f => candidates(hass, f as SensorField, context)));
   for (const r of context.entities) {
     const e = hass.states[r.entity_id ?? '']; if (!e || !r.device_id || r.disabled_by) continue;
-    if (thermal ? r.platform === 'thermal_comfort' : r.platform !== 'thermal_comfort' && (semantic.has(e.entity_id) || Object.keys(stationRules).some(f => measurementMatches(e, f as SensorField)))) ids.add(r.device_id);
+    if (r.platform !== 'thermal_comfort' && (semantic.has(e.entity_id) || Object.keys(stationRules).some(f => measurementMatches(e, f as SensorField)))) ids.add(r.device_id);
   }
   return [...ids].map(value => {const d = context.devices.find(d => d.id === value); const r = context.entities.find(r => r.device_id === value && hass.states[r.entity_id ?? '']);
     return {value,label:d?.name_by_user || d?.name || String(hass.states[r?.entity_id ?? '']?.attributes.friendly_name || value)};}).sort((a,b)=>a.label.localeCompare(b.label));
@@ -68,7 +67,7 @@ export function fillCategory(hass: HomeAssistant, context: RegistryContext, conf
     // Empty strings are deliberate opt-outs; unavailable states still refer to real entities.
     if (typeof id === 'string' && ((id && !hass.states[id])||(fillEmpty&&id===''))) delete search[field];
   }
-  const deviceField = category === 'station' ? 'station_device_id' : category === 'thermal' ? 'thermal_device_id' : undefined;
+  const deviceField = category === 'station' ? 'station_device_id' : undefined;
   if (deviceField && search[deviceField] && !context.entities.some(r=>r.device_id===search[deviceField])) delete search[deviceField];
   if (category === 'atmo' && search.atmo_area && !atmoAreas(hass, context).some(a=>a.value===search.atmo_area)) delete search.atmo_area;
   let detected: Partial<WeatherCardConfig> = {};

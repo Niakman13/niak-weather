@@ -55,8 +55,6 @@ export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   vigilance_entity?: string;
   temperature_entity?: string;
   humidity_entity?: string;
-  humidex_entity?: string;
-  humidex_perception_entity?: string;
   wind_speed_entity?: string;
   wind_gust_entity?: string;
   wind_bearing_entity?: string;
@@ -78,16 +76,11 @@ export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   temperature_trend_entity?: string;
   sun_entity?: string;
   sun_elevation_entity?: string;
-  thermal_dew_point_entity?: string;
-  heat_index_entity?: string;
-  absolute_humidity_entity?: string;
-  thermal_perception_entity?: string;
   forecast_source?: string;
   weather_path?: string;
   location?: string;
   station_device_id?: string;
   station_model?: 'gw2000a'|'ws90'|'manual';
-  thermal_device_id?: string;
   atmo_area?: string;
   pollen_source?: 'atmo' | 'legacy' | 'none';
   show_atmo_details?: boolean;

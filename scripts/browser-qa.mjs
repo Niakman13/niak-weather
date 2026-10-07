@@ -165,23 +165,22 @@ try {
       {entity_id:'sensor.inside',platform:'thermal_comfort',device_id:'inside',translation_key:'humidex'}];
     const editor=document.createElement('niak-weather-card-editor'),events=[];
     editor.addEventListener('config-changed',e=>events.push(e.detail.config));
-    editor.setConfig({type:'custom:niak-weather-card',weather_entity:'weather.a',comfort_entity:'sensor.legacy',lightning_distance_entity:'sensor.legacy2'});
+    editor.setConfig({type:'custom:niak-weather-card',weather_entity:'weather.a',comfort_entity:'sensor.legacy',lightning_distance_entity:'sensor.legacy2',humidex_entity:'sensor.renamed',thermal_device_id:'outside'});
     editor.hass={states:editorStates,language:'fr',callWS:async msg=>msg.type==='config/entity_registry/list'?registry:[]};root.append(editor);await sleep(50);
     editor.shadowRoot.querySelector('details[data-category="station"]').open=true;await sleep(20);
     editor.shadowRoot.querySelector('button[data-fill="station"]').click();await sleep(30);
-    editor.shadowRoot.querySelector('details[data-category="thermal"]').open=true;await sleep(20);
-    editor.shadowRoot.querySelector('button[data-fill="thermal"]').click();await sleep(30);
-    const form=editor.shadowRoot.querySelector('ha-form[data-category="thermal"]'),all=form.schema;
-    const ids=form.schema.find(item=>item.name==='humidex_entity').selector.entity.include_entities;
-    const filtered=ids.join(',')==='sensor.renamed';
-    const prefilled=form.data.humidex_entity==='sensor.renamed' && form.data.humidex_perception_entity==='sensor.renamed_sensation';
-    const simplifiedThermal=!all.some(item=>item.name==='thermal_device_id')&&!editor.shadowRoot.textContent.includes('L’humidex provient uniquement');
+    // No Thermal Comfort section any more: the card computes humidex, dew and frost points from temperature and humidity.
+    const form=editor.shadowRoot.querySelector('ha-form[data-category="station"]'),all=form.schema;
+    const offered=[];const walk=items=>items.forEach(item=>{if(item.schema)walk(item.schema);if(item.selector?.entity?.include_entities)offered.push(...item.selector.entity.include_entities);});walk(all);
+    const filtered=!offered.some(id=>['sensor.renamed','sensor.renamed_sensation','sensor.inside'].includes(id));
+    const prefilled=form.data.humidity_entity==='sensor.outdoor_humidity';
+    const simplifiedThermal=!editor.shadowRoot.querySelector('details[data-category="thermal"]')&&!editor.shadowRoot.textContent.includes('Thermal Comfort')&&!('humidex_entity' in events.at(-1))&&!('thermal_device_id' in events.at(-1));
     const recommendedStation=editor.shadowRoot.querySelector('details[data-category="station"] .category-body p').textContent.startsWith('Conseillé :');
     const removed=!all.some(item=>['comfort_entity','lightning_distance_entity'].includes(item.name)) && !('comfort_entity' in events.at(-1));
     const renamed=editor.shadowRoot.querySelector('details[data-category="station"] summary').textContent.includes('Capteurs locaux / station météo locale');
-    form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,humidex_entity:''}},bubbles:true}));await sleep(20);
-    editor.shadowRoot.querySelector('button[data-fill="thermal"]').click();await sleep(20);
-    const preserved=events.at(-1).humidex_entity==='';
+    form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,dew_point_entity:''}},bubbles:true}));await sleep(20);
+    editor.shadowRoot.querySelector('button[data-fill="station"]').click();await sleep(20);
+    const preserved=events.at(-1).dew_point_entity==='';
     editor.remove();root.append(window.card);
     window.card.setConfig({...window.fixture.config,weather_path:'/test-weather'});await sleep(30);
     window.info=[];const tile=window.card.shadowRoot.querySelector('[aria-label="Bilan vent"] .nw-history-value');
@@ -459,7 +458,7 @@ try {
       await Promise.all([editor.updateComplete,card.updateComplete]);
     }
     const typingMs=Math.round(performance.now()-typingStart);
-    const stableTypingSelectors=weatherForm.schema===schemaBefore&&generalForm.schema===generalSchema&&generalForm.data===generalData&&editor.config.forecast_source==='Météo-France'&&!editor.schemaCache.has('station')&&!editor.schemaCache.has('thermal');
+    const stableTypingSelectors=weatherForm.schema===schemaBefore&&generalForm.schema===generalSchema&&generalForm.data===generalData&&editor.config.forecast_source==='Météo-France'&&!editor.schemaCache.has('station');
     const beforeSources=forecastRequests;
     card.setConfig({...card.config,wind_speed_entity:'sensor.other_wind',pressure_entity:'sensor.other_pressure',daily_rain_entity:'sensor.other_rain'});await card.updateComplete;await sleep(20);
     const sourceEditsNoForecasts=forecastRequests===beforeSources;
@@ -834,9 +833,9 @@ try {
   const relevantBrief=await page.evaluate(async()=>{
     const main=document.querySelector('main');main.replaceChildren();
     const e=(entity_id,state,unit)=>({entity_id,state:String(state),attributes:{unit_of_measurement:unit}});
-    const states={'weather.test':{...window.fixture.states['weather.test'],state:'sunny'},'sensor.outdoor':e('sensor.outdoor',20,'°C'),'sensor.thermal_comfort_humidex':e('sensor.thermal_comfort_humidex',20,'°C'),'sensor.wind':e('sensor.wind',0,'km/h')};
+    const states={'weather.test':{...window.fixture.states['weather.test'],state:'sunny'},'sensor.outdoor':e('sensor.outdoor',20,'°C'),'sensor.humidity':e('sensor.humidity',50,'%'),'sensor.wind':e('sensor.wind',0,'km/h')};
     const card=document.createElement('niak-weather-card');
-    const config={type:'custom:niak-weather-card',weather_entity:'weather.test',temperature_entity:'sensor.outdoor',humidex_entity:'sensor.thermal_comfort_humidex',wind_speed_entity:'sensor.wind',smart_brief:true};
+    const config={type:'custom:niak-weather-card',weather_entity:'weather.test',temperature_entity:'sensor.outdoor',humidity_entity:'sensor.humidity',wind_speed_entity:'sensor.wind',smart_brief:true};
     let dailyRain=0;
     const callWS=async msg=>{
       if(msg.type!=='call_service')return {};
@@ -847,7 +846,8 @@ try {
     card.setConfig(config);card.hass={states,language:'fr',config:{time_zone:'UTC'},callWS};main.append(card);await new Promise(r=>setTimeout(r,60));
     const root=card.shadowRoot;
     const empty=!root.querySelector('.nw-summary-lead,.nw-summary-emblem,.nw-attention')&&!!root.querySelector('.nw-current-temperature')&&!!root.querySelector('#comfort');
-    card.hass={...card.hass,states:{...states,'sensor.thermal_comfort_humidex':e('sensor.thermal_comfort_humidex',28,'°C')}};await card.updateComplete;
+    // 20 °C at 95 % humidity: the humidex computed by the card is about 27 °C, well above the thermometer.
+    card.hass={...card.hass,states:{...states,'sensor.humidity':e('sensor.humidity',95,'%')}};await card.updateComplete;
     const gap=root.querySelector('.nw-summary-lead')?.textContent.includes('ressenti est plus élevé')&&!root.querySelector('.nw-summary-lines').textContent.includes('ressentis')&&!root.querySelector('.nw-attention');
     dailyRain=72;card.hass={...card.hass,states};card.forecastAt=0;await card.loadForecasts();await card.updateComplete;
     const tomorrow=root.querySelector('.nw-summary-lead')?.textContent.includes('Pluie importante prévue demain : 72 mm')&&!root.querySelector('.nw-attention');

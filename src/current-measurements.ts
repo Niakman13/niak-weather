@@ -17,9 +17,10 @@ export function weatherSourceLabel(hass:HomeAssistant,config:WeatherCardConfig):
 }
 export function meaningfulComfort(hass:HomeAssistant,config:WeatherCardConfig,model:HassEntity):boolean {
   if (!available(model) || finite(model.attributes.ressenti)===undefined) return false;
-  return [config.temperature_entity,config.humidex_entity].some(id=>{
-    const e=hass.states[id ?? '']; return available(e) && finite(e!.state)!==undefined;
-  });
+  const thermometer=hass.states[config.temperature_entity ?? ''];
+  if(available(thermometer) && finite(thermometer!.state)!==undefined) return true;
+  // Without a station, the bulletin's temperature and humidity still give a humidex-based feel.
+  return !config.temperature_entity && model.attributes.hum_source==='bulletin';
 }
 /** Bulletin fallbacks are display-only: never turn forecast rain into a measured local total. */
 export function currentMetrics(hass:HomeAssistant,config:WeatherCardConfig,model:HassEntity,hourly:WeatherForecast[]=[],now=new Date()):CurrentMetric[] {

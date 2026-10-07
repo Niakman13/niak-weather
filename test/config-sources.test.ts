@@ -28,8 +28,8 @@ describe('Source configuration and repairs',()=>{
     const id='sensor.station_meteo_ws90_temperature';
     const states={[id]:entity(id,'20',{device_class:'temperature'})};
     const context={entities:[{entity_id:id,platform:'mqtt',device_id:'ws90'}],devices:[{id:'ws90',name:'WS90 Zigbee2MQTT'}]};
-    const config={...base,temperature_entity:'sensor.deleted',humidex_entity:'sensor.keep',atmo_air_entity:'sensor.atmo_keep'};
-    expect(fillCategory(hass(states),context,config,'station')).toMatchObject({temperature_entity:id,humidex_entity:'sensor.keep',atmo_air_entity:'sensor.atmo_keep',station_device_id:'ws90'});
+    const config={...base,temperature_entity:'sensor.deleted',atmo_air_entity:'sensor.atmo_keep'};
+    expect(fillCategory(hass(states),context,config,'station')).toMatchObject({temperature_entity:id,atmo_air_entity:'sensor.atmo_keep',station_device_id:'ws90'});
     expect(sourceDevices(hass(states),context)).toEqual([{value:'ws90',label:'WS90 Zigbee2MQTT'}]);
   });
   it('preserves empty fields, valid manual IDs and unavailable entities',()=>{
@@ -42,11 +42,10 @@ describe('Source configuration and repairs',()=>{
     const states={'sensor.a_outdoor_temperature':entity('sensor.a_outdoor_temperature'),'sensor.b_outdoor_temperature':entity('sensor.b_outdoor_temperature')};
     expect(fillCategory(hass(states),empty,{...base,temperature_entity:'sensor.deleted'},'station').temperature_entity).toBe('sensor.deleted');
   });
-  it('does not auto-associate a room humidity or an explicitly indoor humidex',()=>{
+  it('does not auto-associate a room humidity',()=>{
     const states={'sensor.salon_humidity':entity('sensor.salon_humidity'),'sensor.inside_humidex':entity('sensor.inside_humidex')};
     const context={entities:[{entity_id:'sensor.inside_humidex',platform:'thermal_comfort'}],devices:[]};
     expect(fillCategory(hass(states),context,base,'station').humidity_entity).toBeUndefined();
-    expect(fillCategory(hass(states),context,base,'thermal').humidex_entity).toBeUndefined();
   });
   it('retains the explicit manual-device mode during automatic filling',()=>{
     const states={'sensor.outdoor_temperature':entity('sensor.outdoor_temperature')};
@@ -58,11 +57,11 @@ describe('Source configuration and repairs',()=>{
     const states=Object.fromEntries(ids.map(id=>[id,entity(id)]));
     for(const field of ['temperature_entity','pressure_entity','humidity_entity'] as const) expect(candidates(hass(states),field)).toEqual([]);
   });
-  it('keeps humidex strictly in Thermal Comfort, not MQTT station sensors',()=>{
-    const states={'sensor.ws90_humidex':entity('sensor.ws90_humidex'),'sensor.custom':entity('sensor.custom')};
-    const context={entities:[{entity_id:'sensor.ws90_humidex',platform:'mqtt'},{entity_id:'sensor.custom',platform:'thermal_comfort',translation_key:'humidex'}],devices:[]};
-    expect(manualCandidates(hass(states),'humidex_entity',context,base)).toEqual(['sensor.custom']);
-    expect(fillCategory(hass(states),context,base,'thermal').humidex_entity).toBe('sensor.custom');
+  it('never takes a Thermal Comfort output for a station sensor: the card computes them itself',()=>{
+    const states={'sensor.custom':entity('sensor.custom','12',{device_class:'temperature',unit_of_measurement:'°C'}),'sensor.ws90_dew_point':entity('sensor.ws90_dew_point','12',{device_class:'temperature',unit_of_measurement:'°C'})};
+    const context={entities:[{entity_id:'sensor.custom',platform:'thermal_comfort',translation_key:'dew_point'},{entity_id:'sensor.ws90_dew_point',platform:'mqtt'}],devices:[]};
+    expect(manualCandidates(hass(states),'dew_point_entity',context,base)).toEqual(['sensor.ws90_dew_point']);
+    expect(fillCategory(hass(states),context,base,'station').dew_point_entity).toBe('sensor.ws90_dew_point');
   });
   it('repairs Atmo after a reinstall using zone, measure and day metadata',()=>{
     const states:Record<string,HassEntity>={},context:RegistryContext={entities:[],devices:[]};

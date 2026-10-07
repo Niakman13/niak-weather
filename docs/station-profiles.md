@@ -29,7 +29,7 @@ Les chiffres calculés portent **calculé**, **historique** ou **partiel**. Les 
 
 Sans capteur dédié, la tendance de température peut être calculée sur une fenêtre d’au plus une heure, après trente minutes de données utilisables. La rafale maximale du jour peut être tirée de l’historique récent ; elle est indiquée partielle si la journée n’est pas couverte. Ces calculs ne reconstituent pas les pics que Recorder n’a jamais enregistrés.
 
-L’absence de rayonnement solaire en W/m² n’est pas compensée par une conversion arbitraire des lux. L’humidex demeure réservé à Thermal Comfort. Les conditions météo calculées, le statut d’humidité/pluie et les diagnostics électriques de la WS90 ne sont pas ajoutés automatiquement au brief par ce changement.
+L’absence de rayonnement solaire en W/m² n’est pas compensée par une conversion arbitraire des lux. L’humidex est calculé par la carte à partir de la température et de l’humidité. Les conditions météo calculées, le statut d’humidité/pluie et les diagnostics électriques de la WS90 ne sont pas ajoutés automatiquement au brief par ce changement.
 
 ## Limites de vérification
 

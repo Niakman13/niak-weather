@@ -15,9 +15,9 @@ describe('Brief intelligent', () => {
     expect(b.summary).toContain('3 °C de moins'); expect(b.summary).toContain('Le vent accentue');
     expect(b.summary).toContain('prévisions indisponibles'); expect(b.summary).not.toContain('tout va bien');
   });
-  it('explains humidex heat and flags its absence', () => {
+  it('explains humidex heat and flags missing humidity', () => {
     expect(brief({ ressenti: 23, humidex: 23 }).summary).toContain('L’humidité accentue');
-    expect(brief({ humidex: -999, base: 'thermometre' }).caveats.join()).toContain('Humidex absent');
+    expect(brief({ humidex: -999, base: 'thermometre' }).caveats.join()).toContain('Humidité indisponible');
   });
   it('does not count missing sensors as calm or comfortable', () => {
     const b = brief({ ressenti: -999, t_ext: -999, humidex: -999, vent: -999, rafales: -999 });
@@ -45,7 +45,9 @@ describe('Brief intelligent', () => {
   });
   it('handles thunderstorms and freezing forecasts without claiming local detection', () => {
     const b = brief({}, [{ hours: 2, condition: 'lightning-rainy', temperature: -1 }]);
-    expect(b.signals.map(s => s.key)).toContain('storm'); expect(b.signals.map(s => s.key)).toContain('freeze-future');
+    expect(b.signals.map(s => s.key)).toContain('storm');
+    // One frost line: the night's minimum replaces the first freezing hour.
+    expect(b.signals.map(s => s.key)).toContain('frost-night'); expect(b.signals.map(s => s.key)).not.toContain('freeze-future');
     expect(b.signals.find(s => s.key === 'storm')!.explanation).toContain('pas une détection');
   });
   it('ignores invalid or out-of-window forecast offsets', () => {

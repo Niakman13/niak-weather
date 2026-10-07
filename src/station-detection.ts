@@ -6,8 +6,7 @@ export type SensorField = keyof Pick<WeatherCardConfig,
   'temperature_entity' | 'humidity_entity' | 'wind_speed_entity' | 'wind_gust_entity' | 'wind_bearing_entity' | 'rain_rate_entity' |
   'daily_rain_entity' | 'rain_24h_entity' | 'weekly_rain_entity' | 'monthly_rain_entity' | 'yearly_rain_entity' | 'event_rain_entity' |
   'pressure_entity' | 'solar_radiation_entity' | 'dew_point_entity' | 'uv_index_entity' | 'illuminance_entity' | 'max_daily_gust_entity' |
-  'temperature_trend_entity' | 'humidex_entity' | 'humidex_perception_entity' | 'thermal_dew_point_entity' | 'heat_index_entity' |
-  'absolute_humidity_entity' | 'thermal_perception_entity' | 'rain_total_entity'>;
+  'temperature_trend_entity' | 'rain_total_entity'>;
 export const stationRules: Partial<Record<SensorField, RegExp>> = {
   temperature_entity: /(?:outdoor|outside|exterieur|external).*temp|temp.*(?:outdoor|outside|exterieur|external)|(?:ecowitt|ws\d{2}|station.*meteo).*temp/,
   humidity_entity: /(?:outdoor|outside|exterieur|external).*humid|humid.*(?:outdoor|outside|exterieur|external)|humidity|humidite/,
@@ -30,13 +29,6 @@ export const stationRules: Partial<Record<SensorField, RegExp>> = {
   max_daily_gust_entity: /max.*(?:daily.*gust|gust|rafale)|rafale.*max/,
   temperature_trend_entity: /tendance.*temp.*(?:ext|dehors)|temp.*(?:ext|outdoor).*trend/,
 };
-const thermalRules: Partial<Record<SensorField, RegExp>> = {
-  humidex_entity: /humidex/, humidex_perception_entity: /(?:humidex.*(?:perception|sensation)|(?:perception|sensation).*humidex)/,
-  thermal_dew_point_entity: /dew_?point|point.*rosee/, heat_index_entity: /heat_?index|indice.*chaleur/,
-  absolute_humidity_entity: /absolute_humidity|humidite_absolue/,
-  thermal_perception_entity: /thermal_perception|dew_point_perception|perception_thermique/,
-};
-export const thermalFields = Object.keys(thermalRules) as SensorField[];
 export const sensorText = (e: HassEntity, r?: Registry) => `${e.entity_id} ${e.attributes.friendly_name ?? ''} ${r?.unique_id ?? ''} ${r?.translation_key ?? ''} ${r?.original_name ?? ''}`
   .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const text=sensorText;
@@ -70,6 +62,7 @@ export function functionMatches(e:HassEntity,field:SensorField,r?:Registry):bool
   if(field==='illuminance_entity')return (!cls||cls==='illuminance')&&(!unit||/^(lx|lux)$/.test(unit));
   return true;
 }
+// Thermal Comfort outputs (humidex, dew point…) are never taken for station sensors.
 const isThermal = (e: HassEntity, r?: Registry) => r?.platform === 'thermal_comfort' || /thermal.*comfort/.test(text(e, r));
 export async function getRegistry(hass: HomeAssistant): Promise<RegistryContext> {
   const results = await Promise.allSettled([
@@ -79,23 +72,21 @@ export async function getRegistry(hass: HomeAssistant): Promise<RegistryContext>
     devices: results[1].status === 'fulfilled' && Array.isArray(results[1].value) ? results[1].value : [] };
 }
 export function candidates(hass: Pick<HomeAssistant, 'states'>, field: SensorField, context?: RegistryContext, config: Partial<WeatherCardConfig> = {}): string[] {
-  const thermal = thermalFields.includes(field), rule = (thermal ? thermalRules : stationRules)[field];
+  const rule = stationRules[field];
   if (!rule) return [];
   const regs = new Map(context?.entities.map(r => [r.entity_id, r]));
   return Object.values(hass.states).filter(e => {
     if (!e.entity_id.startsWith('sensor.')) return false;
     const r = regs.get(e.entity_id), t = text(e, r);
-    if (r?.disabled_by || (thermal ? !isThermal(e, r) : isThermal(e, r))) return false;
-    const device = thermal ? config.thermal_device_id : config.station_device_id;
+    if (r?.disabled_by || isThermal(e, r)) return false;
+    const device = config.station_device_id;
     if (device && r?.device_id !== device && field !== 'temperature_trend_entity') return false;
     if (!rule.test(t)) return false;
-    if(!thermal&&!functionMatches(e,field,r))return false;
+    if(!functionMatches(e,field,r))return false;
     if (field === 'temperature_entity' && /dew|rosee|humidex|heat_?index|wind_?chill|apparent|ressenti|indoor|interieur|trend|tendance/.test(t)) return false;
     if (field === 'humidity_entity' && /humidex|absolute|absolue|indoor|interieur/.test(t)) return false;
     if (field === 'pressure_entity' && /trend|tendance/.test(t)) return false;
     if (field === 'wind_speed_entity' && /gust|rafale|max/.test(t)) return false;
-    if (field === 'humidex_entity' && /perception|sensation/.test(t)) return false;
-    if (field === 'thermal_dew_point_entity' && /perception/.test(t)) return false;
     if (field === 'wind_gust_entity' && /max|daily/.test(t)) return false;
     if (field === 'daily_rain_entity' && /24h|24_h|max|year/.test(t)) return false;
     return true;
@@ -126,25 +117,6 @@ export function detectEcowittStation(hass: Pick<HomeAssistant, 'states'>, contex
       + (/average|avg|moyenne/.test(text(hass.states[id], regs.get(id))) && /wind_speed|wind_bearing/.test(field) ? 20 : 0)
       + (field === 'pressure_entity' && /relative/.test(text(hass.states[id], regs.get(id))) ? 20 : 0));
     if (best) selected[field] = best;
-  }
-  const chosen = { ...config, ...selected };
-  let thermalDevice = config.thermal_device_id;
-  const humidexIds = candidates(hass, 'humidex_entity', context, chosen).filter(id => thermalDevice || !/indoor|inside|interieur|salon|chambre|bedroom|living/.test(text(hass.states[id], regs.get(id))));
-  const humidexId = config.humidex_entity || uniqueBest(humidexIds, id => {
-    const e = hass.states[id], targetT = hass.states[chosen.temperature_entity ?? ''], targetH = hass.states[chosen.humidity_entity ?? ''];
-    const n = (v: unknown) => v === undefined ? NaN : Number(v);
-    return (Math.abs(n(e.attributes.temperature) - n(targetT?.state)) < .15 ? 100 : 0)
-      + (Math.abs(n(e.attributes.humidity) - n(targetH?.state)) < 1 ? 100 : 0)
-      + (/outdoor|outside|exterieur|external/.test(text(e, regs.get(id))) ? 20 : 0);
-  });
-  if (!thermalDevice && humidexId) thermalDevice = regs.get(humidexId)?.device_id;
-  if (thermalDevice) selected.thermal_device_id = thermalDevice;
-  if (config.humidex_entity === undefined && humidexId) selected.humidex_entity = humidexId;
-  for (const field of thermalFields.filter(f => f !== 'humidex_entity')) {
-    if (config[field] !== undefined) continue;
-    const ids = candidates(hass, field, context, { ...chosen, thermal_device_id: thermalDevice }).filter(id => thermalDevice || !/indoor|inside|interieur|salon|chambre|bedroom|living/.test(text(hass.states[id], regs.get(id))));
-    const best = uniqueBest(ids, id => regs.get(id)?.device_id === thermalDevice && thermalDevice ? 100 : 0);
-    if (best && (thermalDevice || candidates(hass, 'humidex_entity', context).length <= 1)) selected[field] = best;
   }
   const all = Object.values(hass.states);
   Object.assign(selected, detectAtmo(hass, context, config));

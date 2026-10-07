@@ -32,6 +32,6 @@ Avec une station, le cadre Pluie présente le cumul depuis minuit ou l’intensi
 
 ## Afficher un ressenti utile
 
-La jauge de ressenti est masquée en configuration minimale, sans température locale utilisable ni humidex Thermal Comfort utilisable. Elle n’affiche donc pas une simple copie de la température du bulletin. Thermal Comfort reste la source de l’humidex ; le capteur d’une station n’est pas choisi à sa place.
+Sans station, la jauge de ressenti s’appuie sur la température et l’humidité du bulletin, et sa bulle l’indique. Sans humidité du bulletin, elle est masquée : elle n’affiche jamais une simple copie de la température. L’humidex est calculé par la carte ; aucune intégration Thermal Comfort n’est nécessaire.
 
 La synthèse ne traite pas les données de remplacement du bulletin comme des observations de la station locale.

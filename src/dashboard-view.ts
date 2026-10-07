@@ -7,7 +7,7 @@ import { renderRecentDetails } from './recent-details';
 import type {StationDerived} from './station-history';
 import { comfortColor } from './comfort-color';
 import { buildCurrentWeather } from './current-weather';
-import { currentMetrics, meaningfulComfort } from './current-measurements';
+import { currentMetrics, meaningfulComfort, weatherSourceLabel } from './current-measurements';
 import './weather-sky';
 import type { WeatherBrief } from './weather-brief';
 import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
@@ -33,6 +33,10 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   const headline = preview?.headline;
   const feels = finite(model.attributes.ressenti);
   const showComfort=meaningfulComfort(hass,config,model);
+  const comfortWord=String(model.attributes.confort ?? ''),humidityWord=String(model.attributes.humidite_tx ?? '');
+  // Where the feel comes from, like the source bubbles of the Rain, Wind and Pressure columns.
+  const provider=weatherSourceLabel(hass,config),stationTemperature=!!config.temperature_entity;
+  const comfortSource=!stationTemperature?provider:model.attributes.hum_source==='bulletin'?`Station locale · humidité ${provider}`:'Station locale';
   const metrics=currentMetrics(hass,config,model,hourly,now);
   const weatherNow=buildCurrentWeather(hass,config,model);
   const hasDetails=metrics.some(m=>m.key!=='temperature')||!!(config.rain_total_entity||config.rain_24h_entity||config.daily_rain_entity||config.weekly_rain_entity||config.monthly_rain_entity||config.yearly_rain_entity||config.max_daily_gust_entity);
@@ -48,7 +52,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
       const panel=event.currentTarget as HTMLElement;
       panel.parentElement!.querySelector('.nw-synthesis-info-button')!.setAttribute('aria-expanded',String(panel.matches(':popover-open')));
     }}><header class="nw-brief-panel-heading"><h3>Les points à retenir</h3><button aria-label="Fermer les informations de synthèse" @click=${(event:Event)=>(event.currentTarget as HTMLElement).closest<HTMLElement>('.nw-brief-panel')!.hidePopover()}>Fermer ×</button></header><div class="nw-brief-groups">${groups.map(group=>{
-      const signals=brief.signals.filter(s=>s.group===group.key&&(s.severity>0||s.key===preview?.outlookKey||s.key==='rain-now'||s.key==='pressure'||s.key==='comfort-gap'||s.key==='rain-tomorrow'));
+      const signals=brief.signals.filter(s=>s.group===group.key&&(s.severity>0||s.key===preview?.outlookKey||s.key==='rain-now'||s.key==='pressure'||s.key==='comfort-gap'||s.key==='rain-tomorrow'||s.key==='fog-later'));
       return signals.length?html`<section class="nw-brief-group"><h4>${group.title}</h4><p class="nw-brief-context">${group.description}</p><ul>${signals.map(s=>html`<li><ha-icon icon=${s.icon}></ha-icon><span>${s.text}</span>${s.entity?html`<button data-entity=${s.entity} aria-label=${`Source : ${s.text}`}>Source</button>`:nothing}</li>`)}</ul></section>`:nothing;
     })}</div>
     ${!brief.signals.some(s=>s.severity>0)?html`<p>Pas de point d’attention renforcé parmi les données disponibles.</p>`:nothing}
@@ -79,10 +83,12 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
     ${config.show_today===false?nothing:html`<section id="today" class="nw-section" aria-labelledby="nw-today-title" style="--vc:61,155,233">
       <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>${showComfort ? 'Mesures et ressenti' : 'Conditions actuelles'}</span></header>
       ${showComfort?html`<div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}>
+        <span class="nw-comfort-source" title=${`Source du ressenti : ${comfortSource}`}>${comfortSource}</span>
         <details class="nw-comfort-info"><summary aria-label="Comprendre le ressenti"><h3 class="nw-panel-title">Ressenti <span class="nw-info-icon" aria-hidden="true">i</span></h3></summary>
-          <p>Une estimation de l’ambiance extérieure : l’humidex Thermal Comfort, ou la température si l’humidex manque, est ajusté selon le vent, le soleil, la pluie et la nuit lorsque les données sont disponibles. Ce n’est pas un indice météo officiel.
+          <p>Une estimation de l’ambiance extérieure : l’humidex, calculé par la carte à partir de la température et de l’humidité (station, sinon bulletin), est ajusté selon le vent, le soleil, la pluie et la nuit lorsque les données sont disponibles. Le mot reprend l’échelle de stress thermique UTCI. Ce n’est pas un indice météo officiel.
             <a href="https://github.com/Niakman13/niak-weather#expliquer-le-ressenti" target="_blank" rel="noopener noreferrer">En savoir plus sur GitHub</a>.</p>
         </details>
+        ${comfortWord?html`<p class="nw-comfort-word"><i aria-hidden="true"></i><strong>${comfortWord}</strong>${humidityWord?html`<span>· ${humidityWord}</span>`:nothing}</p>`:nothing}
         ${rendered.comfort ? unsafeHTML(rendered.comfort) : html`<p class="nw-empty">Ressenti indisponible</p>`}</div>`:nothing}
       ${hasDetails ? html`<div id="bilan" aria-label="Pluie, vent et pression">${renderRecentDetails(hass,config,history,rainHistory,now,metrics,derived,model)}</div>` : nothing}
       <div id="pastilles">${unsafeHTML(rendered.pastilles)}</div>
@@ -151,7 +157,7 @@ export const dashboardStyles = css`
     .nw-synthesis::before { background:linear-gradient(90deg,var(--card-background-color,#fff),color-mix(in srgb,var(--card-background-color,#fff) 95%,transparent) 32%,color-mix(in srgb,var(--card-background-color,#fff) 68%,transparent) 60%,color-mix(in srgb,var(--card-background-color,#fff) 18%,transparent)); }
   }
   .nw-brief-limits summary, .nw-measure-details summary { cursor:pointer; color:var(--secondary-text-color); font-size:11px; padding:6px 0; }
-  #comfort { border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:12px; background:rgba(150,150,150,.035); padding:14px 16px; margin-bottom:14px; }
+  #comfort { position:relative; border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:12px; background:rgba(150,150,150,.035); padding:14px 16px; margin-bottom:14px; }
   .nw-panel-title { margin:0; font-size:12px; font-weight:650; color:var(--secondary-text-color); }
   .nw-comfort-info>summary { cursor:pointer; list-style:none; width:fit-content; border-radius:6px; }
   .nw-comfort-info>summary::-webkit-details-marker { display:none; }
@@ -161,6 +167,10 @@ export const dashboardStyles = css`
   .nw-comfort-info[open] .nw-info-icon { color:var(--primary-color); border-color:currentColor; }
   .nw-comfort-info p { margin:10px 0 14px; padding:10px 12px; border:1px solid var(--divider-color,rgba(150,150,150,.2)); border-radius:10px; background:rgba(150,150,150,.04); color:var(--primary-text-color); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
   .nw-comfort-info a { color:var(--primary-color); text-decoration:underline; }
+  .nw-comfort-word { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px; margin:8px 0 0; font-size:13px; color:var(--secondary-text-color); }
+  .nw-comfort-word i { align-self:center; width:9px; height:9px; border-radius:50%; background:color-mix(in srgb,rgb(var(--vc)) 65%,var(--primary-text-color) 35%); }
+  .nw-comfort-word strong { font-size:18px; font-weight:700; letter-spacing:-.3px; color:var(--primary-text-color); }
+  .nw-comfort-source { position:absolute; top:12px; right:14px; max-width:55%; overflow:hidden; text-overflow:ellipsis; border:1px solid var(--divider-color,rgba(150,150,150,.2)); border-radius:999px; padding:4px 8px; font-size:10px; color:var(--secondary-text-color); white-space:nowrap; }
   #comfort .me-jauge { margin:43px 0 16px; }
   #comfort .nw-feels-value { position:absolute; top:-37px; transform:translateX(-50%); font-size:27px; font-weight:750; line-height:1; white-space:nowrap; color:rgb(var(--vc)); color:color-mix(in srgb,rgb(var(--vc)) 65%,var(--primary-text-color) 35%); }
   #comfort .nw-feels-value small { font-size:12px; font-weight:500; margin-left:3px; }

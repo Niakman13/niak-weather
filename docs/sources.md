@@ -8,7 +8,7 @@ Niak Weather assemble des données déjà présentes dans Home Assistant. La car
 
 Pour démarrer, il suffit de Home Assistant **2025.1.0 ou plus récent**, d’une entité `weather.*` et de la carte installée. HACS est nécessaire pour le parcours recommandé et ses mises à jour, pas pour un téléchargement manuel. Météo-France est la source de référence ; une autre entité météo peut être sélectionnée, mais ses prévisions horaires/quotidiennes doivent être prises en charge par son fournisseur. Tous les fournisseurs ne sont pas validés.
 
-Pour la météo **mesurée chez vous**, ajoutez une station locale. Pour le **ressenti tenant compte de l’humidité**, ajoutez Thermal Comfort avec les mesures extérieures. Pour **l’air extérieur et les allergies**, ajoutez Atmo France. Aucun de ces ajouts n’est nécessaire pour installer la carte de base. La synthèse interprète les sources réellement disponibles ; Thermal Comfort et Atmo ne sont pas nécessaires pour l’activer.
+Pour la météo **mesurée chez vous**, ajoutez une station locale. Le **ressenti tenant compte de l’humidité** est calculé par la carte, sans intégration supplémentaire. Pour **l’air extérieur et les allergies**, ajoutez Atmo France. Aucun de ces ajouts n’est nécessaire pour installer la carte de base. La synthèse interprète les sources réellement disponibles ; Thermal Comfort et Atmo ne sont pas nécessaires pour l’activer.
 
 ## Météo-France — conditions et prévisions
 
@@ -30,7 +30,7 @@ Dans **Sources de la station météo locale**, choisissez votre station et utili
 
 | Mesures disponibles | Utilité dans la carte |
 | --- | --- |
-| Température et humidité extérieures | Thermomètre local, humidité, règles météo locales et entrées pour Thermal Comfort. |
+| Température et humidité extérieures | Thermomètre local, humidité, règles météo locales ; base de l’humidex, du point de rosée et du point de gelée calculés par la carte. |
 | Vent moyen, direction, rafales, rafale maximale du jour | Boussole, force/direction, contribution au ressenti et bilan vent. |
 | Intensité de pluie et cumul depuis minuit | Pluie en cours, cumul du jour et condition locale observée. |
 | Cumuls 24 h, semaine, mois, année, épisode | Bilan pluie, sans addition artificielle de compteurs. |
@@ -40,17 +40,15 @@ Dans **Sources de la station météo locale**, choisissez votre station et utili
 
 Chaque mesure est facultative individuellement. Les cadres Température, Vent et Pression utilisent les attributs du bulletin lorsqu’une mesure locale n’est pas disponible. La bulle précise la source et signale explicitement un repli si un capteur configuré devient indisponible. Sans mesure locale de pluie, le cadre décrit l’état du bulletin et éventuellement le prochain cumul prévu, jamais un cumul mesuré inventé. [Détails de l’affichage](display-options.md). Les compteurs **semaine et mois de la station** ne sont pas des sommes glissantes calculées par la carte. Depuis la v1.2.0-beta.3, ils sont nommés « Cette semaine » et « Ce mois », à la place de « 7 jours » et « 30 jours ». Leur date de remise à zéro dépend des réglages de la station.
 
-## Thermal Comfort — humidex et ressenti
+## Ressenti, humidex, rosée et gelée — calculés par la carte
 
-**Statut :** facultatif ; recommandé pour un ressenti tenant compte de l’humidité.
+**Aucune intégration supplémentaire.** La carte calcule elle-même l’humidex, le point de rosée et le point de gelée à partir de la température et de l’humidité extérieures, avec les formules de Thermal Comfort (vérifiées au centième sur un historique réel). Il n’est plus nécessaire d’installer Thermal Comfort ; s’il est installé, la carte l’ignore et retire ses anciens réglages.
 
-**Prérequis :** installer [Thermal Comfort](https://github.com/dolezsa/thermal_comfort) dans les intégrations HACS, suivre ses instructions de redémarrage, puis créer un appareil utilisant la **température extérieure et l’humidité extérieure**. Ne pas sélectionner l’appareil d’une chambre ou d’un salon. Activer les entités Humidex et Perception de l’humidex si elles sont désactivées.
+- **Avec une station** : température et humidité de la station. Un point de rosée mesuré par la station est affiché tel quel.
+- **Sans station** : température et humidité du bulletin météo. La bulle du cadre Ressenti indique alors la source.
+- **Sans aucune humidité** : le thermomètre sert de base et la carte annonce que l’humidité n’est pas comptée.
 
-Dans **Sources Thermal Comfort**, choisissez cet appareil et utilisez **Remplir automatiquement**. Les listes sont filtrées par appareil et mesure ; la recherche compare aussi les entrées à celles de la station. En cas d’ambiguïté, choisissez manuellement. L’humidex de la station n’est pas substitué à celui de Thermal Comfort.
-
-**Apport à la carte :** l’humidex devient la base du ressenti, auquel la carte applique ses contributions de vent, soleil, pluie et ciel nocturne lorsque les données nécessaires existent. La perception qualifie l’humidex. Le point de rosée Thermal Comfort sert de repli si celui de la station est absent.
-
-Sans humidex, le thermomètre sert de base et la carte annonce explicitement que **l’humidité n’est pas comptée**. L’indice de chaleur, l’humidité absolue et les perceptions supplémentaires restent sélectionnables, mais ne sont pas additionnés à l’humidex ni affichés comme de nouvelles pastilles : cela compterait plusieurs fois les mêmes effets.
+L’humidex ne mesure que la gêne due à la chaleur : quand il descend sous le thermomètre (temps frais ou sec), la carte part du thermomètre. Le mot du ressenti reprend les seuils de l’échelle UTCI ; la nuance d’humidité vient du point de rosée. Le brief compare la minimale prévue au point de gelée (gel, gelée blanche) et au point de rosée (brouillard au petit matin).
 
 ## Soleil — position et repères jour/nuit
 

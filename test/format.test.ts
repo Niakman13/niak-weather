@@ -39,8 +39,9 @@ describe("Ecowitt station detection", () => {
       humidity_entity: "sensor.gw2000a_outdoor_humidity",
       wind_speed_entity: "sensor.gw2000a_wind_speed",
       rain_rate_entity: "sensor.gw2000a_rain_rate",
-      humidex_entity: "sensor.thermal_comfort_humidex",
     });
+    // Thermal Comfort is no longer looked for: humidex is computed from temperature and humidity.
+    expect(detectEcowittStation({ states })).not.toHaveProperty("humidex_entity");
   });
   it("recognizes the long Ecowitt WS90 entity names", () => {
     const prefix = "sensor.station_meteo_ecowitt_ws90_powered_by_shelly_";

@@ -1,6 +1,6 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { getRegistry, stationRules, thermalFields, type RegistryContext, type SensorField } from './station-detection';
+import { getRegistry, stationRules, type RegistryContext, type SensorField } from './station-detection';
 import { categoryFields, fillCategory, manualCandidates, measurementMatches, sourceDevices, sourceStatus, vigilanceCandidates, type SourceCategory } from './config-sources';
 import type { HomeAssistant, WeatherCardConfig } from './types';
 import { atmoAreas, atmoCandidates, atmoFields, atmoField, atmoMetrics } from './atmo';
@@ -9,7 +9,7 @@ import {modelDevices,selectedStationModel,stationGroups,stationModelOptions,stat
 import type { AtmoField, AtmoMetric } from './types';
 const categoryOptions:Record<SourceCategory,string[]>={
   general:['location','smart_brief','weather_animations','weather_animation_quality','weather_path','show_synthesis','show_today','show_predictions'],
-  weather:['forecast_source'],station:['station_device_id','station_history','station_model'],thermal:['thermal_device_id'],
+  weather:['forecast_source'],station:['station_device_id','station_history','station_model'],
   atmo:['atmo_area','show_atmo_details','show_atmo_tomorrow'],
 };
 const defaults:Partial<WeatherCardConfig>={show_synthesis:true,show_today:true,show_predictions:true,smart_brief:true,weather_animations:true,weather_animation_quality:'standard',show_atmo_details:true,show_atmo_tomorrow:true,station_history:true};
@@ -27,9 +27,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   pressure_entity: 'Pression (relative recommandée)', solar_radiation_entity: 'Rayonnement solaire', dew_point_entity: 'Point de rosée de la station',
   uv_index_entity: 'Indice UV', illuminance_entity: 'Luminosité', max_daily_gust_entity: 'Rafale maximale du jour', temperature_trend_entity: 'Tendance température (°C/h)',
   sun_entity: 'Soleil (lever, coucher, élévation)', sun_elevation_entity: 'Élévation solaire (capteur complémentaire)',
-  humidex_entity: 'Humidex', humidex_perception_entity: 'Perception de l’humidex', thermal_dew_point_entity: 'Point de rosée Thermal Comfort',
-  heat_index_entity: 'Indice de chaleur', absolute_humidity_entity: 'Humidité absolue', thermal_perception_entity: 'Perception thermique / rosée',
-  station_device_id: 'Votre station dans Home Assistant', thermal_device_id: 'Appareil Thermal Comfort', weather_path: 'Page météo (appui long)',
+  station_device_id: 'Votre station dans Home Assistant', weather_path: 'Page météo (appui long)',
   atmo_area: 'Commune / zone Atmo France', pollen_source: 'Source des pollens', show_atmo_details: 'Afficher les polluants, espèces et concentrations', show_atmo_tomorrow: 'Afficher les prévisions Atmo de demain',
 };
 for (const metric of Object.keys(atmoMetrics) as AtmoMetric[]) for (const next of [false, true])
@@ -123,14 +121,11 @@ export class NiakWeatherCardEditor extends LitElement {
         next[field]=this.config[field];this.message=`${labels[field]} : ce capteur n’a pas la fonction ou l’unité attendue.`;
       }
     }
-    const thermalChanged = next.thermal_device_id !== this.config.thermal_device_id;
     const atmoChanged = next.atmo_area !== this.config.atmo_area;
     if (stationChanged && next.station_device_id) for (const key of Object.keys(stationRules) as SensorField[]) delete next[key];
-    if (thermalChanged && next.thermal_device_id) for (const key of thermalFields) delete next[key];
     if (atmoChanged && next.atmo_area) for (const key of atmoFields) delete next[key];
     this.apply(next);
     if ((stationChanged||modelChanged) && next.station_device_id) void this.detect('station');
-    else if (thermalChanged && next.thermal_device_id) void this.detect('thermal');
     else if (atmoChanged && next.atmo_area) void this.detect('atmo');
   }
   private formData(category:SourceCategory):Record<string,unknown>{
@@ -141,7 +136,7 @@ export class NiakWeatherCardEditor extends LitElement {
     this.dataCache.set(category,{key,data});return data;
   }
   private schemas(category: SourceCategory): unknown[] {
-    const dependencies=[...categoryFields[category],...(category==='station'?['station_device_id','station_model']:category==='thermal'?['thermal_device_id']:category==='atmo'?['atmo_area']:[])];
+    const dependencies=[...categoryFields[category],...(category==='station'?['station_device_id','station_model']:category==='atmo'?['atmo_area']:[])];
     const key=JSON.stringify(dependencies.map(name=>this.config![name as keyof WeatherCardConfig]));
     const cached=this.schemaCache.get(category);
     if(cached&&cached.key===key&&cached.registry===this.registry&&cached.catalog===this.catalog)return cached.schema;
@@ -150,7 +145,7 @@ export class NiakWeatherCardEditor extends LitElement {
     }
     const registry = this.registry ?? {entities: [], devices: []};
     const sensor = (name: SensorField) => {
-      const scope=thermalFields.includes(name)?this.config!.thermal_device_id:selectedStationModel(this.config!)==='manual'?undefined:this.config!.station_device_id;
+      const scope=selectedStationModel(this.config!)==='manual'?undefined:this.config!.station_device_id;
       const cacheKey=JSON.stringify([name,scope]);
       let candidates=this.candidateCache.get(cacheKey);
       if(!candidates){candidates=manualCandidates(this.hass!,name,registry,{...this.config,station_device_id:scope});this.candidateCache.set(cacheKey,candidates);}
@@ -196,7 +191,6 @@ export class NiakWeatherCardEditor extends LitElement {
         this.stationDeviceSchema=[{name:'station_model',selector:{select:{options:stationModelOptions}}},...(model==='manual'?[]:[device('station_device_id')])];
         return stationGroups(model).map(group=>expand(group.name,group.title,[...group.fields.map(sensor),...(group.name==='station_rain'&&model!=='gw2000a'?[{name:'station_history',selector:{boolean:{}}}]:[])]));
       },
-      thermal: ()=>thermalFields.map(sensor),
       atmo: ()=>{
         const areas=atmoAreas(this.hass!,this.registry);
         if(this.config!.atmo_area&&!areas.some(a=>a.value===this.config!.atmo_area))areas.push({value:this.config!.atmo_area,label:'Zone configurée (indisponible)'});
@@ -216,8 +210,7 @@ export class NiakWeatherCardEditor extends LitElement {
     const sections: Array<{key:SourceCategory;title:string;description:string}> = [
       {key:'general',title:'Général',description:'Personnalisez les sections, la synthèse et les animations pour adapter la carte à votre tableau de bord.'},
       {key:'weather',title:'Sources météo, soleil et vigilance',description:'Indispensable : fournit la météo actuelle et les prévisions, idéalement avec Météo-France. Le soleil affine le ressenti et la vigilance ajoute les alertes officielles.'},
-      {key:'station',title:'Capteurs locaux / station météo locale',description:'Conseillé : ajoute les mesures prises chez vous. Choisissez le modèle de votre station, puis vérifiez les capteurs préremplis.'},
-      {key:'thermal',title:'Sources Thermal Comfort',description:'Conseillé : améliore le ressenti en tenant compte de l’humidité extérieure. Renseignez les capteurs de votre installation Thermal Comfort.'},
+      {key:'station',title:'Capteurs locaux / station météo locale',description:'Conseillé : ajoute les mesures prises chez vous. Choisissez le modèle de votre station, puis vérifiez les capteurs préremplis. Avec l’humidité extérieure, la carte calcule elle-même l’humidex, le point de rosée et le point de gelée.'},
       {key:'atmo',title:'Sources Atmo France',description:'Conseillé : ajoute la qualité de l’air et les pollens de votre commune, aujourd’hui et demain. Ces informations enrichissent la synthèse.'},
     ];
     const model=selectedStationModel(this.config),modelFields=stationGroups(model).flatMap(g=>g.fields);

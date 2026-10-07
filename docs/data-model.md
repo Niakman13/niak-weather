@@ -24,7 +24,6 @@ Niak Weather **ne génère pas son propre bulletin météo**, ne corrige pas les
 | --- | --- |
 | `weather_entity` | Entité météo obligatoire : condition de la zone et prévisions, Météo-France recommandé |
 | `temperature_entity`, `humidity_entity` | Température et humidité **extérieures** |
-| `humidex_entity`, `humidex_perception_entity` | Humidex et qualification Thermal Comfort |
 | `wind_speed_entity`, `wind_bearing_entity` | Moyenne du vent et direction moyenne sur 10 min si disponibles |
 | `wind_gust_entity`, `max_daily_gust_entity` | Rafale actuelle et maximum du jour |
 | `rain_rate_entity`, `daily_rain_entity` | Intensité instantanée et cumul depuis minuit |
@@ -44,7 +43,7 @@ Niak Weather **ne génère pas son propre bulletin météo**, ne corrige pas les
 | `show_atmo_details`, `show_atmo_tomorrow` | Détails et prévisions facultatifs (activés par défaut en complet) |
 | `show_synthesis`, `show_today`, `show_predictions` | Afficher les trois sections indépendamment (activées par défaut) |
 
-Les autres choix Thermal Comfort (`thermal_dew_point_entity`, `heat_index_entity`, `absolute_humidity_entity`, `thermal_perception_entity`) sont filtrés et préremplis par appareil. Le point de rosée Thermal Comfort sert de repli si celui de la station n’est pas choisi/disponible. **Indice de chaleur et humidité absolue ne sont pas additionnés à l’humidex** : ce serait compter plusieurs fois le même effet. Ces mesures ne sont pas affichées en pastilles supplémentaires.
+L’humidex, le point de rosée et le point de gelée sont **calculés par la carte** à partir de la température et de l’humidité (station, sinon bulletin). Les anciens réglages Thermal Comfort (`humidex_entity`, `humidex_perception_entity`, `thermal_dew_point_entity`, `heat_index_entity`, `absolute_humidity_entity`, `thermal_perception_entity`, `thermal_device_id`) sont ignorés et retirés à l’enregistrement.
 
 `location` personnalise le lieu, sinon le nom de l’entité météo est utilisé. `forecast_source` personnalise le fournisseur. `weather_path` configure la navigation sur appui long.
 
@@ -62,7 +61,7 @@ pollens:
 
 ## Estimation du ressenti et conditions observées
 
-Le ressenti est l’humidex, ou à défaut le thermomètre, corrigé des effets du vent, du rayonnement, de la pluie et du ciel nocturne. La vitesse effective combine 75 % du vent moyen et 25 % du maximum entre vent moyen et rafales, puis retire une marge de 3 km/h, sans devenir négative. Le vent refroidit généralement, mais peut réchauffer dans une fournaise humide. Chaque effet est arrondi avant leur somme ; sans humidex, l’absence de correction d’humidité est annoncée explicitement.
+Le ressenti est l’humidex calculé par la carte lorsqu’il dépasse le thermomètre, sinon le thermomètre, corrigé des effets du vent, du rayonnement, de la pluie et du ciel nocturne. La vitesse effective combine 75 % du vent moyen et 25 % du maximum entre vent moyen et rafales, puis retire une marge de 3 km/h, sans devenir négative. Le vent refroidit généralement, mais peut réchauffer dans une fournaise humide. Chaque effet est arrondi avant leur somme ; sans aucune mesure d’humidité, l’absence de correction d’humidité est annoncée explicitement.
 
 La station passe devant la condition de la zone lorsqu’elle constate de la pluie, du brouillard dense ou un soleil fort contredisant le bulletin. Elle ne prétend pas constater de la foudre. Les orages à venir restent des prévisions. Les signaux de synthèse sont hiérarchisés : orage annoncé, pluie très forte, rafales, chaleur, froid ou UV selon les données disponibles. Ils attirent l’attention sur une situation, sans constituer une alerte officielle. La carte ne gère ni la détection de foudre ni les ouvrants.
 

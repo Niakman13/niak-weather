@@ -9,7 +9,7 @@ entité météo peut être choisie, mais les horizons disponibles dépendent de 
 
 Pour suivre le parcours ci-dessous, [HACS](https://hacs.xyz/) doit être installé.
 Ecowitt est facultatif pour démarrer, mais nécessaire pour les mesures locales ;
-Thermal Comfort enrichit le ressenti avec l’humidité. Le Soleil, Atmo France
+la carte calcule elle-même le ressenti avec l’humidité. Le Soleil, Atmo France
 et Polleninformation sont des compléments facultatifs.
 Consulte le [guide des sources et prérequis](sources.md) pour choisir ce que tu souhaites afficher.
 
@@ -40,7 +40,7 @@ La version stable est **v1.9.2**. Consulte les [notes de mise à jour](release-1
 ## Ajouter la carte
 
 Dans un tableau de bord, clique **Ajouter une carte** puis recherche **Niak
-Weather**. Commence par **Sources météo, soleil et vigilance** : seule la source météo est requise. Les trois catégories **Capteurs locaux / station météo locale**, **Thermal Comfort** et **Atmo France** sont conseillées pour enrichir les mesures, le ressenti et la synthèse, sans être nécessaires pour démarrer. **Général** regroupe l’affichage et les animations. Chaque catégorie explique brièvement son rôle.
+Weather**. Commence par **Sources météo, soleil et vigilance** : seule la source météo est requise. Les deux catégories **Capteurs locaux / station météo locale** et **Atmo France** sont conseillées pour enrichir les mesures, le ressenti et la synthèse, sans être nécessaires pour démarrer. **Général** regroupe l’affichage et les animations. Chaque catégorie explique brièvement son rôle.
 
 Chaque catégorie possède son bouton **Remplir automatiquement**. Il recherche les correspondances de cette catégorie seulement et consulte à nouveau les registres Home Assistant. Les listes manuelles proposent des mesures compatibles : températures pour la température, vitesses pour le vent, pression pour le baromètre. Choisis l’appareil de la station pour réduire les listes ; la sélection n’est pas limitée à l’intégration Ecowitt.
 
@@ -104,11 +104,9 @@ Le choix Accueil / Complet a disparu. Les trois interrupteurs de Général contr
 
 Dans **Atmo France — air extérieur et pollens**, sélectionne la commune/zone et la source **Atmo France**, puis préremplis les entités. Les indices et concentrations d’aujourd’hui et de demain ont des choix séparés et filtrés. Si l’intégration n’est pas encore configurée, le [guide Atmo France](atmo-france.md) détaille son installation, l’activation des pollens/prévisions et la migration depuis Polleninformation.
 
-### Thermal Comfort
+### Ressenti et humidité
 
-Installe [Thermal Comfort](https://github.com/dolezsa/thermal_comfort) via HACS si ce n’est pas déjà fait, puis configure un appareil avec la température et l’humidité **extérieures** de la station. Active les capteurs Humidex et Perception de l’humidex dans Home Assistant s’ils sont désactivés.
-
-Dans **Sources Thermal Comfort**, utilise **Remplir automatiquement**, puis vérifie les capteurs proposés. Les listes sont filtrées par type de mesure. La recherche automatique compare aussi les lectures d’entrée à celles de la station pour éviter de prendre les capteurs d’une pièce intérieure. Si plusieurs choix sont équivalents, elle laisse le champ vide : sélectionne le capteur adapté. Aucun choix supplémentaire « manuel / appareil » n’est nécessaire. Sans humidex, la carte indique que l’humidité n’est pas comptée dans son estimation.
+Rien à installer : avec l’humidité extérieure de la station (ou, sans station, celle du bulletin), la carte calcule l’humidex, le point de rosée et le point de gelée. Si Thermal Comfort était configuré pour la carte, ses anciens réglages sont ignorés et retirés à l’enregistrement ; tu peux le garder pour tes automatisations.
 
 ### Comprendre ce que tu vois
 

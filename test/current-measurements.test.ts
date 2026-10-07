@@ -51,9 +51,11 @@ describe('Current measurement cards and source provenance',()=>{
   it('hides comfort with only a weather provider, even if an estimated value exists',()=>{
     expect(meaningfulComfort(h(),config,model)).toBe(false);
   });
-  it('keeps comfort with a valid local thermometer or Thermal Comfort humidex',()=>{
+  it('keeps comfort with a valid local thermometer, or with the bulletin humidity when there is no station',()=>{
     expect(meaningfulComfort(h({'sensor.temp':e('sensor.temp')}),{...config,temperature_entity:'sensor.temp'},model)).toBe(true);
-    expect(meaningfulComfort(h({'sensor.humidex':e('sensor.humidex','23')}),{...config,humidex_entity:'sensor.humidex'},model)).toBe(true);
-    expect(meaningfulComfort(h({'sensor.humidex':e('sensor.humidex','unavailable')}),{...config,humidex_entity:'sensor.humidex'},model)).toBe(false);
+    const fromBulletin={...model,attributes:{...model.attributes,hum_source:'bulletin'}};
+    expect(meaningfulComfort(h(),config,fromBulletin)).toBe(true);
+    // A configured but unavailable thermometer is never replaced by the bulletin.
+    expect(meaningfulComfort(h({'sensor.temp':e('sensor.temp','unavailable')}),{...config,temperature_entity:'sensor.temp'},fromBulletin)).toBe(false);
   });
 });

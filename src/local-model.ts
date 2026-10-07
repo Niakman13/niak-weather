@@ -1,9 +1,10 @@
 import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
 import { buildWeatherVerdict, round } from './weather-model';
+import { comfortWord, dewPoint, frostPoint, humidex, humidexFeel, humidityFeel } from './humidity';
 
 export type History = Record<string, Array<{ s: string; lu?: number; lc?: number }>>;
 export const sourceFields = {
-  t_ext: 'temperature_entity', hr_ext: 'humidity_entity', humidex: 'humidex_entity', perception: 'humidex_perception_entity',
+  t_ext: 'temperature_entity', hr_ext: 'humidity_entity',
   vent: 'wind_speed_entity', rafales: 'wind_gust_entity', vent_dir: 'wind_bearing_entity', pluie_taux: 'rain_rate_entity',
   pluie_jour: 'daily_rain_entity', pluie_24h: 'rain_24h_entity', pluie_semaine: 'weekly_rain_entity', pluie_mois: 'monthly_rain_entity',
   pluie_an: 'yearly_rain_entity', pluie_evenement: 'event_rain_entity', pression: 'pressure_entity', solaire: 'solar_radiation_entity',
@@ -110,20 +111,40 @@ export function buildLocalModel(hass: HomeAssistant, config: WeatherCardConfig, 
     const local = parts(date, hass.config?.time_zone); return round(+local.hour + +local.minute / 60, 2);
   };
   a.lever = solarTime('next_rising', 6.5); a.coucher = solarTime('next_setting', 21);
-  if (metric('rosee') === undefined && config.thermal_dew_point_entity) {
-    const e = hass.states[config.thermal_dew_point_entity]; a.rosee = measurement(e?.state, e?.attributes.unit_of_measurement, 'temperature') ?? -999;
-    sources.rosee = config.thermal_dew_point_entity;
-  }
+  // Humidity, dew point, frost point and humidex are computed here: no Thermal Comfort integration needed.
+  // Station first; without a station humidity, the bulletin's own temperature/humidity pair gives the dew point,
+  // the quantity that varies least from one place to the next. Like the temperature, a configured but
+  // unavailable station sensor is never silently replaced by the bulletin.
+  const bulletinT = measurement(weather?.attributes.temperature, weather?.attributes.temperature_unit, 'temperature');
+  const bulletinH = finite(weather?.attributes.humidity);
+  const stationH = metric('hr_ext');
+  const useBulletin = !snapshot && !config.humidity_entity && bulletinH !== undefined;
+  if (useBulletin) { a.hr_ext = bulletinH; sources.hr_ext = config.weather_entity; }
+  const dew = temperature !== undefined && stationH !== undefined ? dewPoint(temperature, stationH)
+    : metric('rosee') ?? (useBulletin && bulletinT !== undefined ? dewPoint(bulletinT, bulletinH!) : undefined);
+  if (metric('rosee') === undefined && dew !== undefined) { a.rosee = round(dew); sources.rosee = sources.hr_ext ?? config.weather_entity; }
+  a.hum_source = stationH !== undefined || config.dew_point_entity && metric('rosee') !== undefined ? 'station' : useBulletin ? 'bulletin' : '';
+  // A humidex handed over explicitly (legacy snapshot, parity fixtures), even a missing one, is kept as is.
+  const handed = snapshot !== undefined && Object.hasOwn(snapshot, 'humidex');
+  // Humidex measures heat discomfort only: in cold or dry air it falls below the thermometer and would make
+  // the feel colder for no reason. The card then starts from the thermometer, humidity being known but not a factor.
+  const computed = temperature !== undefined && dew !== undefined ? round(humidex(temperature, dew)) : undefined;
+  a.humidex = handed ? finite(snapshot!.humidex) ?? -999 : computed !== undefined && computed > temperature! ? computed : -999;
+  if (metric('humidex') !== undefined) sources.humidex = sources.hr_ext ?? sources.rosee ?? config.weather_entity;
+  a.gelee = temperature !== undefined && dew !== undefined ? round(frostPoint(temperature, dew)) : -999;
   const v = buildWeatherVerdict({ temperature, humidity: metric('hr_ext'), humidex: metric('humidex'), windSpeed: metric('vent'),
     windGust: metric('rafales'), solarRadiation: metric('solaire'), sunElevation: a.elevation, rainRate: metric('pluie_taux'),
-    dewPoint: metric('rosee'), uvIndex: metric('uv'), cloudCoverage: finite(weather?.attributes.cloud_coverage) }, String(snapshot?.condition_prev ?? weather?.state ?? ''), hourly.slice(0, 18));
+    // Observed fog needs the station's own moisture, never the bulletin's.
+    dewPoint: a.hum_source === 'station' ? metric('rosee') : undefined, uvIndex: metric('uv'), cloudCoverage: finite(weather?.attributes.cloud_coverage) }, String(snapshot?.condition_prev ?? weather?.state ?? ''), hourly.slice(0, 18));
   a.ressenti = v.apparentTemperature ?? -999; a.base = metric('humidex') === undefined ? 'thermometre' : 'humidex';
-  a.perception = config.humidex_perception_entity ? hass.states[config.humidex_perception_entity]?.state ?? '' : '';
+  a.perception = metric('humidex') === undefined ? '' : humidexFeel(metric('humidex')!);
+  a.confort = comfortWord(v.apparentTemperature);
+  a.humidite_tx = humidityFeel(dew, metric('hr_ext'), v.apparentTemperature);
   a.effet_vent = v.effects.wind; a.effet_soleil = v.effects.sun; a.effet_pluie = v.effects.rain; a.effet_nuit = v.effects.night;
   const measuredWind = metric('vent');
   a.vent_eff = measuredWind === undefined || measuredWind < 0 ? -999 : round(Math.max(0, measuredWind * .75 + Math.max(measuredWind, metric('rafales') ?? measuredWind) * .25 - 3));
   a.soleil_reel = (metric('solaire') ?? -999) >= 350;
-  a.brouillard_reel = (metric('hr_ext') ?? -999) >= 97 && temperature !== undefined && metric('rosee') !== undefined
+  a.brouillard_reel = a.hum_source === 'station' && (metric('hr_ext') ?? -999) >= 97 && temperature !== undefined && metric('rosee') !== undefined
     && temperature - metric('rosee')! <= .4 && (metric('pluie_taux') ?? 0) < .3;
   a.ecart_thermometre = temperature === undefined || v.apparentTemperature === undefined ? -999 : round(v.apparentTemperature - temperature);
   a.condition = v.condition; a.condition_prev = weather?.state; a.cond_source = v.conditionSource === 'station' ? 'station' : 'prevision';
@@ -144,7 +165,7 @@ export function buildLocalModel(hass: HomeAssistant, config: WeatherCardConfig, 
   a.pluie_recit = rainNarrative(metric('pluie_jour'), metric('pluie_semaine'), metric('pluie_mois'));
   a.sous_titre = subtitle(a, hourly);
   a.phrase_ressenti = apparentPhrase(a);
-  if (!config.temperature_entity) a.phrase_ressenti = String(a.phrase_ressenti).replace(/thermomètre/g, 'température du bulletin');
+  if (!config.temperature_entity) a.phrase_ressenti = String(a.phrase_ressenti).replace(/qu’au thermomètre/g, 'que la température du bulletin').replace(/au thermomètre/g, 'à la température du bulletin');
   return { entity_id: '__niak_model', state: temperature === undefined ? 'unavailable' : String(a.ressenti), attributes: a };
 }
 
@@ -179,7 +200,7 @@ function subtitle(a: Record<string, any>, hourly: WeatherForecast[]): string {
 }
 function apparentPhrase(a: Record<string, any>): string {
   if (finite(a.t_ext) === undefined) return '';
-  if (a.base === 'thermometre') return 'humidex indisponible — l’humidité n’est pas comptée';
+  if (a.base === 'thermometre' && !a.hum_source) return 'humidité indisponible — elle n’est pas comptée';
   const e = a.ecart_thermometre, abs = fr(Math.abs(e));
   if (Math.abs(e) < .6) return 'le ressenti colle au thermomètre';
   if (e > 0) return `${abs} °C de plus qu’au thermomètre — ` + (a.effet_vent > .3 ? 'même le vent réchauffe, il n’apporte plus rien'

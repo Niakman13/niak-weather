@@ -17,10 +17,14 @@ describe('original Jinja parity (96 independent weather situations)', () => {
     states['weather.test'] = { entity_id: 'weather.test', state: fixture.condition, attributes: { cloud_coverage: fixture.cloud } };
     const hass = { states, language: 'fr', config: { time_zone: 'UTC' } } as HomeAssistant;
     const hours = fixture.hours.map(p => ({ datetime: '', condition: p.c, temperature: p.t, precipitation: p.p }));
-    const a = buildLocalModel(hass, config, hours, {}, new Date('2026-10-04T10:00:00Z')).attributes;
+    // The original template read humidex from Thermal Comfort: hand the fixture's value over unchanged.
+    const a = buildLocalModel(hass, config, hours, {}, new Date('2026-10-04T10:00:00Z'), { humidex: (fixture.values as any).humidex }).attributes;
     for (const key of ['ressenti', 'base', 'effet_vent', 'effet_soleil', 'effet_pluie', 'effet_nuit', 'ecart_thermometre',
       'condition', 'cond_source', 'titre', 'niveau', 'alerte', 'sous_titre', 'phrase_ressenti', 'vent_deg', 'vent_rose', 'vent_secteur',
       'vent_nom', 'beaufort', 'beaufort_tx', 'pluie_dans', 'pluie_mm', 'pluie_recit', 'uv_tx']) {
+      // Deliberate change: the template said "humidex indisponible" without Thermal Comfort; the card now knows
+      // the humidity and explains the feel instead, so that phrase is no longer the template's.
+      if (key === 'phrase_ressenti' && !((fixture.values as any).humidex > -900)) continue;
       expect(a[key], `case ${index}: ${key}`).toEqual((fixture.expected as any)[key]);
     }
   });
@@ -66,21 +70,13 @@ describe('data integrity and missing values', () => {
     expect(detectEcowittStation({ states })).toMatchObject({ temperature_entity: 'sensor.wh3000_outdoor_temperature', yearly_rain_entity: 'sensor.wh3000_yearly_rain', pressure_entity: 'sensor.wh3000_relative_pressure' });
     expect(detectEcowittStation({ states }).daily_rain_entity).toBeUndefined();
   });
-  it('filters Thermal Comfort by type and resolves the correct device from its input readings', () => {
+  it('ignores Thermal Comfort sensors when detecting a station', () => {
     const states: Record<string, HassEntity> = {};
-    for (const [id, state, attributes] of [
-      ['sensor.outdoor_temperature', '20', {}], ['sensor.outdoor_humidity', '60', {}],
-      ['sensor.renamed_outside_humidex', '23', { temperature: 20, humidity: 60 }],
-      ['sensor.inside_humidex', '25', { temperature: 25, humidity: 40 }],
-      ['sensor.outside_sensation_humidex', 'comfortable', {}],
-    ] as const) states[id] = { entity_id: id, state, attributes };
-    const context = { devices: [], entities: [
-      { entity_id: 'sensor.renamed_outside_humidex', platform: 'thermal_comfort', device_id: 'out' },
-      { entity_id: 'sensor.inside_humidex', platform: 'thermal_comfort', device_id: 'in' },
-      { entity_id: 'sensor.outside_sensation_humidex', platform: 'thermal_comfort', device_id: 'out' },
-    ] };
-    expect(candidates({ states }, 'humidex_entity', context)).toEqual(['sensor.inside_humidex', 'sensor.renamed_outside_humidex']);
-    expect(detectEcowittStation({ states }, context)).toMatchObject({ humidex_entity: 'sensor.renamed_outside_humidex', humidex_perception_entity: 'sensor.outside_sensation_humidex', thermal_device_id: 'out' });
+    for (const [id, state] of [['sensor.outdoor_temperature', '20'], ['sensor.outdoor_humidity', '60'], ['sensor.outside_dew_point', '12']] as const)
+      states[id] = { entity_id: id, state, attributes: {} };
+    const context = { devices: [], entities: [{ entity_id: 'sensor.outside_dew_point', platform: 'thermal_comfort', device_id: 'out' }] };
+    expect(candidates({ states }, 'dew_point_entity', context)).toEqual([]);
+    expect(detectEcowittStation({ states }, context)).not.toHaveProperty('thermal_device_id');
   });
   it('preserves manual choices and intentionally cleared fields', () => {
     const id = 'sensor.gw2000_outdoor_temperature', states = { [id]: { entity_id: id, state: '20', attributes: {} } };
