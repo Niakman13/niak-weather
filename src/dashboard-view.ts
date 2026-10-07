@@ -53,6 +53,8 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
     })}</div>
     ${!brief.signals.some(s=>s.severity>0)?html`<p>Pas de point d’attention renforcé parmi les données disponibles.</p>`:nothing}
     ${brief.caveats.length?html`<details class="nw-brief-limits"><summary>Données à vérifier · ${brief.caveats.length}</summary><ul>${brief.caveats.map(c=>html`<li>${c}</li>`)}</ul></details>`:nothing}</div></div>`:nothing;
+  // Night, storm and downpour skies stay dark whatever the theme: their text stays white, as on the sky itself.
+  const darkSky=weatherNow.phase==='night'||['lightning','lightning-rainy','pouring'].includes(weatherNow.condition);
   return html`
     ${config.show_synthesis===false?nothing:html`<section id="heros" class=${`nw-section nw-synthesis${headline?'':' nw-synthesis--weather-only'}`} aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
       <div class="nw-sky-backdrop" aria-hidden="true"><niak-weather-sky .condition=${weatherNow.condition} .phase=${weatherNow.phase}
@@ -65,7 +67,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
       <div class="nw-summary-lines">
         ${secondary.map(s => html`<p><span>${s.group === 'future' ? 'À venir' : s.group === 'environment' ? 'Environnement' : s.group === 'official' ? 'Vigilance' : 'Maintenant'}</span>${s.text}</p>`)}
       </div>`:nothing}
-      <aside class="nw-current-weather" aria-label="Météo actuelle">
+      <aside class=${`nw-current-weather${darkSky?' nw-current-weather--dark-sky':''}`} aria-label="Météo actuelle">
         <div class="nw-current-content"><span class="nw-current-kicker">En ce moment</span>
           <button class="nw-current-condition" data-entity=${weatherNow.conditionEntity ?? config.weather_entity} title=${weatherNow.source}><ha-icon icon=${weatherNow.icon}></ha-icon>${weatherNow.label}</button>
           ${weatherNow.temperature===undefined ? html`<span class="nw-current-missing">Température indisponible</span>` : html`
@@ -105,10 +107,9 @@ export const dashboardStyles = css`
   .nw-attention i { width:7px; height:7px; flex-shrink:0; border-radius:50%; background:rgb(var(--vc)); }
   .nw-synthesis { position:relative; isolation:isolate; overflow:hidden; display:grid; grid-template-columns:76px minmax(0,1fr) minmax(240px,.65fr); column-gap:20px; }
   .nw-sky-backdrop { position:absolute; inset:0; z-index:-2; pointer-events:none; }
-  .nw-sky-backdrop::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent 45%,#10243b24 70%,#10243b85); }
-  .nw-synthesis::after { content:''; position:absolute; inset:auto 0 0; height:110px; max-height:45%; z-index:-1; pointer-events:none; background:linear-gradient(180deg,transparent,var(--card-background-color,#fff)); }
+  .nw-synthesis::after { content:''; position:absolute; inset:auto 0 0; height:80px; max-height:35%; z-index:-1; pointer-events:none; background:linear-gradient(180deg,transparent,var(--card-background-color,#fff)); }
   .nw-synthesis+#today { border-top:0; }
-  .nw-synthesis::before { content:''; position:absolute; inset:0; z-index:-1; pointer-events:none; background:linear-gradient(90deg,var(--card-background-color,#fff) 0%,color-mix(in srgb,var(--card-background-color,#fff) 97%,transparent) 32%,color-mix(in srgb,var(--card-background-color,#fff) 90%,transparent) 48%,color-mix(in srgb,var(--card-background-color,#fff) 55%,transparent) 64%,color-mix(in srgb,var(--card-background-color,#fff) 12%,transparent) 83%,transparent 100%); }
+  .nw-synthesis::before { content:''; position:absolute; inset:0; z-index:-1; pointer-events:none; background:linear-gradient(90deg,var(--card-background-color,#fff) 0%,color-mix(in srgb,var(--card-background-color,#fff) 94%,transparent) 30%,color-mix(in srgb,var(--card-background-color,#fff) 62%,transparent) 44%,transparent 60%); }
   .nw-synthesis>.nw-section-heading { grid-column:1 / 3; grid-row:1; position:relative; z-index:1; }
   .nw-summary-emblem { grid-column:1; grid-row:2; align-self:start; margin-top:3px; width:76px; height:76px; pointer-events:none; }
   .nw-synthesis .me-rond { background:radial-gradient(circle at 35% 25%,rgba(var(--vc),.22),rgba(var(--vc),.06)); border:1.5px solid rgba(var(--vc),.62); animation:nwEmblemGlow 5.2s ease-in-out infinite; }
@@ -132,7 +133,7 @@ export const dashboardStyles = css`
   .nw-brief-panel-heading h3 { font-size:14px;margin:0; }
   .nw-brief-panel-heading button { font:inherit;font-size:11px;cursor:pointer;border:0;background:none;color:var(--secondary-text-color);padding:5px; }
   .nw-current-weather { position:relative; grid-column:3; grid-row:1 / span 3; min-height:190px; display:flex; justify-content:flex-end; align-items:center; }
-  .nw-current-content { position:relative; display:flex; flex-direction:column; align-items:flex-end; text-align:right; color:white; text-shadow:0 1px 5px #142c4699; padding:8px 0 8px 26px; gap:4px; }
+  .nw-current-content { position:relative; display:flex; flex-direction:column; align-items:flex-end; text-align:right; color:var(--primary-text-color); text-shadow:0 0 10px var(--card-background-color,#fff),0 0 3px var(--card-background-color,#fff); padding:8px 0 8px 26px; gap:4px; }
   .nw-current-kicker { font-size:10px; text-transform:uppercase; letter-spacing:.12em; opacity:.85; }
   .nw-current-weather button { font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; text-align:right; text-shadow:inherit; }
   .nw-current-condition { display:flex; align-items:center; justify-content:flex-end; gap:7px; font-size:16px !important; font-weight:650 !important; }
@@ -147,7 +148,7 @@ export const dashboardStyles = css`
   @container (max-width:650px) {
     .nw-synthesis { grid-template-columns:60px minmax(0,1fr); column-gap:12px; }
     .nw-current-weather { grid-column:1 / -1; grid-row:4; min-height:172px; margin-top:18px; }
-    .nw-synthesis::before { background:linear-gradient(90deg,var(--card-background-color,#fff),color-mix(in srgb,var(--card-background-color,#fff) 95%,transparent) 32%,color-mix(in srgb,var(--card-background-color,#fff) 75%,transparent) 60%,color-mix(in srgb,var(--card-background-color,#fff) 30%,transparent)); }
+    .nw-synthesis::before { background:linear-gradient(90deg,var(--card-background-color,#fff),color-mix(in srgb,var(--card-background-color,#fff) 95%,transparent) 32%,color-mix(in srgb,var(--card-background-color,#fff) 68%,transparent) 60%,color-mix(in srgb,var(--card-background-color,#fff) 18%,transparent)); }
   }
   .nw-brief-limits summary, .nw-measure-details summary { cursor:pointer; color:var(--secondary-text-color); font-size:11px; padding:6px 0; }
   #comfort { border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:12px; background:rgba(150,150,150,.035); padding:14px 16px; margin-bottom:14px; }
@@ -175,7 +176,9 @@ export const dashboardStyles = css`
   #tuiles .me-tu { padding:14px 12px; border-color:var(--divider-color,rgba(150,150,150,.18)); background:rgba(150,150,150,.035); border-radius:12px; gap:10px; }
   #tuiles .nw-current-metric { display:flex; flex-direction:column; align-items:flex-start; }
   .nw-metric-source { display:inline-flex; padding:3px 8px; border-radius:999px; border:1px solid var(--divider-color,rgba(150,150,150,.18)); background:color-mix(in srgb,var(--primary-color,#3d9be9) 7%,transparent); color:var(--secondary-text-color); font-size:10px; font-weight:600; line-height:1.4; }
-  .nw-current-temperature-source.nw-metric-source { color:white; background:rgba(15,40,65,.18); border-color:rgba(255,255,255,.28); opacity:1; margin-top:5px; }
+  .nw-current-temperature-source.nw-metric-source { color:var(--primary-text-color); background:color-mix(in srgb,var(--card-background-color,#fff) 70%,transparent); border-color:var(--divider-color,rgba(150,150,150,.3)); opacity:1; margin-top:5px; }
+  .nw-current-weather--dark-sky .nw-current-content { color:white; text-shadow:0 1px 5px #0b1a2b99; }
+  .nw-current-weather--dark-sky .nw-current-temperature-source.nw-metric-source { color:white; background:rgba(15,40,65,.25); border-color:rgba(255,255,255,.28); }
   .nw-metric-body { display:flex; align-items:center; gap:10px; min-width:0; }
   .nw-current-metric .me-tuv { white-space:normal; overflow-wrap:anywhere; }
   #tuiles .me-tuic { background:transparent; width:30px; height:30px; flex-basis:30px; }
