@@ -59,7 +59,6 @@ export const bannerStyles = css`
   .nw-b-tiles .nw-b-sky { font-size:12px; color:var(--primary-text-color); opacity:.85; }
   .nw-b-tiles .nw-b-rain, .nw-b-tiles .nw-b-wind { font-size:11px; font-weight:600; }
   .nw-b-rain { color:rgb(27,171,175); } .nw-b-wind { color:rgb(40,130,240); }
-    background:color-mix(in srgb,var(--card-background-color,#fff) 80%,rgb(var(--vc)) 20%); border:1px solid rgba(var(--vc),.5); }
   .nw-synthesis.nw-banner { grid-template-areas:"head aside" "vigil aside" "main aside" "tiles tiles"; grid-template-rows:auto auto 1fr auto; }
   .nw-b-headline { margin:0; font-size:15px; font-weight:600; letter-spacing:-.1px; line-height:1.4; max-width:56ch; }
   /* Vigilance: a glass pill in the official colour, its icon glowing with the same halo as the alert emblem. */

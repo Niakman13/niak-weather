@@ -53,6 +53,8 @@ export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   smart_brief?: boolean;
   show_synthesis?: boolean;
   show_today?: boolean;
+  /** Daily bulletin in the banner: first sentence and four period tiles. */
+  show_bulletin?: boolean;
   show_predictions?: boolean;
   weather_animations?: boolean;
   weather_animation_quality?: 'low' | 'standard';

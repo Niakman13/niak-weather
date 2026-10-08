@@ -89,7 +89,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
           <span class="nw-current-temperature-source nw-metric-source">${weatherNow.temperatureSource}</span>
         </div>
       </aside>`;
-  const bulletin=buildBulletin(hourly,now,hass.config?.time_zone,String(hass.states[config.weather_entity]?.attributes.wind_speed_unit ?? 'km/h'));
+  const bulletin=config.show_bulletin===false?undefined:buildBulletin(hourly,now,hass.config?.time_zone,String(hass.states[config.weather_entity]?.attributes.wind_speed_unit ?? 'km/h'));
   const dateLabel=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:hass.config?.time_zone}).format(now);
   return html`
     ${config.show_synthesis===false?nothing:renderBanner({brief,headline,icon:preview?.icon ?? 'mdi:information-outline',attention:!!preview?.selected.length,level:preview?.selected[0]?.severity,secondary,bulletin,header:brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`,sky:skyLayer,current:currentLayer,dateLabel,rgb:brief?.rgb ?? '61,155,233'})}
@@ -124,25 +124,12 @@ export const dashboardStyles = css`
   .nw-section-heading { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; margin-bottom:18px; }
   .nw-section-heading h2 { font-size:19px; font-weight:750; margin:0; letter-spacing:-.25px; }
   .nw-section-heading>span { font-size:11px; color:var(--secondary-text-color); }
-  .nw-attention { display:inline-flex; align-items:center; gap:6px; flex-shrink:0; margin-left:0; padding:6px 11px; border:1px solid rgba(var(--vc),.28); border-radius:999px; background:color-mix(in srgb,var(--card-background-color,#fff) 88%,rgb(var(--vc)) 12%); color:var(--primary-text-color); font-size:11px; font-weight:600; line-height:1.3; white-space:nowrap; }
-  .nw-attention i { width:7px; height:7px; flex-shrink:0; border-radius:50%; background:rgb(var(--vc)); }
   .nw-synthesis { position:relative; isolation:isolate; overflow:hidden; display:grid; grid-template-columns:76px minmax(0,1fr) minmax(240px,.65fr); column-gap:20px; }
   .nw-sky-backdrop { position:absolute; inset:0; z-index:-2; pointer-events:none; }
   .nw-synthesis::after { content:''; position:absolute; inset:auto 0 0; height:80px; max-height:35%; z-index:-1; pointer-events:none; background:linear-gradient(180deg,transparent,var(--card-background-color,#fff)); }
   .nw-synthesis+#today { border-top:0; }
   .nw-synthesis::before { content:''; position:absolute; inset:0; z-index:-1; pointer-events:none; background:linear-gradient(90deg,var(--card-background-color,#fff) 0%,color-mix(in srgb,var(--card-background-color,#fff) 96%,transparent) 26%,color-mix(in srgb,var(--card-background-color,#fff) 82%,transparent) 36%,color-mix(in srgb,var(--card-background-color,#fff) 55%,transparent) 47%,color-mix(in srgb,var(--card-background-color,#fff) 25%,transparent) 59%,transparent 74%); }
   .nw-synthesis>.nw-section-heading { grid-column:1 / 3; grid-row:1; position:relative; z-index:1; }
-  .nw-summary-emblem { grid-column:1; grid-row:2; align-self:start; margin-top:3px; width:76px; height:76px; pointer-events:none; }
-  .nw-synthesis .me-rond { background:radial-gradient(circle at 35% 25%,rgba(var(--vc),.22),rgba(var(--vc),.06)); border:1.5px solid rgba(var(--vc),.62); animation:nwEmblemGlow 5.2s ease-in-out infinite; }
-  .nw-synthesis .me-halo { inset:-55px; background:radial-gradient(circle,rgba(var(--vc),.28) 0%,rgba(var(--vc),.19) 30%,rgba(var(--vc),.09) 56%,rgba(var(--vc),0) 84%); filter:blur(20px); opacity:.78; animation:nwHalo 5.2s ease-in-out infinite; }
-  @keyframes nwHalo { 0%,100% { opacity:.52; transform:scale(.94); } 50% { opacity:.78; transform:scale(1.08); } }
-  @keyframes nwEmblemGlow { 0%,100% { box-shadow:0 0 8px rgba(var(--vc),.18),inset 0 0 8px rgba(var(--vc),.06); } 50% { box-shadow:0 0 14px rgba(var(--vc),.3),inset 0 0 10px rgba(var(--vc),.1); } }
-  .nw-summary-lead { grid-column:2; grid-row:2; display:flex; flex-direction:column; align-items:flex-start; flex-wrap:wrap; gap:8px; min-height:30px; position:relative; z-index:1; }
-  .nw-summary-lead h3 { flex:0 0 auto; }
-  .nw-summary-lead h3 { font-size:22px; font-weight:700; letter-spacing:-.45px; line-height:1.3; margin:0; overflow-wrap:anywhere; }
-  .nw-summary-lines { grid-column:1 / 3; grid-row:3; margin:8px 0 0; font-size:12px; line-height:1.6; position:relative; z-index:1; }
-  .nw-summary-lines p { margin:7px 0; }
-  .nw-summary-lines p>span { display:inline-block; color:var(--primary-text-color); margin-right:8px; padding:3px 9px; border:1px solid rgba(var(--vc),.2); border-radius:999px; background:color-mix(in srgb,var(--card-background-color,#fff) 92%,rgb(var(--vc)) 8%); font-size:10px; font-weight:600; line-height:1.4; vertical-align:baseline; }
   .nw-brief-details { display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin:0;font-size:11px;min-width:0; }
   .nw-brief-details>.nw-synthesis-info-button { display:inline-flex;align-items:center;justify-content:center;border:0;background:none;padding:3px;color:inherit;cursor:pointer; }
   .nw-synthesis-info-button:focus-visible { outline:2px solid var(--primary-color);outline-offset:2px;border-radius:50%; }
@@ -170,9 +157,6 @@ export const dashboardStyles = css`
   .nw-current-temperature small { font-size:20px; font-weight:400; margin-left:3px; vertical-align:super; letter-spacing:0; }
   .nw-current-temperature-source { font-size:10px; opacity:.8; }
   .nw-current-missing { font-size:13px; margin-top:8px; }
-  .nw-synthesis.nw-synthesis--weather-only { grid-template-columns:minmax(0,1fr); }
-  .nw-synthesis--weather-only>.nw-section-heading { grid-column:1; grid-row:1; }
-  .nw-synthesis--weather-only .nw-current-weather { grid-column:1; grid-row:2; min-height:150px; margin-top:0; }
   @container (max-width:650px) {
     .nw-synthesis { grid-template-columns:60px minmax(0,1fr); column-gap:12px; }
     .nw-current-weather { grid-column:1 / -1; grid-row:4; min-height:172px; margin-top:18px; }
@@ -277,12 +261,7 @@ export const dashboardStyles = css`
     .nw-section+.nw-section { margin-top:16px; }
     .nw-section-heading h2 { font-size:17px; }
     .nw-section-heading { margin-bottom:14px; }
-    .nw-attention { margin-left:0; }
     .nw-synthesis { grid-template-columns:60px minmax(0,1fr); column-gap:12px; }
-    .nw-summary-emblem { width:60px; height:60px; grid-row:2; }
-    .nw-summary-lead { min-height:66px; }
-    .nw-summary-lead h3 { font-size:17px; }
-    .nw-summary-lines { grid-column:1 / -1; margin-left:0; }
     .nw-brief-groups { grid-template-columns:minmax(0,1fr); }
     #comfort { padding:12px; }
     #tuiles .me-tu { align-items:flex-start; padding:12px 10px; gap:5px; }
@@ -290,8 +269,5 @@ export const dashboardStyles = css`
     #tuiles .me-tuic ha-icon { --mdc-icon-size:19px; }
     #tuiles .me-tuv { font-size:20px; }
     #container #tuiles .me-tus { white-space:normal; overflow-wrap:anywhere; }
-  }
-  @media (prefers-reduced-motion:reduce) {
-    .nw-synthesis .me-rond, .nw-synthesis .me-halo { animation:none; }
   }
 `;
