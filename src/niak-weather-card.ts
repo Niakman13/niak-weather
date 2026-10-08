@@ -168,7 +168,7 @@ export class NiakWeatherCard extends LitElement {
   protected render() {
     if (!this.hass || !this.config) return nothing;
     const config = this.config, hass = this.hass, now = new Date();
-    const forecast = normaliseForecasts(this.hourly, this.daily, now, hass.config?.time_zone);
+    const forecast = normaliseForecasts(this.hourly, this.daily, now, hass.config?.time_zone, String(hass.states[config.weather_entity]?.attributes.wind_speed_unit ?? 'km/h'));
     const hourly = forecast.heures.map((p: any) => ({ datetime: '', temperature: finite(p.t), precipitation: finite(p.p), condition: p.c }));
     const derived=config.station_history===false?undefined:deriveStation(hass,config,{...this.stationArchive,counter:this.rainHistory},this.history,now);
     const calculated = buildLocalModel(hass, config, hourly, this.history, now);

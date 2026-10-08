@@ -89,14 +89,14 @@ try {
     assert.equal(layout.order,true);assert.equal(layout.overflow,false);
     const forecastGeometry=await page.evaluate(()=>{
       const root=window.card.shadowRoot, curve=root.querySelector('#courbe .nw-forecast-card'), days=root.querySelector('#jours'), area=root.querySelector('.nw-fc-area');
-      const tags=[...root.querySelectorAll('.nw-fc-tag')].map(e=>e.getBoundingClientRect()),glyphs=root.querySelectorAll('.nw-fc-icons .nw-glyph').length;
+      const tags=[...root.querySelectorAll('.nw-fc-tag')].map(e=>e.getBoundingClientRect()),glyphs=root.querySelectorAll('.nw-fc-hour>ha-icon').length;
       const units=[...root.querySelectorAll('.nw-fc-y--t>span,.nw-fc-extreme')].every(e=>e.textContent.trim().endsWith('°C'));
       return {aligned:Math.abs(curve.getBoundingClientRect().bottom-days.getBoundingClientRect().bottom)<2,height:area.getBoundingClientRect().height,glyphs,units,
         distinct:tags.length<2||tags[0].bottom<=tags[1].top||tags[1].bottom<=tags[0].top||tags[0].right<=tags[1].left||tags[1].right<=tags[0].left};
     });
     if(width>850) assert.equal(forecastGeometry.aligned,true,`forecast columns fill the same height: ${JSON.stringify(forecastGeometry)}`);
     assert.ok(forecastGeometry.height>=150,'forecast graph has usable height');
-    assert.ok(forecastGeometry.glyphs>=3,'forecast shows weather icons');
+    assert.ok(forecastGeometry.glyphs>=3,'forecast shows the week-table weather icons under the hours');
     assert.equal(forecastGeometry.units,true,'temperature axis and extremes carry °C');
     assert.equal(forecastGeometry.distinct,true,'now/tomorrow labels remain distinct');
     const refinedLayout=await page.evaluate(()=>{

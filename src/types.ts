@@ -33,6 +33,10 @@ export interface WeatherForecast {
   temperature?: number;
   templow?: number;
   precipitation?: number;
+  wind_speed?: number;
+  wind_gust_speed?: number;
+  /** Direction the wind comes from, in degrees (0 = north). */
+  wind_bearing?: number;
 }
 
 export interface ForecastResponse {

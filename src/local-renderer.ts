@@ -558,6 +558,16 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
   var pc = function (v) { return (v - lo) / (hi - lo) * 100; };
   var pmax = 0;
   js.forEach(function (j) { pmax = Math.max(pmax, nb(j.p) || 0); });
+  // Wind: strongest of the day and prevailing direction; the arrow points where the wind goes.
+  var SECT = ['du Nord', 'du Nord-Est', 'd’Est', 'du Sud-Est', 'du Sud', 'du Sud-Ouest', 'd’Ouest', 'du Nord-Ouest'];
+  var jvent = function (j) {
+    var v = nb(j.v), b = nb(j.vb), g = nb(j.vg);
+    if (v === null) return '<span class="me-jv"></span>';
+    var tip = 'Vent ' + (b !== null ? SECT[Math.round(b / 45) % 8] + ' ' : '') + 'jusqu’à ' + fr(v, 0) + ' km/h' + (g !== null && g > v ? ', rafales ' + fr(g, 0) + ' km/h' : '');
+    return '<span class="me-jv" title="' + esc(tip) + '">'
+         + (b !== null ? '<ha-icon icon="mdi:navigation" style="transform:rotate(' + Math.round((b + 180) % 360) + 'deg)"></ha-icon>' : '')
+         + esc(fr(v, 0)) + '</span>';
+  };
   var lignes = '';
   js.forEach(function (j, idx) {
     var meta = window.meCond[String(j.c || '')] || null;
@@ -586,13 +596,14 @@ var BLEU = 'var(--mush-rgb-blue, 61,155,233)';
            +      (t !== null ? esc(fr(t, 0)) + ' °C' : '—') + '</span>'
            +    '<span class="me-jp">'
            +      (p >= 0.1 ? esc(fr(p, 1)) + '<i>mm</i>' : '') + '</span>'
+           +    (V.dashboard ? jvent(j) : '')
            +  '</div>';
   });
   var src = (window.meSrc || {}).meteo || V.ent;
   return '<div class="me-jours"' + window.meGeste(src) + '>'
        + '<div class="me-ttl">La semaine'
        + (pmax >= 0.1 ? '<i>· cumuls attendus</i>' : '') + '</div>'
-       + (V.dashboard ? '<div class="me-j nw-week-labels" role="group" aria-label="Colonnes : température minimale et maximale en degrés Celsius, pluie en millimètres"><span class="me-jn"></span><span class="me-ji"></span><span class="me-jmin">Min<small>°C</small></span><span class="me-jbar"></span><span class="me-jmax">Max<small>°C</small></span><span class="me-jp">Pluie<small>mm</small></span></div>' : '') + lignes + '</div>';
+       + (V.dashboard ? '<div class="me-j nw-week-labels" role="group" aria-label="Colonnes : température minimale et maximale en degrés Celsius, pluie en millimètres, vent maximal en kilomètres par heure"><span class="me-jn"></span><span class="me-ji"></span><span class="me-jmin">Min<small>°C</small></span><span class="me-jbar"></span><span class="me-jmax">Max<small>°C</small></span><span class="me-jp">Pluie<small>mm</small></span><span class="me-jv">Vent<small>km/h</small></span></div>' : '') + lignes + '</div>';
 
  }
  function tuiles() {

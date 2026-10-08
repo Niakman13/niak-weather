@@ -91,3 +91,21 @@ describe('data integrity and missing values', () => {
     expect(zones.jours).toContain('AUJ.'); expect(zones.heros).not.toMatch(/onclick|window\./);
   });
 });
+describe('Daily wind from hourly forecasts', () => {
+  it('keeps the strongest wind and the speed-weighted prevailing direction of each local day', async () => {
+    const { dailyWind, normaliseForecasts } = await import('../src/local-model');
+    const now = new Date('2026-10-08T06:00:00Z');
+    // Tomorrow (9 Oct, Paris): southerly 10 km/h in the morning, westerly 30 km/h gusting 50 in the afternoon.
+    const hourly = Array.from({ length: 24 }, (_, h) => ({ datetime: new Date(Date.UTC(2026, 9, 8, 22 + h)).toISOString(), temperature: 15,
+      wind_speed: h < 12 ? 10 : 30, wind_gust_speed: h < 12 ? 0 : 50, wind_bearing: h < 12 ? 180 : 270 }));
+    const day = dailyWind(hourly, now, 'Europe/Paris').get(1)!;
+    expect(day).toMatchObject({ v: 30, g: 50 });
+    expect(day.b).toBeGreaterThan(240); expect(day.b).toBeLessThan(270);
+    // A day with only two forecast hours has no meaningful maximum.
+    expect(dailyWind(hourly.slice(0, 2), now, 'Europe/Paris').get(1)).toBeUndefined();
+    // Converted from m/s like the station's wind.
+    expect(dailyWind(hourly, now, 'Europe/Paris', 'm/s').get(1)!.v).toBe(108);
+    const week = normaliseForecasts(hourly, [{ datetime: '2026-10-09T10:00:00Z', temperature: 20, templow: 12 }], now, 'Europe/Paris').jours[0];
+    expect(week).toMatchObject({ e: 1, v: 30, vg: 50 });
+  });
+});

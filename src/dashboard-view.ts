@@ -243,6 +243,10 @@ export const dashboardStyles = css`
   #pastilles .me-pas { padding:16px 0 4px; margin-top:0; gap:8px; border:0; justify-content:center; }
   #pastilles .me-pa b { font-size:11px; font-weight:650; }
   #jours .me-jmin, #jours .me-jmax { flex:0 0 42px; white-space:nowrap; }
+  #jours .me-jv { flex:0 0 46px; display:flex; align-items:center; justify-content:flex-end; gap:2px; font-size:11px; font-weight:650; color:var(--secondary-text-color); white-space:nowrap; }
+  #jours .me-jv ha-icon { --mdc-icon-size:14px; color:rgb(40,130,240); }
+  #jours .nw-week-labels .me-jv { flex-direction:column; align-items:center; font-size:9px; font-weight:600; line-height:1.35; }
+  #jours .nw-week-labels .me-jv small { font-size:8px; font-weight:400; }
   #jours .nw-week-labels { min-height:22px; padding:4px 0 7px; }
   #jours .nw-week-labels .me-jmin, #jours .nw-week-labels .me-jmax, #jours .nw-week-labels .me-jp { display:flex; flex-direction:column; align-items:center; font-size:9px; font-weight:600; color:var(--secondary-text-color); opacity:1; line-height:1.35; }
   #jours .nw-week-labels small { font-size:8px; font-weight:400; }

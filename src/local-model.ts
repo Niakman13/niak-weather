@@ -39,7 +39,25 @@ function parts(date: Date, timeZone?: string) {
   return Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date).map(p => [p.type, p.value]));
 }
-export function normaliseForecasts(hourly: WeatherForecast[], daily: WeatherForecast[], now = new Date(), timeZone?: string) {
+/** Strongest wind and prevailing direction (speed-weighted) per local day, from hourly forecasts; daily forecasts carry no wind. */
+export function dailyWind(hourly: WeatherForecast[], now = new Date(), timeZone?: string, unit = 'km/h') {
+  const serial = (p: Record<string, string>) => Date.UTC(+p.year, +p.month - 1, +p.day) / 86400000, today = serial(parts(now, timeZone));
+  const days = new Map<number, { v: number; g?: number; x: number; y: number; n: number }>();
+  for (const p of hourly) {
+    const d = new Date(p.datetime), speed = measurement(p.wind_speed, unit, 'wind'), bearing = finite(p.wind_bearing);
+    if (!Number.isFinite(d.getTime()) || speed === undefined || d.getTime() < now.getTime() - 3600_000) continue;
+    const day = serial(parts(d, timeZone)) - today, cur = days.get(day) ?? { v: 0, x: 0, y: 0, n: 0 }, gust = measurement(p.wind_gust_speed, unit, 'wind');
+    cur.v = Math.max(cur.v, speed); cur.n++;
+    if (gust !== undefined && gust > 0) cur.g = Math.max(cur.g ?? 0, gust);
+    if (bearing !== undefined) { cur.x += Math.sin(bearing * Math.PI / 180) * Math.max(speed, .1); cur.y += Math.cos(bearing * Math.PI / 180) * Math.max(speed, .1); }
+    days.set(day, cur);
+  }
+  // A day needs a few hours of forecast to have a meaningful maximum (today counts from now on).
+  return new Map([...days].filter(([day, w]) => w.n >= (day === 0 ? 1 : 6)).map(([day, w]) => [day, { v: round(w.v, 0), g: w.g === undefined ? undefined : round(w.g, 0),
+    b: w.x || w.y ? round((Math.atan2(w.x, w.y) * 180 / Math.PI + 360) % 360, 0) : undefined }]));
+}
+
+export function normaliseForecasts(hourly: WeatherForecast[], daily: WeatherForecast[], now = new Date(), timeZone?: string, windUnit = 'km/h') {
   const today = parts(now, timeZone);
   const daySerial = (p: Record<string, string>) => Date.UTC(+p.year, +p.month - 1, +p.day) / 86400000;
   const normal = (p: WeatherForecast) => {
@@ -50,10 +68,13 @@ export function normaliseForecasts(hourly: WeatherForecast[], daily: WeatherFore
   };
   const heures = hourly.slice(0, 18).map(normal).filter(p => p !== undefined).map(p => ({ h: p.h, j: p.j,
     c: p.c, t: p.t === undefined ? null : round(p.t), p: p.p }));
+  const wind = dailyWind(hourly, now, timeZone, windUnit);
   const jours = daily.slice(0, 7).map(normal).filter(p => p !== undefined).map(p => {
     const local = parts(new Date(p.datetime), timeZone), weekday = new Date(Date.UTC(+local.year, +local.month - 1, +local.day)).getUTCDay();
+    const w = wind.get(p.j);
     return { n: ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM'][weekday], e: p.j, c: p.c,
-      t: p.t === undefined ? null : round(p.t, 0), m: finite(p.templow) === undefined ? null : round(p.templow!, 0), p: p.p };
+      t: p.t === undefined ? null : round(p.t, 0), m: finite(p.templow) === undefined ? null : round(p.templow!, 0), p: p.p,
+      v: w?.v ?? null, vg: w?.g ?? null, vb: w?.b ?? null };
   });
   return { heures, jours };
 }
