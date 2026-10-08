@@ -60,14 +60,14 @@
     const states={'weather.demo':{entity_id:'weather.demo',state:condition,attributes:{friendly_name:'Gardanne',temperature:temp,temperature_unit:'°C',attribution:'Météo-France',wind_speed_unit:'km/h'}},
       'sensor.temperature':sensor('sensor.temperature',temp,'°C'),'sensor.humidity':sensor('sensor.humidity',78,'%'),'sensor.wind':sensor('sensor.wind',condition==='windy'?42:8,'km/h'),
       'sensor.gust':sensor('sensor.gust',condition==='windy'?60:14,'km/h'),'sensor.rain':sensor('sensor.rain',rain,'mm/h'),'sensor.rain_day':sensor('sensor.rain_day',rain*2,'mm'),
-      'sensor.pressure':sensor('sensor.pressure',1014,'hPa'),'sensor.solar':sensor('sensor.solar',night?0:350,'W/m²'),
+      'sensor.pressure':sensor('sensor.pressure',1014,'hPa'),'sensor.trend':sensor('sensor.trend',-0.4,'°C/h'),'sensor.solar':sensor('sensor.solar',night?0:350,'W/m²'),
       'sensor.vigilance':{entity_id:'sensor.vigilance',state:storm?'Jaune':'Vert',last_updated:now.toISOString(),attributes:{attribution:'Data provided by Météo-France',Orages:storm?'Jaune':'Vert'}},
       'sun.sun':{entity_id:'sun.sun',state:night?'below_horizon':'above_horizon',attributes:{elevation:night?-20:phase==='twilight'?1:35}}};
     const forecasts={hourly:Array.from({length:30},(_,i)=>({datetime:new Date(now.getTime()+(i+1)*3600000).toISOString(),temperature:temp+4*Math.sin(i/5),precipitation:i>20&&i<26?4:rain&&i<3?rain:0,condition:i>20&&i<26?'pouring':condition})),
       daily:Array.from({length:7},(_,i)=>({datetime:new Date(now.getTime()+i*86400000).toISOString(),temperature:25-i,templow:17-i,precipitation:i===1?72:0,condition:i===1?'pouring':'partlycloudy'}))};
     const hass={states,language:'fr',config:{time_zone:Intl.DateTimeFormat().resolvedOptions().timeZone},callWS:async m=>m.type==='call_service'?({response:{'weather.demo':{forecast:forecasts[m.service_data.type]}}}):{}};
     for(const card of cards){
-      card.setConfig({type:'custom:niak-weather-card',format:card.dataset.format,weather_entity:'weather.demo',vigilance_entity:'sensor.vigilance',location:'Gardanne',weather_path:'/meteo',temperature_entity:'sensor.temperature',humidity_entity:'sensor.humidity',wind_speed_entity:'sensor.wind',wind_gust_entity:'sensor.gust',rain_rate_entity:'sensor.rain',daily_rain_entity:'sensor.rain_day',pressure_entity:'sensor.pressure',solar_radiation_entity:'sensor.solar',forecast_source:'Météo-France',weather_animations:$('motion').checked});
+      card.setConfig({type:'custom:niak-weather-card',format:card.dataset.format,weather_entity:'weather.demo',vigilance_entity:'sensor.vigilance',location:'Gardanne',weather_path:'/meteo',temperature_entity:'sensor.temperature',humidity_entity:'sensor.humidity',wind_speed_entity:'sensor.wind',wind_gust_entity:'sensor.gust',rain_rate_entity:'sensor.rain',daily_rain_entity:'sensor.rain_day',pressure_entity:'sensor.pressure',temperature_trend_entity:'sensor.trend',solar_radiation_entity:'sensor.solar',forecast_source:'Météo-France',weather_animations:$('motion').checked});
       card.hass=hass;
     }
   }

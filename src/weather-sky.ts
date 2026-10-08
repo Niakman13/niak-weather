@@ -63,6 +63,11 @@ export class NiakWeatherSky extends LitElement {
     }
     return d;
   }
+  /** Plane-tree autumn shades: golden, green turning orange, red-brown. The gradient runs from the stem to the tip. */
+  private static planeTint(k:number) {
+    const stops=[['#d9a531','#e8b84a','#c76a26'],['#8f9e3e','#e29a34','#b5502a'],['#b64a2b','#c9572f','#7f2c1f']][k];
+    return svg`<linearGradient id=${`nw-plane-${k}`} x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color=${stops[0]}/><stop offset=".55" stop-color=${stops[1]}/><stop offset="1" stop-color=${stops[2]}/></linearGradient>`;
+  }
   /** Winter in the top-right corner: snowflakes of every size gather, glow and sparkle, then fade, on a 16 s cycle. */
   private frostPane() {
     // [x, y, radius, opacity, rotation, delay s] in a 420 × 170 corner
@@ -84,7 +89,8 @@ export class NiakWeatherSky extends LitElement {
     const drift=(count:number,art:(i:number)=>unknown)=>Array.from({length:few?2:count},(_,i)=>html`<div class=${`drift${gusty?' drift--gusty':''}`} style=${`--dx:${46+(i*23)%50}%;--dt:${(gusty?5:11)+(i*7)%(gusty?4:7)}s;--dd:${-(i*3.1)%11}s;--rest:${12+(i*29)%70}%;--sw:${2.6+(i%3)*.5}s`}><i>${art(i)}</i></div>`);
     if(this.season==='spring'&&!precip&&!storm&&!fog) return drift(6,i=>html`<svg class=${`petal petal-${i%2}`} viewBox="0 0 12 12"><path d="M6 0C10 3 10 9 6 12C2 9 2 3 6 0Z"/></svg>`);
     // Autumn leaves fly in rain and storms too; only snow and hail hide them.
-    if(this.season==='autumn'&&!['snowy','snowy-rainy','hail'].includes(this.condition)) return drift(5,i=>html`<svg class=${`maple maple-${i%3}`} viewBox="0 0 24 24"><path d="M12 1l2 5 4-2-1 5 4 1-4 3 2 4-5-1-1 7h-2l-1-7-5 1 2-4-4-3 4-1-1-5 4 2z"/></svg>`);
+    if(this.season==='autumn'&&!['snowy','snowy-rainy','hail'].includes(this.condition)) return drift(5,i=>html`<svg class=${`plane plane-${i%3}`} viewBox="0 0 44 44"><defs>${NiakWeatherSky.planeTint(i%3)}</defs>
+      <path class="stem" d="M22 30.5Q23 37 21 42.5"/><path class="blade" fill=${`url(#nw-plane-${i%3})`} d="M22 32Q14 34 8 31L4 28.5L7.5 27Q11 25.5 10 22.5L4.5 21L6.5 19.5L1 13L4.5 12.5L3 9Q8 9 10.5 12L11.5 10Q14.5 13 16 16Q15.3 11 16.8 7.6L15.4 6.2L18.8 5.3Q20.8 3.6 22 1Q23.2 3.6 25.2 5.3L28.6 6.2L27.2 7.6Q28.7 11 28 16Q29.5 13 32.5 10L33.5 12Q36 9 41 9L39.5 12.5L43 13L37.5 19.5L39.5 21L34 22.5Q33 25.5 36.5 27L40 28.5L36 31Q30 34 22 32Z"/><path class="veins" d="M22 31V4M22 31Q14 22 3.5 10M22 31Q30 22 40.5 10M22 31Q14 29 5 28.5M22 31Q30 29 39 28.5M22 19L17 13.5M22 19L27 13.5M22 12L19 8.5M22 12L25 8.5M13.5 21.5L8.5 18.5M30.5 21.5L35.5 18.5M10 17L6.5 12.5M34 17L37.5 12.5"/></svg>`);
     if(this.season==='summer'&&this.phase==='day'&&['sunny','partlycloudy'].includes(this.condition)) return html`<div class="heat">${Array.from({length:few?3:7},(_,i)=>html`<svg class="heat-plume" viewBox="0 0 24 120" preserveAspectRatio="none" style=${`--hx:${47+(i*13)%46}%;--hh:${70+(i*17)%45}px;--hd:${-(i*.9)%4.2}s;--hs:${1.6+(i%3)*.35}s`}><defs><linearGradient id=${`nw-heat-${i}`} x1="0" y1="1" x2="0" y2="0"><stop offset="0" class="heat-stop" stop-opacity="0"/><stop offset=".35" class="heat-stop" stop-opacity=".6"/><stop offset="1" class="heat-stop" stop-opacity="0"/></linearGradient></defs><path stroke=${`url(#nw-heat-${i})`} d="M12 120C4 104 20 92 12 76S4 48 12 32S20 10 12 0"/></svg>`)}</div>`;
     if(this.season==='winter') return this.frostPane();
     return nothing;
@@ -140,7 +146,10 @@ export class NiakWeatherSky extends LitElement {
     .drift>i {display:block;animation:sway var(--sw) ease-in-out infinite alternate;}
     .drift--gusty {animation-name:drift-gust;}
     .petal {width:14px;height:14px;filter:drop-shadow(0 1px 1px #0002);}.petal-0 {fill:#f2a9c6;}.petal-1 {fill:#fbe3ec;}
-    .maple {width:17px;height:17px;filter:drop-shadow(0 1px 1px #0003);}.maple-0 {fill:#d9772b;}.maple-1 {fill:#b9472c;}.maple-2 {fill:#dca33a;}
+    /* Plane-tree leaf: five toothed lobes, palmate veins, long stem. */
+    .plane {width:24px;height:24px;overflow:visible;filter:drop-shadow(0 1px 1.5px #0004);}
+    .plane .stem {fill:none;stroke:#7a4a22;stroke-width:1.4;stroke-linecap:round;} .plane .blade {stroke:#6b3d16;stroke-opacity:.25;stroke-width:.4;} .plane .veins {fill:none;stroke:#5b3a17;stroke-opacity:.4;stroke-width:.6;stroke-linecap:round;}
+    .plane-0 .stem {stroke:#8a5a26;} .plane-2 .stem {stroke:#5e2416;}
     .night .drift {filter:brightness(.6);}
     /* Heat rising over the artwork side, above the banner's bottom fade: warm wavy lines that climb and fade. */
     /* Heat rising from the ground on a sunny summer day: soft vertical plumes that waver as they climb, over a warm glow at the horizon. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { tickerPoints, vigilanceBadge } from '../src/compact-points';
+import { alertPoint, tickerPoints, vigilanceParts } from '../src/compact-points';
 import type { BriefSignal, WeatherBrief } from '../src/weather-brief';
 const signal = (key: string, group: BriefSignal['group'], severity: BriefSignal['severity'], text = key): BriefSignal => ({key,group,severity,text,explanation:key,icon:'mdi:weather-sunny'});
 const brief = (signals: BriefSignal[]): WeatherBrief => ({signals,title:'',summary:'',label:'',rgb:'',icon:'',available:true,caveats:[]});
@@ -21,10 +21,24 @@ describe('Tile and intermediate brief', () => {
     expect(tickerPoints(brief([signal('comfort-gap','now',0)])).map(p=>p.text)).toEqual(['comfort-gap']);
     expect(tickerPoints(undefined)).toEqual([]);
   });
-  it('shows the brief vigilance text unchanged', () => {
-    // The same words on the tile, the intermediate and the full card.
-    const badge=vigilanceBadge(brief([signal('official','official',2,'Vigilance orange · orages, vent violent (jaune)')]));
-    expect(badge).toMatchObject({level:2,label:'Vigilance orange · orages, vent violent (jaune)'});
-    expect(vigilanceBadge(brief([signal('wind','now',2)]))).toBeUndefined();
+  it('puts the vigilance in the alert bubble, level above the phenomena', () => {
+    const a=alertPoint(brief([signal('official','official',2,'Vigilance orange · orages, vent violent (jaune)')]));
+    expect(a).toMatchObject({level:2,label:'Vigilance orange',text:'Orages, vent violent (jaune)',official:true});
+  });
+  it('without vigilance, shows the most important point that needs attention, like heavy measured rain', () => {
+    // 8,2 mm/h measured at Gardanne, no official vigilance.
+    const a=alertPoint(brief([signal('comfort-gap','now',0),signal('rain-now','now',2,'Pluie forte (8,2 mm/h)')]));
+    expect(a).toMatchObject({level:2,label:'Maintenant',text:'Pluie forte (8,2 mm/h)',official:false});
+    expect(alertPoint(brief([signal('comfort-gap','now',0)]))).toBeUndefined();
+  });
+  it('keeps the vigilance in the bubble even when a brief point is more severe', () => {
+    const a=alertPoint(brief([signal('storm','future',2,'Orage annoncé'),signal('official','official',1,'Vigilance jaune · orages')]));
+    expect(a).toMatchObject({official:true,label:'Vigilance jaune'});
+  });
+  it('puts the vigilance level above its phenomena, other texts on one line', () => {
+    expect(vigilanceParts('Vigilance jaune · vent violent')).toEqual({level:'Vigilance jaune',detail:'Vent violent'});
+    expect(vigilanceParts('Vigilance orange · orages, vent violent (jaune)')).toEqual({level:'Vigilance orange',detail:'Orages, vent violent (jaune)'});
+    expect(vigilanceParts('Vigilance jaune')).toEqual({detail:'Vigilance jaune'});
+    expect(vigilanceParts('Vent soutenu, rafales à 43,9 km/h')).toEqual({detail:'Vent soutenu, rafales à 43,9 km/h'});
   });
 });

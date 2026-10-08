@@ -1,6 +1,6 @@
 import { css, html, nothing } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { briefPresentation, briefSecondarySignals } from './brief-preview';
+import { briefPresentation } from './brief-preview';
 import { renderAtmo } from './atmo-view';
 import { finite, type History } from './local-model';
 import { renderRecentDetails } from './recent-details';
@@ -11,6 +11,8 @@ import { currentMetrics, meaningfulComfort, weatherSourceLabel } from './current
 import { renderForecastChart } from './forecast-chart';
 import { buildBulletin } from './bulletin';
 import { renderBanner } from './banner-layouts';
+import { alertPoint, tickerPoints } from './compact-points';
+import './compact-view';
 import { currentSeason, daylightText } from './season';
 import './weather-sky';
 import type { WeatherBrief } from './weather-brief';
@@ -33,7 +35,6 @@ function toggleSynthesisInfo(event: Event) {
 export function renderDashboard(rendered: Record<string, string>, brief: WeatherBrief | undefined, model: HassEntity,
   hass: HomeAssistant, config: WeatherCardConfig, now: Date, location: string, hourly:WeatherForecast[] = [], history:History={}, rainHistory:History={},derived?:StationDerived) {
   const preview = brief ? briefPresentation(brief) : undefined;
-  const secondary = brief ? briefSecondarySignals(brief) : [];
   const headline = preview?.headline;
   const feels = finite(model.attributes.ressenti);
   const showComfort=meaningfulComfort(hass,config,model);
@@ -91,8 +92,12 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
       </aside>`;
   const bulletin=config.show_bulletin===false?undefined:buildBulletin(hourly,now,hass.config?.time_zone,String(hass.states[config.weather_entity]?.attributes.wind_speed_unit ?? 'km/h'));
   const dateLabel=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:hass.config?.time_zone}).format(now);
+  // One rotating bubble instead of a list; it never repeats the sentence already shown above it.
+  const alert=alertPoint(brief),shown=alert?alert.source:!bulletin?headline:undefined;
+  const points=tickerPoints(brief).filter(p=>p.text!==shown);
+  const ticker=points.length?html`<niak-brief-ticker class="nw-b-ticker" .points=${points}></niak-brief-ticker>`:nothing;
   return html`
-    ${config.show_synthesis===false?nothing:renderBanner({brief,headline,icon:preview?.icon ?? 'mdi:information-outline',attention:!!preview?.selected.length,level:preview?.selected[0]?.severity,secondary,bulletin,header:brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`,sky:skyLayer,current:currentLayer,dateLabel,rgb:brief?.rgb ?? '61,155,233'})}
+    ${config.show_synthesis===false?nothing:renderBanner({brief,headline,alert,ticker,bulletin,header:brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`,sky:skyLayer,current:currentLayer,dateLabel,rgb:brief?.rgb ?? '61,155,233'})}
     ${config.show_today===false?nothing:html`<section id="today" class="nw-section" aria-labelledby="nw-today-title" style="--vc:61,155,233">
       <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>${showComfort ? 'Mesures et ressenti' : 'Conditions actuelles'}</span></header>
       ${showComfort?html`<div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}>
@@ -151,8 +156,10 @@ export const dashboardStyles = css`
   .nw-current-condition ha-icon { --mdc-icon-size:22px; }
   .nw-current-temperature { font-size:46px !important; line-height:1.1; font-weight:700 !important; letter-spacing:-1.5px; margin-top:4px; }
   .nw-current-reading { display:flex; align-items:center; justify-content:flex-end; gap:8px; }
-  .nw-current-trend { display:flex; flex-direction:column; align-items:center; gap:1px; line-height:1; }
-  .nw-current-trend ha-icon { --mdc-icon-size:22px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; border:1.5px solid currentColor; box-sizing:border-box; }
+  .nw-current-trend { display:flex; flex-direction:column; align-items:center; gap:4px; line-height:1; }
+  .nw-current-trend ha-icon { --mdc-icon-size:15px; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:50%; border:1.3px solid currentColor; box-sizing:border-box;
+    /* text-shadow does not reach an icon or a border: the same glow as the figures keeps the arrow readable over a cloud. */
+    filter:drop-shadow(0 0 4px var(--nw-glow,var(--card-background-color,#fff))) drop-shadow(0 0 1.5px var(--nw-glow,var(--card-background-color,#fff))); }
   .nw-current-trend small { font-size:10px; font-weight:600; white-space:nowrap; }
   .nw-current-temperature small { font-size:20px; font-weight:400; margin-left:3px; vertical-align:super; letter-spacing:0; }
   .nw-current-temperature-source { font-size:10px; opacity:.8; }
@@ -195,7 +202,7 @@ export const dashboardStyles = css`
   #tuiles .nw-current-metric { display:flex; flex-direction:column; align-items:flex-start; }
   .nw-metric-source { display:inline-flex; padding:3px 8px; border-radius:999px; border:1px solid var(--divider-color,rgba(150,150,150,.18)); background:color-mix(in srgb,var(--primary-color,#3d9be9) 7%,transparent); color:var(--secondary-text-color); font-size:10px; font-weight:600; line-height:1.4; }
   .nw-current-temperature-source.nw-metric-source { color:var(--primary-text-color); background:color-mix(in srgb,var(--card-background-color,#fff) 70%,transparent); border-color:var(--divider-color,rgba(150,150,150,.3)); opacity:1; margin-top:5px; }
-  .nw-current-weather--dark-sky .nw-current-content { color:white; text-shadow:0 1px 5px #0b1a2b99; }
+  .nw-current-weather--dark-sky .nw-current-content { --nw-glow:#0b1a2b99; color:white; text-shadow:0 1px 5px #0b1a2b99; }
   .nw-current-weather--dark-sky .nw-current-temperature-source.nw-metric-source { color:white; background:rgba(15,40,65,.25); border-color:rgba(255,255,255,.28); }
   .nw-metric-body { display:flex; align-items:center; gap:10px; min-width:0; }
   .nw-current-metric .me-tuv { white-space:normal; overflow-wrap:anywhere; }
