@@ -1,6 +1,6 @@
 import { css, html, nothing } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { briefPresentation, briefSecondarySignals } from './brief-preview';
+import { briefPresentation } from './brief-preview';
 import { renderAtmo } from './atmo-view';
 import { finite, type History } from './local-model';
 import { renderRecentDetails } from './recent-details';
@@ -11,6 +11,8 @@ import { currentMetrics, meaningfulComfort, weatherSourceLabel } from './current
 import { renderForecastChart } from './forecast-chart';
 import { buildBulletin } from './bulletin';
 import { renderBanner } from './banner-layouts';
+import { tickerPoints } from './compact-points';
+import './compact-view';
 import { currentSeason, daylightText } from './season';
 import './weather-sky';
 import type { WeatherBrief } from './weather-brief';
@@ -33,7 +35,6 @@ function toggleSynthesisInfo(event: Event) {
 export function renderDashboard(rendered: Record<string, string>, brief: WeatherBrief | undefined, model: HassEntity,
   hass: HomeAssistant, config: WeatherCardConfig, now: Date, location: string, hourly:WeatherForecast[] = [], history:History={}, rainHistory:History={},derived?:StationDerived) {
   const preview = brief ? briefPresentation(brief) : undefined;
-  const secondary = brief ? briefSecondarySignals(brief) : [];
   const headline = preview?.headline;
   const feels = finite(model.attributes.ressenti);
   const showComfort=meaningfulComfort(hass,config,model);
@@ -91,8 +92,12 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
       </aside>`;
   const bulletin=config.show_bulletin===false?undefined:buildBulletin(hourly,now,hass.config?.time_zone,String(hass.states[config.weather_entity]?.attributes.wind_speed_unit ?? 'km/h'));
   const dateLabel=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:hass.config?.time_zone}).format(now);
+  // One rotating bubble instead of a list; it never repeats the sentence already shown above it.
+  const shownHeadline=preview?.selected.length||!bulletin?headline:undefined;
+  const points=tickerPoints(brief).filter(p=>p.text!==shownHeadline);
+  const ticker=points.length?html`<niak-brief-ticker class="nw-b-ticker" .points=${points}></niak-brief-ticker>`:nothing;
   return html`
-    ${config.show_synthesis===false?nothing:renderBanner({brief,headline,icon:preview?.icon ?? 'mdi:information-outline',attention:!!preview?.selected.length,level:preview?.selected[0]?.severity,secondary,bulletin,header:brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`,sky:skyLayer,current:currentLayer,dateLabel,rgb:brief?.rgb ?? '61,155,233'})}
+    ${config.show_synthesis===false?nothing:renderBanner({brief,headline,icon:preview?.icon ?? 'mdi:information-outline',attention:!!preview?.selected.length,level:preview?.selected[0]?.severity,ticker,bulletin,header:brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`,sky:skyLayer,current:currentLayer,dateLabel,rgb:brief?.rgb ?? '61,155,233'})}
     ${config.show_today===false?nothing:html`<section id="today" class="nw-section" aria-labelledby="nw-today-title" style="--vc:61,155,233">
       <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>${showComfort ? 'Mesures et ressenti' : 'Conditions actuelles'}</span></header>
       ${showComfort?html`<div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}>

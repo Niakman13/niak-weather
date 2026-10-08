@@ -23,7 +23,7 @@ export class NiakBriefTicker extends LitElement {
     if (key !== this.key) { this.key = key; this.index = 0; this.leaving = false; }
   }
   private next() {
-    if (this.points.length < 2 || document.hidden || this.closest('.nw-compact')?.matches(':hover, :focus-within')) return;
+    if (this.points.length < 2 || document.hidden || this.closest('.nw-compact, .nw-banner')?.matches(':hover, :focus-within')) return;
     const advance = () => { this.index = (this.index + 1) % this.points.length; this.leaving = false; };
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) { advance(); return; }
     this.leaving = true; this.swap = setTimeout(advance, 350);

@@ -297,9 +297,11 @@ try {
     const hourly=Array.from({length:18},(_,i)=>({datetime:new Date(Date.now()+(i+1)*3600000).toISOString(),temperature:21+i/2,precipitation:i<3?7:0,condition:i===2?'lightning-rainy':'rainy'}));
     card.hass={...window.atmoCard.hass,states,callWS:async message=>message.type==='call_service'?{response:{'weather.test':{forecast:hourly}}}:[]};root.append(card);window.briefCard=card;window.briefInfo=[];
     card.addEventListener('hass-more-info',e=>window.briefInfo.push(e.detail.entityId));await sleep(50);
-    const text=card.shadowRoot.querySelector('#heros').textContent;
+    // The rotating bubble keeps every point in its screen-reader list.
+    const tickerText=root=>[...root.querySelectorAll('niak-brief-ticker')].map(t=>t.shadowRoot?.querySelector('.sr')?.textContent??'').join(' ');
+    const text=card.shadowRoot.querySelector('#heros').textContent+' '+tickerText(card.shadowRoot);
     const combined=['75 km/h','Fortes pluies','Vigilance orange'].every(s=>text.includes(s));
-    const concise=card.shadowRoot.querySelectorAll('.nw-b-chip').length<=3;
+    const concise=card.shadowRoot.querySelectorAll('niak-brief-ticker').length<=1&&(card.shadowRoot.querySelector('niak-brief-ticker')?.points.length??0)<=4;
     const banner=card.shadowRoot.querySelector('#heros'),nextSection=card.shadowRoot.querySelector('#today');
     const before=[banner.getBoundingClientRect().height,nextSection.getBoundingClientRect().top];
     card.shadowRoot.querySelector('.nw-synthesis-info-button').click();await sleep(20);
@@ -357,7 +359,7 @@ try {
     const hourly=Array.from({length:6},(_,i)=>({datetime:new Date(Date.now()+(i+1)*3600000).toISOString(),temperature:24,precipitation:0,condition:'cloudy'}));
     card.hass={...base.hass,states,callWS:async msg=>msg.type==='call_service'?{response:{'weather.test':{forecast:hourly}}}:history};
     document.querySelector('main').append(card);await new Promise(r=>setTimeout(r,60));
-    const text=()=>card.shadowRoot.querySelector('.nw-b-chips')?.textContent ?? '';
+    const text=()=>[...card.shadowRoot.querySelectorAll('niak-brief-ticker')].map(t=>t.points.map(p=>`${p.label} ${p.text}`).join(' ')).join(' ');
     const first=text().includes('Pression en hausse (1,1 hPa sur 3 h)');
     card.requestUpdate();await card.updateComplete;
     const result={pressureAlongsideAir:first&&text().includes('Pression en hausse'),noEmptyOutlook:!text().includes('Pas de signal')&&!text().includes('À venir')};
@@ -865,7 +867,7 @@ try {
     const empty=!root.querySelector('.nw-b-headline,.nw-b-vigil')&&!!root.querySelector('.nw-current-temperature')&&!!root.querySelector('#comfort');
     // 20 °C at 95 % humidity: the humidex computed by the card is about 27 °C, well above the thermometer.
     card.hass={...card.hass,states:{...states,'sensor.humidity':e('sensor.humidity',95,'%')}};await card.updateComplete;
-    const gap=root.querySelector('.nw-b-headline')?.textContent.includes('ressenti est plus élevé')&&!(root.querySelector('.nw-b-chips')?.textContent ?? '').includes('ressentis')&&!root.querySelector('.nw-b-vigil');
+    const gap=root.querySelector('.nw-b-headline')?.textContent.includes('ressenti est plus élevé')&&!(root.querySelector('niak-brief-ticker')?.points ?? []).some(p=>p.text.includes('ressentis'))&&!root.querySelector('.nw-b-vigil');
     dailyRain=72;card.hass={...card.hass,states};card.forecastAt=0;await card.loadForecasts();await card.updateComplete;
     const tomorrow=root.querySelector('.nw-b-headline')?.textContent.includes('Pluie importante prévue demain : 72 mm')&&!root.querySelector('.nw-b-vigil');
     window.relevantBriefCard=card;return {empty,gap,tomorrow};
