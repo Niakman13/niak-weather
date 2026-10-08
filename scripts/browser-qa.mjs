@@ -702,8 +702,8 @@ try {
     } finally {if(descriptor)Object.defineProperty(document,'hidden',descriptor);else delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));}
   });assert.equal(skyMotion.hidden,true,'Hidden page pauses sky animations');
   await page.evaluate(()=>{window.skyCard.style.marginTop='2200px';});
-  await page.evaluate(async()=>{await new Promise(r=>setTimeout(r,200));});
-  skyMotion.offscreen=await page.evaluate(()=>getComputedStyle(window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelector('.cloud')).animationPlayState==='paused');assert.equal(skyMotion.offscreen,true);
+  // IntersectionObserver fires asynchronously: wait for the pause instead of a fixed delay (slow CI runners).
+  skyMotion.offscreen=await page.waitForFunction(()=>getComputedStyle(window.skyCard.shadowRoot.querySelector('niak-weather-sky').shadowRoot.querySelector('.cloud')).animationPlayState==='paused',null,{timeout:3000}).then(()=>true,()=>false);assert.equal(skyMotion.offscreen,true,'Off-screen card pauses sky animations');
   const recentDetails=await page.evaluate(async()=>{
     document.querySelector('main').replaceChildren();
     const card=document.createElement('niak-weather-card');window.detailsCard=card;
