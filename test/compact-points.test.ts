@@ -6,7 +6,7 @@ const brief = (signals: BriefSignal[]): WeatherBrief => ({signals,title:'',summa
 describe('Tile and intermediate brief', () => {
   it('scrolls the banner points, most important first, without the official warning', () => {
     // Yellow storm vigilance at Gardanne, storm tonight, 72 mm tomorrow, a 5 °C feel gap.
-    const points=tickerPoints(brief([signal('official','official',1,'Vigilance Météo-France jaune : Orages (jaune)'),signal('storm','future',2),signal('rain-future','future',1),signal('comfort-gap','now',0)]));
+    const points=tickerPoints(brief([signal('official','official',1,'Vigilance jaune · orages'),signal('storm','future',2),signal('rain-future','future',1),signal('comfort-gap','now',0)]));
     expect(points.map(p=>p.text)).toEqual(['storm','rain-future','comfort-gap']);
     expect(points.map(p=>p.label)).toEqual(['À venir','À venir','Maintenant']);
     expect(points.map(p=>p.level)).toEqual([2,1,0]);
@@ -21,10 +21,10 @@ describe('Tile and intermediate brief', () => {
     expect(tickerPoints(brief([signal('comfort-gap','now',0)])).map(p=>p.text)).toEqual(['comfort-gap']);
     expect(tickerPoints(undefined)).toEqual([]);
   });
-  it('names the vigilance colour and phenomena, short for the tile', () => {
-    const badge=vigilanceBadge(brief([signal('official','official',2,'Vigilance Météo-France orange : Orages (orange), Vent violent (jaune)')]));
-    expect(badge).toMatchObject({level:2,label:'Vigilance orange orages, vent violent',short:'Orange orages +1'});
-    expect(vigilanceBadge(brief([signal('official','official',1,'Vigilance Météo-France jaune')]))?.short).toBe('Jaune');
+  it('shows the brief vigilance text unchanged', () => {
+    // The same words on the tile, the intermediate and the full card.
+    const badge=vigilanceBadge(brief([signal('official','official',2,'Vigilance orange · orages, vent violent (jaune)')]));
+    expect(badge).toMatchObject({level:2,label:'Vigilance orange · orages, vent violent (jaune)'});
     expect(vigilanceBadge(brief([signal('wind','now',2)]))).toBeUndefined();
   });
 });

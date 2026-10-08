@@ -48,7 +48,7 @@ describe('Concise summary presentation', () => {
     expect(briefPresentation({...brief([]),available:false}).headline).toBeUndefined();
   });
   it('retains priority attention even when a mild outlook is available',()=>{
-    const result=briefPresentation({...brief([signal('official','official',2),signal('temperature-future','future',0)]),title:'Vigilance Météo-France orange'});
-    expect(result.headline).toBe('Vigilance Météo-France orange');expect(result.outlookKey).toBeUndefined();
+    const result=briefPresentation({...brief([signal('official','official',2),signal('temperature-future','future',0)]),title:'Vigilance orange · orages'});
+    expect(result.headline).toBe('Vigilance orange · orages');expect(result.outlookKey).toBeUndefined();
   });
 });
