@@ -50,7 +50,7 @@ export const bannerStyles = css`
   .nw-b-chip { display:flex; align-items:center; gap:7px; padding:5px 11px 5px 8px; border-radius:999px; font-size:12px; line-height:1.3;
     background:color-mix(in srgb,var(--card-background-color,#fff) 78%,transparent); border:1px solid var(--divider-color,rgba(150,150,150,.25)); backdrop-filter:blur(6px); }
   .nw-b-chip ha-icon { --mdc-icon-size:15px; color:var(--secondary-text-color); }
-  .nw-b-chip b { white-space:nowrap; font-weight:650; font-size:10px; letter-spacing:.4px; text-transform:uppercase; color:var(--secondary-text-color); }
+  .nw-b-chip b { flex:none; white-space:nowrap; font-weight:650; font-size:10px; letter-spacing:.4px; text-transform:uppercase; color:var(--secondary-text-color); }
   .nw-b-chip--official { border-color:rgba(230,125,45,.55); } .nw-b-chip--official ha-icon { color:rgb(230,125,45); }
   .nw-b-tiles { grid-area:tiles; list-style:none; margin:18px 0 0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; position:relative; z-index:1; }
   .nw-b-tiles li { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; align-content:start; column-gap:8px; row-gap:3px; padding:11px 13px; border-radius:14px;
@@ -74,7 +74,7 @@ export const bannerStyles = css`
   .nw-b-vigil strong { font-size:14px; font-weight:650; letter-spacing:-.1px; }
   .nw-b-vigil-mark { position:relative; flex:0 0 32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%;
     color:color-mix(in srgb,rgb(var(--al)) 78%,var(--primary-text-color) 22%); background:radial-gradient(circle at 35% 25%,rgba(var(--al),.24),rgba(var(--al),.08)); border:1.5px solid rgba(var(--al),.6); animation:nwVigilGlow 5.2s ease-in-out infinite; }
-  .nw-b-vigil-mark ha-icon { --mdc-icon-size:17px; position:relative; z-index:1; }
+  .nw-b-vigil-mark ha-icon { --mdc-icon-size:17px; position:relative; z-index:1; display:flex; line-height:0; /* HA's ha-icon is inline and would sit low */ }
   .nw-b-vigil-halo { position:absolute; inset:-20px; border-radius:50%; background:radial-gradient(circle,rgba(var(--al),.22),rgba(var(--al),.08) 45%,rgba(var(--al),0) 75%); filter:blur(10px); animation:nwVigilHalo 5.2s ease-in-out infinite; pointer-events:none; }
   @keyframes nwVigilHalo { 0%,100% { opacity:.5; transform:scale(.94); } 50% { opacity:.85; transform:scale(1.08); } }
   @keyframes nwVigilGlow { 0%,100% { box-shadow:0 0 6px rgba(var(--al),.18); } 50% { box-shadow:0 0 12px rgba(var(--al),.32); } }
@@ -82,9 +82,19 @@ export const bannerStyles = css`
   .nw-b-kicker { font-size:10px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--secondary-text-color); }
   @container (max-width:650px) {
     /* Phone: the current weather sits on the sky, the text below it on the calm part of the banner. */
-    .nw-synthesis.nw-banner { grid-template-columns:minmax(0,1fr); grid-template-rows:auto; grid-template-areas:"head" "vigil" "aside" "main" "tiles"; }
+    /* Order: heading, current weather, bulletin, then the vigilance pill and the Now / Coming bubbles. */
+    .nw-synthesis.nw-banner { grid-template-columns:minmax(0,1fr); grid-template-rows:auto; grid-template-areas:"head" "aside" "kick" "headline" "vigil" "chips" "tiles"; }
+    .nw-banner .nw-b-main { display:contents; }
+    .nw-banner .nw-b-kicker { grid-area:kick; position:relative; z-index:1; }
+    .nw-banner .nw-b-headline { grid-area:headline; position:relative; z-index:1; margin-top:6px; }
+    .nw-banner .nw-b-chips { grid-area:chips; position:relative; z-index:1; margin-top:10px; }
     .nw-b-headline { font-size:14px; }
-    .nw-banner .nw-current-weather { min-height:150px; margin:0 0 14px; }
+    .nw-banner .nw-current-weather { min-height:130px; margin:0 0 10px; }
+    /* A smaller pill on phones: same colour and halo, half the room. */
+    .nw-b-vigil { justify-self:start; margin:12px 0 0; padding:4px 14px 4px 4px; gap:9px; }
+    .nw-b-vigil strong { font-size:13px; }
+    .nw-b-vigil-mark { flex-basis:24px; height:24px; } .nw-b-vigil-mark ha-icon { --mdc-icon-size:13px; }
+    .nw-b-vigil-halo { inset:-12px; }
     .nw-b-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
   }
 `;
