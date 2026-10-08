@@ -113,16 +113,16 @@ export const bannerStyles = css`
   .nw-b-headline { margin:2px 0 0; font-size:17px; font-weight:600; letter-spacing:-.2px; line-height:1.45; max-width:44ch; }
   /* Vigilance: a glass pill in the official colour, its icon glowing with the same halo as the alert emblem. */
   .nw-b-vigil { --al:232,184,20; grid-area:vigil; justify-self:start; position:relative; z-index:2; display:flex; align-items:center; gap:12px; margin:0 0 16px; padding:7px 18px 7px 7px; border-radius:999px;
-    background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 62%,rgb(var(--al)) 38%),color-mix(in srgb,var(--card-background-color,#fff) 86%,rgb(var(--al)) 14%));
-    border:1px solid rgba(var(--al),.55); box-shadow:0 6px 24px -10px rgba(var(--al),.7),inset 0 1px 0 rgba(255,255,255,.25); backdrop-filter:blur(8px); }
+    background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 80%,rgb(var(--al)) 20%),color-mix(in srgb,var(--card-background-color,#fff) 92%,rgb(var(--al)) 8%));
+    border:1px solid rgba(var(--al),.38); box-shadow:0 4px 18px -10px rgba(var(--al),.5); backdrop-filter:blur(8px); }
   .nw-b-vigil--level2 { --al:238,124,30; } .nw-b-vigil--level3 { --al:214,52,58; }
-  .nw-b-vigil strong { font-size:14px; font-weight:700; letter-spacing:-.1px; }
-  .nw-b-vigil-mark { position:relative; flex:0 0 34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#fff;
-    background:radial-gradient(circle at 35% 30%,color-mix(in srgb,rgb(var(--al)) 70%,#fff 30%),rgb(var(--al))); box-shadow:0 0 10px rgba(var(--al),.55); animation:nwVigilGlow 5.2s ease-in-out infinite; }
-  .nw-b-vigil-mark ha-icon { --mdc-icon-size:19px; position:relative; z-index:1; }
-  .nw-b-vigil-halo { position:absolute; inset:-22px; border-radius:50%; background:radial-gradient(circle,rgba(var(--al),.45),rgba(var(--al),0) 70%); filter:blur(8px); animation:nwVigilHalo 5.2s ease-in-out infinite; pointer-events:none; }
-  @keyframes nwVigilHalo { 0%,100% { opacity:.55; transform:scale(.9); } 50% { opacity:1; transform:scale(1.12); } }
-  @keyframes nwVigilGlow { 0%,100% { box-shadow:0 0 8px rgba(var(--al),.45); } 50% { box-shadow:0 0 18px rgba(var(--al),.8); } }
+  .nw-b-vigil strong { font-size:14px; font-weight:650; letter-spacing:-.1px; }
+  .nw-b-vigil-mark { position:relative; flex:0 0 32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%;
+    color:color-mix(in srgb,rgb(var(--al)) 78%,var(--primary-text-color) 22%); background:radial-gradient(circle at 35% 25%,rgba(var(--al),.24),rgba(var(--al),.08)); border:1.5px solid rgba(var(--al),.6); animation:nwVigilGlow 5.2s ease-in-out infinite; }
+  .nw-b-vigil-mark ha-icon { --mdc-icon-size:17px; position:relative; z-index:1; }
+  .nw-b-vigil-halo { position:absolute; inset:-20px; border-radius:50%; background:radial-gradient(circle,rgba(var(--al),.22),rgba(var(--al),.08) 45%,rgba(var(--al),0) 75%); filter:blur(10px); animation:nwVigilHalo 5.2s ease-in-out infinite; pointer-events:none; }
+  @keyframes nwVigilHalo { 0%,100% { opacity:.5; transform:scale(.94); } 50% { opacity:.85; transform:scale(1.08); } }
+  @keyframes nwVigilGlow { 0%,100% { box-shadow:0 0 6px rgba(var(--al),.18); } 50% { box-shadow:0 0 12px rgba(var(--al),.32); } }
   @media (prefers-reduced-motion:reduce) { .nw-b-vigil-mark, .nw-b-vigil-halo { animation:none; } }
   .nw-b-kicker { font-size:10px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--secondary-text-color); }
   .nw-b-lead { margin:0; font-size:17px; line-height:1.55; font-weight:500; max-width:56ch; }
@@ -137,20 +137,7 @@ export const bannerStyles = css`
     .nw-synthesis.nw-banner { grid-template-columns:minmax(0,1fr); grid-template-rows:auto; grid-template-areas:"head" "aside" "main" "tiles"; }
     .nw-banner--focus.nw-synthesis { grid-template-areas:"alert" "head" "aside" "main"; }
     .nw-banner--hybrid.nw-synthesis { grid-template-areas:"head" "vigil" "aside" "main" "tiles"; }
-    .nw-b-headline { margin:2px 0 0; font-size:17px; font-weight:600; letter-spacing:-.2px; line-height:1.45; max-width:44ch; }
-  /* Vigilance: a glass pill in the official colour, its icon glowing with the same halo as the alert emblem. */
-  .nw-b-vigil { --al:232,184,20; grid-area:vigil; justify-self:start; position:relative; z-index:2; display:flex; align-items:center; gap:12px; margin:0 0 16px; padding:7px 18px 7px 7px; border-radius:999px;
-    background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 62%,rgb(var(--al)) 38%),color-mix(in srgb,var(--card-background-color,#fff) 86%,rgb(var(--al)) 14%));
-    border:1px solid rgba(var(--al),.55); box-shadow:0 6px 24px -10px rgba(var(--al),.7),inset 0 1px 0 rgba(255,255,255,.25); backdrop-filter:blur(8px); }
-  .nw-b-vigil--level2 { --al:238,124,30; } .nw-b-vigil--level3 { --al:214,52,58; }
-  .nw-b-vigil strong { font-size:14px; font-weight:700; letter-spacing:-.1px; }
-  .nw-b-vigil-mark { position:relative; flex:0 0 34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#fff;
-    background:radial-gradient(circle at 35% 30%,color-mix(in srgb,rgb(var(--al)) 70%,#fff 30%),rgb(var(--al))); box-shadow:0 0 10px rgba(var(--al),.55); animation:nwVigilGlow 5.2s ease-in-out infinite; }
-  .nw-b-vigil-mark ha-icon { --mdc-icon-size:19px; position:relative; z-index:1; }
-  .nw-b-vigil-halo { position:absolute; inset:-22px; border-radius:50%; background:radial-gradient(circle,rgba(var(--al),.45),rgba(var(--al),0) 70%); filter:blur(8px); animation:nwVigilHalo 5.2s ease-in-out infinite; pointer-events:none; }
-  @keyframes nwVigilHalo { 0%,100% { opacity:.55; transform:scale(.9); } 50% { opacity:1; transform:scale(1.12); } }
-  @keyframes nwVigilGlow { 0%,100% { box-shadow:0 0 8px rgba(var(--al),.45); } 50% { box-shadow:0 0 18px rgba(var(--al),.8); } }
-  @media (prefers-reduced-motion:reduce) { .nw-b-vigil-mark, .nw-b-vigil-halo { animation:none; } }
+    .nw-b-headline { font-size:15px; }
     .nw-banner .nw-current-weather { min-height:150px; margin:0 0 14px; }
     .nw-b-title h3 { font-size:20px; }
     .nw-b-lead { font-size:15px; }
