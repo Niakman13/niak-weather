@@ -165,7 +165,8 @@ export class NiakWeatherSky extends LitElement {
     .scene.night:not(.clear-night):not(.sunny):not(.partlycloudy) {--sky:linear-gradient(150deg,#111c2c,#334457 80%,#506276);--tint:.44;}
     .scene.night.lightning,.scene.night.lightning-rainy {--tint:.56;}
     .scene.unknown,.scene.exceptional {--sky:linear-gradient(145deg,#697782,#87949e);--tint:.3;}
-    .orb {position:absolute;left:73%;top:36px;width:76px;height:76px;border-radius:50%;}
+    /* --nw-orb-x lets a smaller card move the sun or moon away from its text. */
+    .orb {position:absolute;left:var(--nw-orb-x,73%);top:36px;width:76px;height:76px;border-radius:50%;}
     .sun {background:radial-gradient(circle at 35% 35%,#fffce4,#ffe38a 60%,#edb65c);box-shadow:0 0 42px 16px #ffdf7d55;}
     .sun i {position:absolute;inset:-28px;border-radius:50%;background:repeating-conic-gradient(from 0deg,#fff5c800 0 14deg,#fff5c833 16deg 18deg,#fff5c800 20deg 30deg);mask-image:radial-gradient(circle,transparent 38%,black 50%,transparent 72%);animation:rays 38s linear infinite;}
     .moon {width:60px;height:60px;background:radial-gradient(circle at 34% 32%,#fffef6,#f6f2da 55%,#d6e0e4);box-shadow:0 0 16px 3px #fff9e0aa,0 0 50px 16px #e9efff40,0 0 110px 40px #c7d6ff1f;}
@@ -245,7 +246,7 @@ export class NiakWeatherSky extends LitElement {
     @container(max-width:650px) {
       .weather-art {display:block;position:absolute;top:0;right:0;width:100%;height:300px;overflow:hidden;}
       .cloud.heavy-left {left:auto;right:30%;width:220px;}.cloud.heavy-right {left:auto;right:-20%;width:240px;}
-      .orb {left:auto;right:12%;top:36px;}.cloud.back {left:auto;right:22%;top:20px;width:170px;}.cloud.front {left:auto;right:0;top:90px;width:150px;}.cloud.small {left:auto;right:-12%;top:6px;width:120px;}
+      .orb {left:var(--nw-orb-x,auto);right:12%;top:36px;}.cloud.back {left:auto;right:22%;top:20px;width:170px;}.cloud.front {left:auto;right:0;top:90px;width:150px;}.cloud.small {left:auto;right:-12%;top:6px;width:120px;}
       .bolt.b1 {left:auto;right:18%;}.bolt.b2 {left:auto;right:2%;}.bolt.b3 {left:auto;right:42%;}
       .flash.f1 {--fx:70%;}.flash.f2 {--fx:94%;}.flash.f3 {--fx:48%;}
       .fog-sun {left:auto;right:14%;}

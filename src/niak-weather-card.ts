@@ -14,6 +14,10 @@ import { dashboardStyles, renderDashboard } from './dashboard-view';
 import { recentDetailsStyles } from './recent-details';
 import { forecastChartStyles } from './forecast-chart';
 import { bannerStyles } from './banner-layouts';
+import { compactStyles, renderCompact } from './compact-view';
+import { buildCurrentWeather } from './current-weather';
+import { buildBulletin } from './bulletin';
+import { currentSeason } from './season';
 import type { ForecastResponse, HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
 
 @customElement('niak-weather-card')
@@ -69,10 +73,14 @@ export class NiakWeatherCard extends LitElement {
   public static getConfigElement(): HTMLElement { return document.createElement('niak-weather-card-editor'); }
   public getCardSize(): number {
     if (!this.config) return 10;
+    if (this.config.format === 'tile') return 2;
+    if (this.config.format === 'intermediate') return this.config.show_bulletin === false ? 4 : 6;
     return Math.max(1, (this.config.show_synthesis === false ? 0 : 3)
       + (this.config.show_today === false ? 0 : 4) + (this.config.show_predictions === false ? 0 : 3));
   }
-  public getGridOptions() { return { columns: 'full', rows: 'auto' }; }
+  public getGridOptions() { return this.compact ? { columns: 12, rows: 'auto', min_columns: 6 } : { columns: 'full', rows: 'auto' }; }
+  /** Tile and intermediate: no Today section, so no rain history or statistics to load. */
+  private get compact(): boolean { return !!this.config?.format && this.config.format !== 'full'; }
   public connectedCallback(): void {
     super.connectedCallback();
     this.timer = setInterval(() => { this.requestUpdate(); }, 60_000);
@@ -129,7 +137,7 @@ export class NiakWeatherCard extends LitElement {
     finally { if (generation === this.historyGeneration) this.historyPending = false; }
   }
   private async loadRainHistory(): Promise<void> {
-    if (!this.hass || !this.config || this.config.show_today===false || this.rainHistoryPending || Date.now()-this.rainHistoryAt<900_000) return;
+    if (!this.hass || !this.config || this.config.show_today===false || this.compact || this.rainHistoryPending || Date.now()-this.rainHistoryAt<900_000) return;
     const ids=[this.config.daily_rain_entity,this.config.station_history!==false?this.config.rain_total_entity:undefined].filter((id):id is string=>!!id);
     if(!ids.length)return;
     this.rainHistoryPending=true;this.rainHistoryAt=Date.now();
@@ -142,7 +150,7 @@ export class NiakWeatherCard extends LitElement {
   }
   private async loadStationArchive():Promise<void>{
     const hass=this.hass,config=this.config,id=config?.rain_total_entity;
-    if(!hass||!config||!id||config.station_history===false||config.show_today===false||this.archivePending||Date.now()-this.archiveAt<900_000)return;
+    if(!hass||!config||!id||config.station_history===false||config.show_today===false||this.compact||this.archivePending||Date.now()-this.archiveAt<900_000)return;
     const e=hass.states[id];
     if(e?.attributes.state_class!=='total_increasing')return;
     this.archivePending=true;this.archiveAt=Date.now();const generation=this.archiveGeneration;
@@ -177,7 +185,9 @@ export class NiakWeatherCard extends LitElement {
     let model = calculated;
     const weather = hass.states[config.weather_entity];
     const briefPoints: BriefPoint[] = this.hourly.map(p => ({ hours: (Date.parse(p.datetime) - now.getTime()) / 3600_000, temperature: p.temperature, precipitation: p.precipitation, condition: p.condition }));
-    const brief = config.smart_brief === false || config.show_synthesis === false ? undefined : buildWeatherBrief(hass, config, model, briefPoints, now,this.daily);
+    // The small formats are the brief: it is always built for them.
+    const brief = !this.compact && (config.smart_brief === false || config.show_synthesis === false) ? undefined : buildWeatherBrief(hass, config, model, briefPoints, now,this.daily);
+    if (this.compact) return this.renderSmall(model, brief, now);
     if (['unknown', 'unavailable'].includes(model.state)) model = { ...model, attributes:{} };
     const variables = { mode: 'complet', dashboard:true, adaptive:true, configured:config, ent: '__niak_model', ent_prev: '__niak_forecast',
       lieu: config.location ?? String(weather?.attributes.friendly_name ?? ''),
@@ -187,6 +197,20 @@ export class NiakWeatherCard extends LitElement {
     const rendered = renderLocal(variables, states, hass);
     return html`<ha-card><div id="container" ?data-smart-brief=${!!brief} @pointerdown=${this.down} @pointermove=${this.move} @pointercancel=${this.cancel} @pointerup=${this.up}
       @click=${this.handleClick} @keydown=${this.keydown}>${renderDashboard(rendered, brief, model, hass, config, now, variables.lieu, this.hourly, this.history, this.rainHistory,derived)}</div></ha-card>`;
+  }
+  private renderSmall(model: HassEntity, brief: ReturnType<typeof buildWeatherBrief> | undefined, now: Date) {
+    const config = this.config!, hass = this.hass!, weather = hass.states[config.weather_entity];
+    const current = buildCurrentWeather(hass, config, model);
+    const sky = html`<niak-weather-sky .condition=${current.condition} .phase=${current.phase} .animated=${config.weather_animations!==false}
+      .quality=${config.weather_animation_quality ?? 'standard'} .wind=${current.wind ?? 0} .season=${currentSeason(hass,config,now).season}></niak-weather-sky>`;
+    const format = config.format as 'intermediate' | 'tile';
+    const bulletin = format === 'intermediate' && config.show_bulletin !== false
+      ? buildBulletin(this.hourly, now, hass.config?.time_zone, String(weather?.attributes.wind_speed_unit ?? 'km/h')) : undefined;
+    const dateLabel = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long', timeZone:hass.config?.time_zone }).format(now);
+    return html`<ha-card><div id="container" @pointerdown=${this.down} @pointermove=${this.move} @pointercancel=${this.cancel} @pointerup=${this.up}
+      @click=${this.handleClick} @keydown=${this.keydown}>${renderCompact({ format, brief, now:current, bulletin, sky,
+        location: config.location ?? String(weather?.attributes.friendly_name ?? ''), dateLabel: dateLabel[0].toUpperCase() + dateLabel.slice(1),
+        path: config.weather_path?.startsWith('/') && !config.weather_path.startsWith('//') ? config.weather_path : undefined, entity: config.weather_entity, language: hass.language })}</div></ha-card>`;
   }
   private down(event: PointerEvent): void {
     clearTimeout(this.holdTimer); if (event.button !== 0) return;
@@ -239,7 +263,7 @@ export class NiakWeatherCard extends LitElement {
     .nw-brief-details button { font:inherit; color:var(--primary-text-color); background:transparent; border:1px solid var(--divider-color,#999); border-radius:6px; padding:4px 8px; cursor:pointer; }
     .nw-brief-caveat { border-left:3px solid #be8c23; padding-left:8px; }
     @media (prefers-reduced-motion:reduce) { #container[data-smart-brief] .me-rond, #container[data-smart-brief] .me-cur i { animation:none; } }
-    `, dashboardStyles, recentDetailsStyles, forecastChartStyles, bannerStyles];
+    `, dashboardStyles, recentDetailsStyles, forecastChartStyles, bannerStyles, compactStyles];
 }
 window.customCards = window.customCards || [];
 window.customCards.push({ type: 'niak-weather-card', name: 'Niak Weather', description: 'Météo locale Ecowitt et prévisions', preview: true,
