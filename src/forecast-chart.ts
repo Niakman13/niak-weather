@@ -87,7 +87,6 @@ export function renderForecastChart(hass: HomeAssistant, entity: string, provide
       </div>
       <div class="nw-fc-y nw-fc-y--p">${rain ? [rainTop, rainTop / 2, 0].map(v => html`<span style=${`top:${100 - H(v)}%`}>${nf(v, 1)} mm</span>`) : nothing}</div>
       <div class="nw-fc-x">${marks.map(m => html`<span class="nw-fc-hour" style=${`left:${X(m.i)}%`} title=${labels[m.s.c] ?? m.s.c}>${m.s.hour} h<ha-icon icon=${icon(m.s)}></ha-icon>${m.s.w !== undefined ? html`<small class="nw-fc-wind" title=${windTip(m.s)}>${m.s.b !== undefined ? html`<ha-icon icon="mdi:navigation" style=${`transform:rotate(${Math.round((m.s.b + 180) % 360)}deg)`}></ha-icon>` : nothing}${nf(m.s.w)}</small>` : nothing}</span>`)}</div>
-      <div class="nw-fc-wind-unit">${slots.some(s => s.w !== undefined) ? html`Vent<br>km/h` : nothing}</div>
     </div>
     <div class="nw-fc-legend"><span class="nw-fc-legend--t">Température (${unit})</span>${slots.some(s => s.w !== undefined) ? html`<span class="nw-fc-legend--w">Vent (km/h), la flèche indique où il va</span>` : nothing}${rain ? html`<span class="nw-fc-legend--p">Pluie prévue (mm par heure)</span>` : nothing}<span class="nw-fc-legend--n">Nuit</span></div>
     ${footer ? html`<p class="nw-history-caption nw-fc-foot">${footer}</p>` : nothing}
@@ -120,10 +119,10 @@ export const forecastChartStyles = css`
   .nw-fc-extreme { position:absolute;z-index:2;transform:translate(-50%,calc(-100% - 7px));padding:1px 4px;border-radius:6px;background:var(--card-background-color,#fff);font-size:12px;font-weight:700;color:var(--primary-text-color);white-space:nowrap; }
   .nw-fc-extreme--lo { transform:translate(-50%,7px); }
   .nw-fc-x>span { position:absolute;top:6px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--secondary-text-color);white-space:nowrap; }
-  .nw-fc-x>span>ha-icon { --mdc-icon-size:20px;color:var(--primary-text-color); }
-  .nw-fc-wind { display:flex;align-items:center;gap:1px;font-size:10px;font-weight:650;color:var(--primary-text-color); }
-  .nw-fc-wind ha-icon { --mdc-icon-size:12px;color:rgb(40,130,240); }
-  .nw-fc-wind-unit { grid-column:1;grid-row:3;align-self:end;padding-bottom:1px;text-align:right;padding-right:6px;font-size:9px;line-height:1.15;color:var(--secondary-text-color); }
+  /* Same icons and wind as the week table: 17 px secondary icons, 11 px figures, 14 px blue arrows. */
+  .nw-fc-x>span>ha-icon { --mdc-icon-size:17px;color:var(--secondary-text-color);opacity:.85; }
+  .nw-fc-wind { display:flex;align-items:center;gap:2px;font-size:11px;font-weight:650;color:var(--secondary-text-color); }
+  .nw-fc-wind ha-icon { --mdc-icon-size:14px;color:rgb(40,130,240); }
   .nw-fc-legend--w::before { width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:9px solid rgb(40,130,240); }
   .nw-fc-legend { display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-size:10px;color:var(--secondary-text-color); }
   .nw-fc-legend span::before { content:'';display:inline-block;margin-right:6px;vertical-align:middle; }
