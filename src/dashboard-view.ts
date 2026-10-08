@@ -156,8 +156,10 @@ export const dashboardStyles = css`
   .nw-current-condition ha-icon { --mdc-icon-size:22px; }
   .nw-current-temperature { font-size:46px !important; line-height:1.1; font-weight:700 !important; letter-spacing:-1.5px; margin-top:4px; }
   .nw-current-reading { display:flex; align-items:center; justify-content:flex-end; gap:8px; }
-  .nw-current-trend { display:flex; flex-direction:column; align-items:center; gap:1px; line-height:1; }
-  .nw-current-trend ha-icon { --mdc-icon-size:22px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; border:1.5px solid currentColor; box-sizing:border-box; }
+  .nw-current-trend { display:flex; flex-direction:column; align-items:center; gap:5px; line-height:1; }
+  .nw-current-trend ha-icon { --mdc-icon-size:22px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; border:1.5px solid currentColor; box-sizing:border-box;
+    /* text-shadow does not reach an icon or a border: the same glow as the figures keeps the arrow readable over a cloud. */
+    filter:drop-shadow(0 0 4px var(--nw-glow,var(--card-background-color,#fff))) drop-shadow(0 0 1.5px var(--nw-glow,var(--card-background-color,#fff))); }
   .nw-current-trend small { font-size:10px; font-weight:600; white-space:nowrap; }
   .nw-current-temperature small { font-size:20px; font-weight:400; margin-left:3px; vertical-align:super; letter-spacing:0; }
   .nw-current-temperature-source { font-size:10px; opacity:.8; }
@@ -200,7 +202,7 @@ export const dashboardStyles = css`
   #tuiles .nw-current-metric { display:flex; flex-direction:column; align-items:flex-start; }
   .nw-metric-source { display:inline-flex; padding:3px 8px; border-radius:999px; border:1px solid var(--divider-color,rgba(150,150,150,.18)); background:color-mix(in srgb,var(--primary-color,#3d9be9) 7%,transparent); color:var(--secondary-text-color); font-size:10px; font-weight:600; line-height:1.4; }
   .nw-current-temperature-source.nw-metric-source { color:var(--primary-text-color); background:color-mix(in srgb,var(--card-background-color,#fff) 70%,transparent); border-color:var(--divider-color,rgba(150,150,150,.3)); opacity:1; margin-top:5px; }
-  .nw-current-weather--dark-sky .nw-current-content { color:white; text-shadow:0 1px 5px #0b1a2b99; }
+  .nw-current-weather--dark-sky .nw-current-content { --nw-glow:#0b1a2b99; color:white; text-shadow:0 1px 5px #0b1a2b99; }
   .nw-current-weather--dark-sky .nw-current-temperature-source.nw-metric-source { color:white; background:rgba(15,40,65,.25); border-color:rgba(255,255,255,.28); }
   .nw-metric-body { display:flex; align-items:center; gap:10px; min-width:0; }
   .nw-current-metric .me-tuv { white-space:normal; overflow-wrap:anywhere; }

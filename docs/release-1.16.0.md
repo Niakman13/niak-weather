@@ -8,3 +8,4 @@
 - Carte complète : les points du brief défilent dans une seule bulle, comme dans la tuile et l'intermédiaire. Le bandeau prend moins de place.
 - Les mêmes bulles dans les trois formats, un peu plus claires que les quatre cadres du bulletin.
 - Nouvelles feuilles d'automne, dessinées comme des feuilles de platane.
+- La flèche de tendance reste lisible devant un nuage, et son texte est mieux espacé.
