@@ -156,8 +156,8 @@ export const dashboardStyles = css`
   .nw-current-condition ha-icon { --mdc-icon-size:22px; }
   .nw-current-temperature { font-size:46px !important; line-height:1.1; font-weight:700 !important; letter-spacing:-1.5px; margin-top:4px; }
   .nw-current-reading { display:flex; align-items:center; justify-content:flex-end; gap:8px; }
-  .nw-current-trend { display:flex; flex-direction:column; align-items:center; gap:5px; line-height:1; }
-  .nw-current-trend ha-icon { --mdc-icon-size:22px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; border:1.5px solid currentColor; box-sizing:border-box;
+  .nw-current-trend { display:flex; flex-direction:column; align-items:center; gap:4px; line-height:1; }
+  .nw-current-trend ha-icon { --mdc-icon-size:15px; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:50%; border:1.3px solid currentColor; box-sizing:border-box;
     /* text-shadow does not reach an icon or a border: the same glow as the figures keeps the arrow readable over a cloud. */
     filter:drop-shadow(0 0 4px var(--nw-glow,var(--card-background-color,#fff))) drop-shadow(0 0 1.5px var(--nw-glow,var(--card-background-color,#fff))); }
   .nw-current-trend small { font-size:10px; font-weight:600; white-space:nowrap; }
