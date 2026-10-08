@@ -110,7 +110,7 @@ export const bannerStyles = css`
   .nw-b-alert .nw-attention { padding:3px 9px; }
   .nw-b-more { flex-basis:100%; font-size:12px; color:var(--secondary-text-color); padding-left:32px; }
   .nw-banner--hybrid.nw-synthesis { grid-template-areas:"head aside" "vigil aside" "main aside" "tiles tiles"; grid-template-rows:auto auto 1fr auto; }
-  .nw-b-headline { margin:2px 0 0; font-size:17px; font-weight:600; letter-spacing:-.2px; line-height:1.45; max-width:44ch; }
+  .nw-b-headline { margin:0; font-size:15px; font-weight:600; letter-spacing:-.1px; line-height:1.4; max-width:56ch; }
   /* Vigilance: a glass pill in the official colour, its icon glowing with the same halo as the alert emblem. */
   .nw-b-vigil { --al:232,184,20; grid-area:vigil; justify-self:start; position:relative; z-index:2; display:flex; align-items:center; gap:12px; margin:0 0 16px; padding:7px 18px 7px 7px; border-radius:999px;
     background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 80%,rgb(var(--al)) 20%),color-mix(in srgb,var(--card-background-color,#fff) 92%,rgb(var(--al)) 8%));
@@ -137,7 +137,7 @@ export const bannerStyles = css`
     .nw-synthesis.nw-banner { grid-template-columns:minmax(0,1fr); grid-template-rows:auto; grid-template-areas:"head" "aside" "main" "tiles"; }
     .nw-banner--focus.nw-synthesis { grid-template-areas:"alert" "head" "aside" "main"; }
     .nw-banner--hybrid.nw-synthesis { grid-template-areas:"head" "vigil" "aside" "main" "tiles"; }
-    .nw-b-headline { font-size:15px; }
+    .nw-b-headline { font-size:14px; }
     .nw-banner .nw-current-weather { min-height:150px; margin:0 0 14px; }
     .nw-b-title h3 { font-size:20px; }
     .nw-b-lead { font-size:15px; }
