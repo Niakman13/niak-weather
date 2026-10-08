@@ -2,6 +2,7 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 import type { Bulletin } from './bulletin';
 import type { AlertPoint } from './compact-points';
 import type { WeatherBrief } from './weather-brief';
+import { numberFormat } from './intl-cache';
 
 export interface BannerParts {
   brief?: WeatherBrief; headline?: string;
@@ -44,7 +45,7 @@ export function alertPill(a: AlertPoint): TemplateResult {
 export function bulletinTiles(bulletin: Bulletin): TemplateResult {
   return html`<ol class="nw-b-tiles">${bulletin.periods.map(x => html`<li title=${x.text}>
       <span class="nw-b-when">${x.label}</span><ha-icon icon=${x.icon}></ha-icon><strong>${temps(x)}</strong>
-      <span class="nw-b-sky">${x.phrase}</span>${x.rain >= 1 ? html`<span class="nw-b-rain">${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(x.rain)} mm</span>` : nothing}
+      <span class="nw-b-sky">${x.phrase}</span>${x.rain >= 1 ? html`<span class="nw-b-rain">${numberFormat('fr-FR', { maximumFractionDigits: 1 }).format(x.rain)} mm</span>` : nothing}
       ${(x.wind ?? 0) >= 20 ? html`<span class="nw-b-wind">${x.wind} km/h${(x.gust ?? 0) >= 40 ? html` · raf. ${x.gust}` : nothing}</span>` : nothing}</li>`)}</ol>`;
 }
 
@@ -77,7 +78,9 @@ export const bannerStyles = css`
   .nw-b-vigil { --al:232,184,20; position:relative; z-index:2; display:inline-grid; grid-template-columns:auto minmax(0,1fr); column-gap:10px; align-items:center;
     max-width:100%; box-sizing:border-box; margin:2px 0 0; padding:6px 14px 7px 10px; border-radius:14px;
     background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 80%,rgb(var(--al)) 20%),color-mix(in srgb,var(--card-background-color,#fff) 92%,rgb(var(--al)) 8%));
-    border:1px solid rgba(var(--al),.38); backdrop-filter:blur(8px); animation:nwVigilGlow 5.2s ease-in-out infinite; }
+    border:1px solid rgba(var(--al),.38); backdrop-filter:blur(8px); box-shadow:0 0 6px 0 rgba(var(--al),.22),0 4px 18px -10px rgba(var(--al),.5); }
+  /* The breathing glow is a fixed shadow whose opacity pulses: the GPU animates it without repainting. */
+  .nw-b-vigil::after { content:''; position:absolute; inset:-1px; border-radius:inherit; box-shadow:0 0 16px 2px rgba(var(--al),.42); opacity:0; animation:nwVigilGlow 5.2s ease-in-out infinite; pointer-events:none; z-index:-1; }
   .nw-b-vigil--level2 { --al:238,124,30; } .nw-b-vigil--level3 { --al:214,52,58; }
   .nw-vigil-text { display:flex; flex-direction:column; row-gap:1px; min-width:0; }
   .nw-vigil-text small { font-size:9px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; line-height:13px; white-space:nowrap; color:color-mix(in srgb,rgb(var(--al)) 62%,var(--primary-text-color) 38%); }
@@ -87,8 +90,8 @@ export const bannerStyles = css`
   .nw-b-vigil-halo { position:absolute; inset:-12px; border-radius:50%; background:radial-gradient(circle,rgba(var(--al),.3),rgba(var(--al),.1) 45%,rgba(var(--al),0) 75%); filter:blur(6px); animation:nwVigilHalo 5.2s ease-in-out infinite; pointer-events:none; }
   @keyframes nwVigilHalo { 0%,100% { opacity:.55; transform:scale(.94); } 50% { opacity:.9; transform:scale(1.08); } }
   /* The glowing halo around the whole bubble, breathing in the alert's colour. */
-  @keyframes nwVigilGlow { 0%,100% { box-shadow:0 0 6px 0 rgba(var(--al),.22),0 4px 18px -10px rgba(var(--al),.5); } 50% { box-shadow:0 0 16px 2px rgba(var(--al),.42),0 4px 18px -10px rgba(var(--al),.5); } }
-  @media (prefers-reduced-motion:reduce) { .nw-b-vigil, .nw-b-vigil-halo { animation:none; } }
+  @keyframes nwVigilGlow { 0%,100% { opacity:0; } 50% { opacity:1; } }
+  @media (prefers-reduced-motion:reduce) { .nw-b-vigil::after, .nw-b-vigil-halo { animation:none; } }
   .nw-b-kicker { font-size:10px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--secondary-text-color); }
   @container (max-width:650px) {
     /* Order: heading, current weather, then the bulletin column (bulletin, vigilance, Now / Coming bubbles). */

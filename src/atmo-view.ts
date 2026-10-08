@@ -1,6 +1,7 @@
 import { css, html, nothing, svg } from 'lit';
 import { atmoField, atmoFields, atmoMetrics, atmoReading, pollenMetrics, pollutantMetrics, type AtmoReading } from './atmo';
 import type { AtmoMetric, HomeAssistant, WeatherCardConfig } from './types';
+import { numberFormat } from './intl-cache';
 
 export function usesAtmoPollens(config: WeatherCardConfig): boolean {
   return config.pollen_source === 'atmo' || (config.pollen_source === undefined && atmoFields.some(f => !!config[f]));
@@ -59,7 +60,7 @@ export function renderAtmo(hass: HomeAssistant, config: WeatherCardConfig, now =
         ${!isAir&&species.length ? html`<div class="nw-atmo-kind">Niveaux de pollens · échelle Atmo 1–6</div><div class="nw-atmo-row nw-atmo-species">${species.map(({ metric, r, c }) => html`<div class="nw-atmo-species-item">
           ${r ? badge(r, atmoMetrics[metric].label, atmoMetrics[metric].icon, true, !!c) : nothing}
           ${c ? html`<div class="nw-atmo-values">${r?.value===undefined?nothing:html`<span class="nw-atmo-level" data-entity=${r.id} role="button" tabindex="0" aria-label=${`Niveau ${atmoMetrics[metric].label} : ${r.value} sur 6`}>${r.value}/6</span>`}<span class="nw-atmo-concentration" data-entity=${c.id} role="button" tabindex="0" aria-label=${`Concentration ${atmoMetrics[metric].label}`} title="Concentration déclarée par l’intégration Atmo France">
-            ${!r || r.value !== undefined ? c.value === undefined ? 'Concentration indisponible' : `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(c.value)}${c.unit ? ' ' + c.unit : ' (unité non fournie)'}` : 'Concentration non confirmée'}
+            ${!r || r.value !== undefined ? c.value === undefined ? 'Concentration indisponible' : `${numberFormat('fr-FR', { maximumFractionDigits: 2 }).format(c.value)}${c.unit ? ' ' + c.unit : ' (unité non fournie)'}` : 'Concentration non confirmée'}
             ${c.stale ? ' · données anciennes' : ''}</span></div>` : nothing}</div>`)}</div>` : nothing}
         ${dates ? html`<div class="nw-atmo-date">Publication Atmo : ${dates}. ${ownReadings.some(r => r.stale) ? 'Données anciennes : à vérifier dans l’intégration.' : ''}</div>` : nothing}</details>`}
       ${ownReadings.some(r => r.stale) ? html`<p class="nw-atmo-date">Certaines données sont anciennes : vérifier les sources.</p>` : nothing}`;

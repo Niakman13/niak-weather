@@ -1,5 +1,6 @@
 import {finite,measurement,type History} from './local-model';
 import type {HomeAssistant,WeatherCardConfig} from './types';
+import { dateFormat } from './intl-cache';
 export interface Total {value?:number;partial:boolean}
 export interface Statistic {start:number;end:number;sum?:number;state?:number;partial?:boolean}
 export interface StationArchive {rain:Statistic[];rainUnit?:string;counter:History;}
@@ -31,7 +32,7 @@ export function statisticIncrease(rows:Statistic[],start:number,end:number):Tota
   for(const p of relevant){if(p.start>previous.end||p.sum!<previous.sum!||p.partial)partial=true;value+=Math.max(0,p.sum!-previous.sum!);previous=p;}
   return {value:round(value),partial};
 }
-function calendarParts(date:Date,timeZone:string){return Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(date).map(p=>[p.type,p.value]));}
+function calendarParts(date:Date,timeZone:string){return Object.fromEntries(dateFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(date).map(p=>[p.type,p.value]));}
 export function calendarMidnight(year:number,month:number,day:number,timeZone:string):number {
   const desired=Date.UTC(year,month-1,day),normalized=new Date(desired);
   let guess=desired;
@@ -60,14 +61,14 @@ export function deriveStation(hass:HomeAssistant,config:WeatherCardConfig,archiv
     const recorded=statisticIncrease(stats,start,end);
     return recent.value!==undefined&&!recent.partial?recent:recorded.value!==undefined?recorded:recent;
   };
-  const today=new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
+  const today=dateFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
   const [y,m,d]=today.split('-').map(Number);
   const days=Array.from({length:7},(_,i)=>{
     const date=new Date(Date.UTC(y,m-1,d-6+i)),dateKey=date.toISOString().slice(0,10);
     const start=calendarMidnight(date.getUTCFullYear(),date.getUTCMonth()+1,date.getUTCDate(),timeZone);
     const stop=Math.min(end,calendarMidnight(date.getUTCFullYear(),date.getUTCMonth()+1,date.getUTCDate()+1,timeZone));
     const recent=counterIncrease(counter,start,stop),recorded=statisticIncrease(stats,start,stop),value=recent.value!==undefined&&!recent.partial?recent:recorded.value!==undefined?recorded:recent;
-    return {date:dateKey,label:i===6?'Auj.':new Intl.DateTimeFormat('fr',{weekday:'short',timeZone:'UTC'}).format(date),...value};
+    return {date:dateKey,label:i===6?'Auj.':dateFormat('fr',{weekday:'short',timeZone:'UTC'}).format(date),...value};
   });
   let temperatureTrend:number|undefined;
   if(!config.temperature_trend_entity&&config.temperature_entity){

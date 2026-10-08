@@ -1,5 +1,6 @@
 import { finite, measurement } from './local-model';
 import type { WeatherForecast } from './types';
+import { dateFormat, numberFormat } from './intl-cache';
 
 /** A part of the day in the bulletin: night 0–6 h, morning 6–12 h, afternoon 12–18 h, evening 18–24 h (local time). */
 export interface BulletinPeriod {
@@ -29,9 +30,9 @@ const ICON: Record<string, string> = { sunny: 'mdi:weather-sunny', 'clear-night'
   hail: 'mdi:weather-hail', snowy: 'mdi:weather-snowy', 'snowy-rainy': 'mdi:weather-snowy-rainy', windy: 'mdi:weather-windy', 'windy-variant': 'mdi:weather-windy-variant' };
 const FROM = ['du nord', 'du nord-est', 'd’est', 'du sud-est', 'du sud', 'du sud-ouest', 'd’ouest', 'du nord-ouest'];
 
-const nf = (v: number, d = 0) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: d }).format(v);
+const nf = (v: number, d = 0) => numberFormat('fr-FR', { maximumFractionDigits: d }).format(v);
 const cap = (s: string) => s ? s[0].toUpperCase() + s.slice(1) : s;
-const parts = (date: Date, timeZone?: string) => Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit',
+const parts = (date: Date, timeZone?: string) => Object.fromEntries(dateFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit',
   day: '2-digit', hour: '2-digit', hourCycle: 'h23' }).formatToParts(date).map(p => [p.type, p.value]));
 const serial = (p: Record<string, string>) => Date.UTC(+p.year, +p.month - 1, +p.day) / 86400000;
 const rainy = (c: string) => ['rainy', 'pouring', 'lightning-rainy', 'snowy-rainy', 'hail'].includes(c);

@@ -19,6 +19,7 @@ import { buildCurrentWeather } from './current-weather';
 import { buildBulletin } from './bulletin';
 import { currentSeason } from './season';
 import type { ForecastResponse, HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
+import { dateFormat } from './intl-cache';
 
 @customElement('niak-weather-card')
 export class NiakWeatherCard extends LitElement {
@@ -206,7 +207,7 @@ export class NiakWeatherCard extends LitElement {
     const format = config.format as 'intermediate' | 'tile';
     const bulletin = format === 'intermediate' && config.show_bulletin !== false
       ? buildBulletin(this.hourly, now, hass.config?.time_zone, String(weather?.attributes.wind_speed_unit ?? 'km/h')) : undefined;
-    const dateLabel = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long', timeZone:hass.config?.time_zone }).format(now);
+    const dateLabel = dateFormat('fr-FR', { weekday:'long', day:'numeric', month:'long', timeZone:hass.config?.time_zone }).format(now);
     return html`<ha-card><div id="container" @pointerdown=${this.down} @pointermove=${this.move} @pointercancel=${this.cancel} @pointerup=${this.up}
       @click=${this.handleClick} @keydown=${this.keydown}>${renderCompact({ format, brief, now:current, bulletin, sky,
         location: config.location ?? String(weather?.attributes.friendly_name ?? ''), dateLabel: dateLabel[0].toUpperCase() + dateLabel.slice(1),
