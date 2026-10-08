@@ -65,6 +65,12 @@ describe('Brief intelligent', () => {
     const b = brief({}, [], { ...config, atmo_air_entity: 'sensor.air' }, { 'sensor.air': entity('7') });
     expect(b.label).toBe('À surveiller'); expect(b.summary).toContain('Événement');
   });
+  it('ignores a few drops in the next 6 hours', () => {
+    // met.no at Gardanne, 08/10/2026: 0.3 mm at 21 h only.
+    const drops = brief({}, [{ hours: 5, precipitation: .3, condition: 'rainy' }]);
+    expect(drops.signals.find(s => s.key === 'rain-future')).toBeUndefined();
+    expect(brief({}, [{ hours: 2, precipitation: .6 }, { hours: 3, precipitation: .6 }]).signals.find(s => s.key === 'rain-future')?.text).toBe('Pluie dans environ 2 h : 1,2 mm prévus');
+  });
   it('distinguishes tomorrow from today', () => {
     const text = (field: string) => brief({}, [], { ...config, [field]: 'sensor.air' }, { 'sensor.air': entity('5') }).signals.find(s => s.group === 'environment')?.text;
     expect(text('atmo_air_tomorrow_entity')).toBe('Air extérieur : très mauvais demain');

@@ -15,7 +15,11 @@ export class NiakBriefTicker extends LitElement {
   private timer?: ReturnType<typeof setInterval>;
   private swap?: ReturnType<typeof setTimeout>;
   private key = '';
-  connectedCallback() { super.connectedCallback(); this.timer = setInterval(() => this.next(), 5000); }
+  connectedCallback() {
+    super.connectedCallback();
+    // Home Assistant may move the card mid-fade: a cancelled swap must not leave the bubble transparent.
+    this.leaving = false; this.timer = setInterval(() => this.next(), 5000);
+  }
   disconnectedCallback() { super.disconnectedCallback(); clearInterval(this.timer); clearTimeout(this.swap); }
   protected willUpdate(changed: Map<PropertyKey, unknown>) {
     if (!changed.has('points')) return;
