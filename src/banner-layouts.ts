@@ -47,10 +47,13 @@ export const bannerStyles = css`
   .nw-b-date { font-size:11px; color:var(--secondary-text-color); }
   .nw-b-date::first-letter { text-transform:uppercase; }
   .nw-b-chips { list-style:none; margin:4px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:8px; }
-  .nw-b-chip { display:flex; align-items:center; gap:7px; padding:5px 11px 5px 8px; border-radius:999px; font-size:12px; line-height:1.3;
+  /* Label and sentence share a baseline; the icon sits on the first line, even when the sentence wraps. */
+  .nw-b-chip { display:flex; align-items:baseline; gap:7px; padding:5px 11px 5px 8px; border-radius:14px; font-size:12px; line-height:16px;
     background:color-mix(in srgb,var(--card-background-color,#fff) 78%,transparent); border:1px solid var(--divider-color,rgba(150,150,150,.25)); backdrop-filter:blur(6px); }
-  .nw-b-chip ha-icon { --mdc-icon-size:15px; color:var(--secondary-text-color); }
-  .nw-b-chip b { flex:none; white-space:nowrap; font-weight:650; font-size:10px; letter-spacing:.4px; text-transform:uppercase; color:var(--secondary-text-color); }
+  .nw-b-chip ha-icon { --mdc-icon-size:15px; color:var(--secondary-text-color); flex:none; display:flex; line-height:0; align-self:flex-start; margin-top:.5px; }
+  /* #container: the legacy styles set white-space:normal on every descendant. */
+  #container .nw-b-chip b, #container .nw-b-tiles strong { white-space:nowrap; }
+  .nw-b-chip b { flex:none; white-space:nowrap; line-height:16px; font-weight:650; font-size:10px; letter-spacing:.4px; text-transform:uppercase; color:var(--secondary-text-color); }
   .nw-b-chip--official { border-color:rgba(230,125,45,.55); } .nw-b-chip--official ha-icon { color:rgb(230,125,45); }
   .nw-b-tiles { grid-area:tiles; list-style:none; margin:18px 0 0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; position:relative; z-index:1; }
   .nw-b-tiles li { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; align-content:start; column-gap:8px; row-gap:3px; padding:11px 13px; border-radius:14px;

@@ -244,7 +244,8 @@ export class NiakWeatherSky extends LitElement {
     @keyframes lightning {0%,4.5%,100%{opacity:0;}.6%,1.6%{opacity:1;}2.2%{opacity:.3;}3%{opacity:1;}}
     @keyframes storm-flash {0%,4.5%,100%{opacity:0;}.6%{opacity:.7;}1.6%{opacity:.5;}2.2%{opacity:.1;}3%{opacity:.55;}}
     @container(max-width:650px) {
-      .weather-art {display:block;position:absolute;top:0;right:0;width:100%;height:300px;overflow:hidden;}
+      /* --nw-art-height: the tile and intermediate formats fill their whole height; the full banner keeps a 300 px band. */
+      .weather-art {display:block;position:absolute;top:0;right:0;width:100%;height:var(--nw-art-height,300px);overflow:hidden;}
       .cloud.heavy-left {left:auto;right:30%;width:220px;}.cloud.heavy-right {left:auto;right:-20%;width:240px;}
       .orb {left:var(--nw-orb-x,auto);right:12%;top:36px;}.cloud.back {left:auto;right:22%;top:20px;width:170px;}.cloud.front {left:auto;right:0;top:90px;width:150px;}.cloud.small {left:auto;right:-12%;top:6px;width:120px;}
       .bolt.b1 {left:auto;right:18%;}.bolt.b2 {left:auto;right:2%;}.bolt.b3 {left:auto;right:42%;}
