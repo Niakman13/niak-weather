@@ -270,4 +270,10 @@ export const dashboardStyles = css`
     #tuiles .me-tuv { font-size:20px; }
     #container #tuiles .me-tus { white-space:normal; overflow-wrap:anywhere; }
   }
+  @container (max-width:360px) {
+    /* Small phones: narrower min, max and wind columns so the week fits inside the card. */
+    #jours .me-j { column-gap:4px; } #jours .me-jbar { min-width:14px; } #jours .me-jn { flex-basis:26px; }
+    #jours .me-jmin, #jours .me-jmax { flex-basis:30px; } #jours .me-jp { flex-basis:32px; }
+    #jours .me-jv { flex-basis:36px; font-size:10px; } #jours .me-jv ha-icon { --mdc-icon-size:12px; }
+  }
 `;

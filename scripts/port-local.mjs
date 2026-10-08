@@ -60,8 +60,11 @@ for (const [name, original] of Object.entries(reference.fields)) {
 }
 out += ' const rendered = {' + Object.keys(reference.fields).map(n => `${n}: ${n}()`).join(', ') + '};\n const gauge = rendered.heros.indexOf(\'<div class="me-jauge">\');\n return {...rendered, comfort: gauge < 0 ? "" : rendered.heros.slice(gauge, -6)};\n}\n';
 writeFileSync('src/local-renderer.ts', out);
-const css = reference.css.replaceAll('[onclick]', ':is([data-entity], [data-nav])');
-writeFileSync('src/local-styles.ts', '// Generated: exact original CSS apart from event attribute selectors.\nexport const localStyles = ' + JSON.stringify(css) + ';\n');
+// The template reset white-space on every descendant with an ID selector, overriding the card's own one-line rules.
+// :where() keeps the reset as a default (no specificity) so labels, units and numbers can stay on one line.
+const css = reference.css.replaceAll('[onclick]', ':is([data-entity], [data-nav])')
+  .replace('#container, #container * { white-space: normal; }', ':where(#container, #container *) { white-space: normal; }');
+writeFileSync('src/local-styles.ts', '// Generated: exact original CSS apart from event attribute selectors and a zero-specificity white-space reset.\nexport const localStyles = ' + JSON.stringify(css) + ';\n');
 if (process.argv[3]) {
   const raw = readFileSync(process.argv[3], 'utf8'), template = parse(raw)[1];
   const E = Object.fromEntries(Object.keys(template.variables.E).map(key => [key,

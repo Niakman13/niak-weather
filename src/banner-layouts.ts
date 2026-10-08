@@ -51,8 +51,6 @@ export const bannerStyles = css`
   .nw-b-chip { display:flex; align-items:baseline; gap:7px; padding:5px 11px 5px 8px; border-radius:14px; font-size:12px; line-height:16px;
     background:color-mix(in srgb,var(--card-background-color,#fff) 78%,transparent); border:1px solid var(--divider-color,rgba(150,150,150,.25)); backdrop-filter:blur(6px); }
   .nw-b-chip ha-icon { --mdc-icon-size:15px; color:var(--secondary-text-color); flex:none; display:flex; line-height:0; align-self:flex-start; margin-top:.5px; }
-  /* #container: the legacy styles set white-space:normal on every descendant. */
-  #container .nw-b-chip b, #container .nw-b-tiles strong { white-space:nowrap; }
   .nw-b-chip b { flex:none; white-space:nowrap; line-height:16px; font-weight:650; font-size:10px; letter-spacing:.4px; text-transform:uppercase; color:var(--secondary-text-color); }
   .nw-b-chip--official { border-color:rgba(230,125,45,.55); } .nw-b-chip--official ha-icon { color:rgb(230,125,45); }
   .nw-b-tiles { grid-area:tiles; list-style:none; margin:18px 0 0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; position:relative; z-index:1; }
@@ -99,5 +97,9 @@ export const bannerStyles = css`
     .nw-b-vigil-mark { flex-basis:24px; height:24px; } .nw-b-vigil-mark ha-icon { --mdc-icon-size:13px; }
     .nw-b-vigil-halo { inset:-12px; }
     .nw-b-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
+  @container (max-width:360px) {
+    /* Small phones: "22–23 °C" stays on one line inside its tile. */
+    .nw-b-tiles li { padding:10px; column-gap:6px; } .nw-b-tiles ha-icon { --mdc-icon-size:20px; } .nw-b-tiles strong { font-size:14px; letter-spacing:-.4px; }
   }
 `;
