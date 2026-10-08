@@ -6,8 +6,6 @@ import type { CurrentWeather } from './current-weather';
 import { tickerPoints, vigilanceBadge, type TickerPoint } from './compact-points';
 import type { WeatherBrief } from './weather-brief';
 
-const COLORS = ['', '190,140,35', '230,125,45', '215,70,75'];
-
 /** Shows the points of the brief one at a time, every 5 s. Hovering or focusing the card pauses it. */
 @customElement('niak-brief-ticker')
 export class NiakBriefTicker extends LitElement {
@@ -33,13 +31,13 @@ export class NiakBriefTicker extends LitElement {
   protected render() {
     const point = this.points[this.index % Math.max(1, this.points.length)];
     if (!point) return nothing;
-    return html`<p class=${`chip${this.leaving ? ' out' : ''}${point.level ? ' act' : ''}`} style=${point.level ? `--al:${COLORS[point.level]}` : ''} aria-hidden="true">
+    return html`<p class=${`chip${this.leaving ? ' out' : ''}`} aria-hidden="true">
         <ha-icon icon=${point.icon}></ha-icon><span class="kick">${point.label}</span><span class="msg">${point.text}</span></p>
       <ul class="sr">${this.points.map(p => html`<li>${p.label} : ${p.text}</li>`)}</ul>`;
   }
   static styles = css`
     :host { display:block; min-width:0; }
-    /* Glass bubble, like the four bulletin tiles: icon, group label, sentence. */
+    /* Glass bubble, like the four bulletin tiles: icon, group label, sentence. Grey label and icon, as on the full card. */
     .chip { display:inline-flex; align-items:baseline; gap:7px; max-width:100%; box-sizing:border-box; margin:0; padding:4px 12px 4px 8px; border-radius:13px; /* a pill on one line, a rounded box on two */
       font-size:13px; line-height:17px; font-weight:500; color:var(--primary-text-color);
       background:linear-gradient(rgba(128,128,128,.07),rgba(128,128,128,.07)),color-mix(in srgb,var(--card-background-color,#fff) 38%,transparent);
@@ -49,7 +47,6 @@ export class NiakBriefTicker extends LitElement {
     /* On the first line, next to the label, even when the sentence wraps. */
     ha-icon { --mdc-icon-size:14px; display:flex; line-height:0; flex:none; align-self:flex-start; margin:1.5px -2px 0 0; color:var(--secondary-text-color); }
     .kick { flex:none; font-size:10px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; white-space:nowrap; color:var(--secondary-text-color); }
-    .act ha-icon, .act .kick { color:rgb(var(--al)); }
     .msg { min-width:0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
     .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; margin:0; padding:0; }
     @container (max-width:360px) {
@@ -90,7 +87,7 @@ export function renderCompact(p: CompactParts): TemplateResult {
 }
 
 export const compactStyles = css`
-  .nw-compact { position:relative; isolation:isolate; overflow:hidden; cursor:pointer; color:var(--primary-text-color); box-sizing:border-box; }
+  .nw-compact { --nw-art-height:100%; position:relative; isolation:isolate; overflow:hidden; cursor:pointer; color:var(--primary-text-color); box-sizing:border-box; }
   .nw-compact:focus-visible { outline:2px solid var(--primary-color); outline-offset:-2px; }
   /* The sky keeps its drawing size and shrinks as one block: clouds, sun and rain stay in proportion. */
   .nw-c-skybox { position:absolute; top:0; right:0; z-index:-2; width:calc(100% / var(--k)); height:calc(100% / var(--k)); transform:scale(var(--k)); transform-origin:top right; pointer-events:none; }
@@ -148,6 +145,8 @@ export const compactStyles = css`
     color:color-mix(in srgb,rgb(var(--al)) 78%,var(--primary-text-color) 22%); box-sizing:border-box; }
   .nw-c-vig ha-icon { --mdc-icon-size:11px; }
   .nw-c-vig i { flex:none; } .nw-c-vig-text { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* #container: the legacy styles set white-space:normal on every descendant; one-line texts must win. */
+  #container .nw-c-vig-text, #container .nw-c-place, #container .nw-c-head span, #container .nw-c-kicker { white-space:nowrap; }
   /* HA's ha-icon is inline: without this it takes a line height and sits high in its circle. */
   .nw-compact ha-icon { display:flex; line-height:0; }
   /* Phones and half width: the brief moves under the temperature, on the full width. */
