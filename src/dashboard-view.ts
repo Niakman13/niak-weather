@@ -17,6 +17,7 @@ import { currentSeason, daylightText } from './season';
 import './weather-sky';
 import type { WeatherBrief } from './weather-brief';
 import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
+import { dateFormat, numberFormat } from './intl-cache';
 
 function toggleSynthesisInfo(event: Event) {
   const button=event.currentTarget as HTMLButtonElement;
@@ -42,7 +43,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   // Where the feel comes from, like the source bubbles of the Rain, Wind and Pressure columns.
   const provider=weatherSourceLabel(hass,config),stationTemperature=!!config.temperature_entity;
   // The "i" shows the calculation with today's values, so a "vent −0,3 °C" chip reads as what it is.
-  const one=(v:number)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1}).format(v);
+  const one=(v:number)=>numberFormat('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1}).format(v);
   const comfortBase=model.attributes.base==='humidex'?finite(model.attributes.humidex):finite(model.attributes.t_ext);
   const comfortTerms=([['effet_vent','vent'],['effet_soleil','soleil'],['effet_pluie','pluie'],['effet_nuit','ciel clair']] as const)
     .map(([key,label])=>({value:finite(model.attributes[key])??0,label})).filter(t=>Math.abs(t.value)>=.1);
@@ -55,7 +56,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   const metrics=currentMetrics(hass,config,model,hourly,now);
   const weatherNow=buildCurrentWeather(hass,config,model);
   const hasDetails=metrics.some(m=>m.key!=='temperature')||!!(config.rain_total_entity||config.rain_24h_entity||config.daily_rain_entity||config.weekly_rain_entity||config.monthly_rain_entity||config.yearly_rain_entity||config.max_daily_gust_entity);
-  const degrees=(value:number)=>new Intl.NumberFormat(hass.language || 'fr',{maximumFractionDigits:1}).format(value);
+  const degrees=(value:number)=>numberFormat(hass.language || 'fr',{maximumFractionDigits:1}).format(value);
   const groups = [
     { key:'official', title:'Vigilance officielle', description:'Bulletin du département choisi dans les réglages.' },
     { key:'now', title:'Maintenant', description:'Mesures et estimations actuelles à la maison.' },
@@ -65,7 +66,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   const season=currentSeason(hass,config,now),daylight=daylightText(season);
   // Announced only during the first week of a new season, then the sky alone carries it.
   const seasonNews={spring:'C’est le printemps',summer:'C’est l’été',autumn:'C’est l’automne',winter:'C’est l’hiver'}[season.season];
-  const seasonSince=season.start?new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(Date.UTC(2000,season.start.month-1,season.start.day))):'';
+  const seasonSince=season.start?dateFormat('fr-FR',{day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(Date.UTC(2000,season.start.month-1,season.start.day))):'';
   const seasonPill=season.daysIn!==undefined&&season.daysIn<7?html`<span class=${`nw-season nw-season--${season.season}`} title=${`${season.label} depuis le ${seasonSince}${daylight?` · ${daylight}`:''}`}><ha-icon icon=${season.icon}></ha-icon>${seasonNews}</span>`:nothing;
   const synthesisInfo=brief?html`<div class="nw-brief-details"><h2 id="nw-synthesis-title">Synthèse</h2><button class="nw-synthesis-info-button" aria-label="Consulter les points à retenir de la synthèse" aria-expanded="false" aria-controls="nw-synthesis-info" @click=${toggleSynthesisInfo}><span class="nw-info-icon" aria-hidden="true">i</span></button><span class="nw-synthesis-location">${location}</span>${seasonPill}
     <div id="nw-synthesis-info" class="nw-brief-panel" popover="auto" role="region" aria-label="Les points à retenir" @toggle=${(event:Event)=>{
@@ -91,7 +92,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
         </div>
       </aside>`;
   const bulletin=config.show_bulletin===false?undefined:buildBulletin(hourly,now,hass.config?.time_zone,String(hass.states[config.weather_entity]?.attributes.wind_speed_unit ?? 'km/h'));
-  const dateLabel=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:hass.config?.time_zone}).format(now);
+  const dateLabel=dateFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:hass.config?.time_zone}).format(now);
   // One rotating bubble instead of a list; it never repeats the sentence already shown above it.
   const alert=alertPoint(brief),shown=alert?alert.source:!bulletin?headline:undefined;
   const points=tickerPoints(brief).filter(p=>p.text!==shown);
@@ -192,8 +193,10 @@ export const dashboardStyles = css`
   #comfort .me-rail { height:6px; }
   #comfort .me-tick { top:-9px; height:20px; width:4px; margin-left:-4px; box-sizing:content-box; border:2px solid var(--card-background-color,#fff); border-radius:4px; background:color-mix(in srgb,var(--primary-text-color) 65%,var(--card-background-color,#fff) 35%); opacity:1; box-shadow:0 0 0 1px rgba(150,150,150,.25); z-index:1; }
   #comfort .me-cur { z-index:2; }
-  #comfort .me-cur i { width:16px; height:16px; top:-8px; left:-8px; border:2px solid var(--card-background-color,#fff); background:color-mix(in srgb,rgb(var(--vc)) 65%,var(--primary-text-color) 35%); box-shadow:0 0 0 1px rgba(var(--vc),.42),0 0 9px rgba(var(--vc),.4); animation:nwComfortPulse 4.8s ease-in-out infinite; }
-  @keyframes nwComfortPulse { 0%,100% { box-shadow:0 0 0 1px rgba(var(--vc),.35),0 0 6px rgba(var(--vc),.28); } 50% { box-shadow:0 0 0 2px rgba(var(--vc),.45),0 0 13px rgba(var(--vc),.52); } }
+  #comfort .me-cur i { width:16px; height:16px; top:-8px; left:-8px; border:2px solid var(--card-background-color,#fff); background:color-mix(in srgb,rgb(var(--vc)) 65%,var(--primary-text-color) 35%); box-shadow:0 0 0 1px rgba(var(--vc),.35),0 0 6px rgba(var(--vc),.28); animation:none; }
+  #comfort .me-cur i::after { content:''; position:absolute; inset:-2px; border-radius:50%; box-shadow:0 0 0 1px rgba(var(--vc),.3),0 0 13px rgba(var(--vc),.52); opacity:0; animation:nwComfortPulse 4.8s ease-in-out infinite; pointer-events:none; }
+  @keyframes nwComfortPulse { 0%,100% { opacity:0; } 50% { opacity:1; } }
+  @media (prefers-reduced-motion:reduce) { #comfort .me-cur i::after { animation:none; } }
   #comfort .me-decos { border:0; padding:0; margin:0; gap:8px; justify-content:center; }
   #comfort .me-d, #pastilles .me-pa { padding:6px 10px; border:1px solid var(--divider-color,rgba(150,150,150,.18)); border-radius:999px; background:rgba(150,150,150,.045); box-sizing:border-box; max-width:100%; min-height:30px; align-items:center; }
   #comfort .me-d b { font-size:11px; font-weight:650; }

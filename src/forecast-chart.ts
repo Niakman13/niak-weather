@@ -1,10 +1,11 @@
 import { css, html, nothing, svg, type TemplateResult } from 'lit';
 import { finite, measurement } from './local-model';
 import type { HomeAssistant, WeatherForecast } from './types';
+import { dateFormat, numberFormat } from './intl-cache';
 
 export interface ForecastSlot { hour: number; day: number; t?: number; p: number; c: string; night: boolean; w?: number; g?: number; b?: number }
 
-const parts = (date: Date, timeZone?: string) => Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit',
+const parts = (date: Date, timeZone?: string) => Object.fromEntries(dateFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit',
   day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date).map(p => [p.type, p.value]));
 
 /** The next 18 hourly points, in local time, with night flagged from today's sunrise and sunset (decimal hours). */
@@ -47,7 +48,7 @@ export function renderForecastChart(hass: HomeAssistant, entity: string, provide
   const n = slots.length, X = (i: number) => (i + .5) / n * 100;
   const scale = temperatureScale(temps), Y = (t: number) => 15 + (1 - (t - scale.min) / (scale.max - scale.min)) * 78;
   const peak = Math.max(...slots.map(s => s.p)), rain = peak >= .1, rainTop = rainScale(peak), H = (p: number) => p / rainTop * 46;
-  const nf = (v: number, d = 0) => new Intl.NumberFormat(hass.language || 'fr', { maximumFractionDigits: d }).format(v);
+  const nf = (v: number, d = 0) => numberFormat(hass.language || 'fr', { maximumFractionDigits: d }).format(v);
   const points = slots.map((s, i) => s.t === undefined ? undefined : { x: X(i), y: Y(s.t) }).filter((p): p is { x: number; y: number } => !!p);
   let line = `M${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
   for (let i = 0; i < points.length - 1; i++) {
@@ -70,7 +71,7 @@ export function renderForecastChart(hass: HomeAssistant, entity: string, provide
   return html`<section class="nw-history-card me-bl nw-forecast-card" style="--history-accent:61,155,233" aria-label="Prévisions des 18 prochaines heures">
     <header><h3><ha-icon icon="mdi:chart-bell-curve-cumulative"></ha-icon>18 prochaines heures</h3><span class="nw-history-source">${provider}</span></header>
     <div class="nw-fc" data-entity=${entity} role="img" aria-label=${`Températures de ${nf(lo.s.t!)} à ${nf(hi.s.t!)} ${unit}${rain ? `, pluie jusqu’à ${nf(peak, 1)} mm par heure` : ', pas de pluie prévue'}`}>
-      <div class="nw-fc-tags"><span class="nw-fc-tag" style=${`left:${X(0)}%`}>Maintenant</span>${midnight > 0 ? html`<span class="nw-fc-tag" style=${`left:${(X(midnight) + X(midnight - 1)) / 2}%`}>Demain</span>` : nothing}</div>
+      <div class="nw-fc-tags"><span class="nw-fc-tag" style=${`left:${X(0)}%`}>Maintenant</span>${midnight > 0 ? html`<span class="nw-fc-tag nw-fc-tag--next" style=${`left:${(X(midnight) + X(midnight - 1)) / 2}%;--f:${(X(midnight) + X(midnight - 1)) / 200}`}>Demain</span>` : nothing}</div>
       <div class="nw-fc-y nw-fc-y--t">${scale.ticks.map(v => html`<span style=${`top:${Y(v)}%`}>${nf(v)} ${unit}</span>`)}</div>
       <div class="nw-fc-area">
         ${nights.map(([a, b]) => html`<i class="nw-fc-night" style=${`left:${X(a) - 50 / n}%;width:${(b - a + 1) * 100 / n}%`}></i>`)}
@@ -111,8 +112,10 @@ export const forecastChartStyles = css`
   .nw-fc-night { position:absolute;top:0;bottom:0;background:rgba(110,125,170,.12); }
   .nw-fc-now, .nw-fc-midnight { position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--secondary-text-color);opacity:.55; }
   /* Markers get their own strip above the chart: nothing on the curve can cover them. */
-  .nw-fc-tags { grid-column:2;grid-row:1;position:relative; }
+  .nw-fc-tags { grid-column:2;grid-row:1;position:relative;container-type:inline-size; }
   .nw-fc-tag { position:absolute;bottom:2px;transform:translateX(-2px);font-size:9px;font-weight:650;letter-spacing:.5px;text-transform:uppercase;color:var(--secondary-text-color);white-space:nowrap;line-height:11px; }
+  /* Late in the evening midnight is close to now: lift « Demain » one line when it would touch « Maintenant » (72px). */
+  .nw-fc-tag--next { bottom:clamp(2px,calc((72px - var(--f) * 100cqw) * 99),14px); }
   /* The legacy layout sets #container * { white-space: normal }: chart labels must stay on one line. */
   #container .nw-fc-x>span, #container .nw-fc-y>span, #container .nw-fc-extreme, #container .nw-fc-tag, #container .nw-current-trend small { white-space:nowrap; }
   .nw-fc-dot { position:absolute;width:9px;height:9px;margin:-6px 0 0 -6px;border-radius:50%;background:rgb(61,155,233);border:2px solid var(--card-background-color,#fff); }

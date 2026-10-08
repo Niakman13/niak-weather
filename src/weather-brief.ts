@@ -1,6 +1,7 @@
 import { atmoField, atmoFields, atmoMetrics, atmoReading, pollenMetrics, pollutantMetrics, normal } from './atmo';
 import { finite } from './local-model';
 import type { HassEntity, HomeAssistant, WeatherCardConfig,WeatherForecast } from './types';
+import { dateFormat, numberFormat } from './intl-cache';
 
 export interface BriefPoint { hours: number; temperature?: number; precipitation?: number; condition?: string; }
 export interface BriefSignal {
@@ -10,7 +11,7 @@ export interface BriefSignal {
 export interface WeatherBrief {
   title: string; label: string; rgb: string; icon: string; summary: string; signals: BriefSignal[]; caveats: string[]; available: boolean;
 }
-const format = (n: number) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(n);
+const format = (n: number) => numberFormat('fr-FR', { maximumFractionDigits: 1 }).format(n);
 const timing = (h: number) => h < 1 ? 'dans l’heure' : `dans environ ${Math.round(h)} h`;
 const colors = ['61,155,233', '190,140,35', '230,125,45', '215,70,75'];
 const COLOR_NAMES = ['verte', 'jaune', 'orange', 'rouge'];
@@ -73,7 +74,7 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   const cold = upcoming.find(p => finite(p.temperature) !== undefined && p.temperature! <= 0);
   if (cold) add({ key: 'freeze-future', group: 'future', severity: 1, text: `Gel ${timing(cold.hours)} : ${format(cold.temperature!)} °C prévus`, explanation: 'Prévision du fournisseur météo.', entity: config.weather_entity, icon: 'mdi:snowflake' });
   // Tonight: the forecast minimum of the next 18 h against the frost and dew points measured now.
-  const at = (h: number) => `vers ${Number(new Intl.DateTimeFormat('en-GB', { timeZone: hass.config?.time_zone, hour: 'numeric', hourCycle: 'h23' }).format(new Date(now.getTime() + h * 3600_000)))} h`;
+  const at = (h: number) => `vers ${Number(dateFormat('en-GB', { timeZone: hass.config?.time_zone, hour: 'numeric', hourCycle: 'h23' }).format(new Date(now.getTime() + h * 3600_000)))} h`;
   const night = points.filter(p => Number.isFinite(p.hours) && p.hours >= 0 && p.hours <= 18 && finite(p.temperature) !== undefined);
   const low = night.length ? night.reduce((m, p) => p.temperature! < m.temperature! ? p : m) : undefined;
   const frostPoint = finite(a.gelee), dewPoint = finite(a.rosee);
@@ -94,7 +95,7 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
     if(maximum-temp>=3||temp-minimum>=3)add({ key: 'temperature-future', group: 'future', severity: 0,
       text: maximum-temp>=3?`Montée jusqu’à ${format(maximum)} °C dans les 6 h`:`Baisse jusqu’à ${format(minimum)} °C dans les 6 h`, explanation: 'Comparé à la température actuelle, sur les 6 prochaines heures.', entity: config.weather_entity, icon: 'mdi:thermometer' });
   }
-  const zone=hass.config?.time_zone??'UTC',dateKey=(date:Date)=>new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+  const zone=hass.config?.time_zone??'UTC',dateKey=(date:Date)=>dateFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
   const today=dateKey(now),tomorrowDate=new Date(`${today}T12:00:00Z`);tomorrowDate.setUTCDate(tomorrowDate.getUTCDate()+1);
   const tomorrow=tomorrowDate.toISOString().slice(0,10);
   const tomorrowRain=daily.find(p=>Number.isFinite(Date.parse(p.datetime))&&dateKey(new Date(p.datetime))===tomorrow&&finite(p.precipitation)!==undefined&&p.precipitation!>=20);

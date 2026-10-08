@@ -3,6 +3,7 @@ import { finite, measurement, type History } from './local-model';
 import type { HassEntity, HomeAssistant, WeatherCardConfig } from './types';
 import type { CurrentMetric } from './current-measurements';
 import type {StationDerived} from './station-history';
+import { dateFormat, numberFormat } from './intl-cache';
 
 type Point = { t:number; v?:number };
 export interface RainDay { date:string; label:string; value?:number; partial:boolean }
@@ -13,7 +14,7 @@ function points(rows:History[string]|undefined,unit:unknown,kind:string,now:numb
 }
 /** Daily sensor maxima, never differences of rolling 24h, weekly or monthly totals. */
 export function rainDays(rows:History[string]|undefined,unit:unknown,now:Date,timeZone?:string):RainDay[] {
-  const formatter=new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'});
+  const formatter=dateFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'});
   const series=points(rows,unit,'rain',now.getTime()).map(p=>({...p,date:formatter.format(new Date(p.t))}));
   const today=formatter.format(now), noon=new Date(`${today}T12:00:00Z`);
   const grouped=new Map<string,typeof series>();
@@ -33,7 +34,7 @@ export function rainDays(rows:History[string]|undefined,unit:unknown,now:Date,ti
     const value=endsInOutage&&highest===0?undefined:highest;
     const resetInside=values.some((v,j)=>j>0&&v<values[j-1]);
     const partial=value!==undefined&&(resetInside||endsInOutage||(!previous&&daily.length>0));
-    return {date:key,label:i===6?'Auj.':new Intl.DateTimeFormat('fr',{weekday:'short',timeZone:'UTC'}).format(date),value,partial};
+    return {date:key,label:i===6?'Auj.':dateFormat('fr',{weekday:'short',timeZone:'UTC'}).format(date),value,partial};
   });
 }
 /** State-change history is drawn as steps; unavailable periods remain gaps. */
@@ -111,7 +112,7 @@ export function columnStatus(model?:HassEntity):{rain?:string;wind?:string;press
 
 export function renderRecentDetails(hass:HomeAssistant,config:WeatherCardConfig,history:History,rainHistory:History,now:Date,metrics:CurrentMetric[]=[],derived?:StationDerived,model?:HassEntity){
   const read=(id:string|undefined,kind:string)=>{const e=hass.states[id??''];const v=valid(e)?measurement(e!.state,e!.attributes.unit_of_measurement,kind):undefined;return v!==undefined&&v>=0?v:undefined;};
-  const fmt=(v:number|undefined,d=1)=>v===undefined?'—':new Intl.NumberFormat(hass.language||'fr',{maximumFractionDigits:d,minimumFractionDigits:d}).format(v);
+  const fmt=(v:number|undefined,d=1)=>v===undefined?'—':numberFormat(hass.language||'fr',{maximumFractionDigits:d,minimumFractionDigits:d}).format(v);
   const metric=(value:number|undefined,unit:string,label:string,id?:string,large=false)=>html`<button class=${`nw-history-value${large?' nw-history-value--large':''}`} data-entity=${id??config.weather_entity} aria-label=${`${label} : ${fmt(value)} ${unit}`}><strong>${fmt(value,unit==='km/h'||unit==='hPa'?0:1)}<small>${unit}</small></strong><span>${label}</span></button>`;
   const rainMetric=metrics.find(m=>m.key==='rain'),windMetric=metrics.find(m=>m.key==='wind'),pressureMetric=metrics.find(m=>m.key==='pressure');
   const hasRain=!!rainMetric||!!(config.rain_total_entity||config.rain_24h_entity||config.daily_rain_entity||config.weekly_rain_entity||config.monthly_rain_entity||config.yearly_rain_entity);
@@ -147,7 +148,7 @@ export function renderRecentDetails(hass:HomeAssistant,config:WeatherCardConfig,
   const pressureLow=pressureValues.length?Math.floor(Math.min(...pressureValues))-1:0,pressureTop=pressureValues.length?Math.ceil(Math.max(...pressureValues))+1-pressureLow:2;
   const pressurePaths=windCurvePaths(pressureSeries.map(p=>({...p,v:p.v===undefined?undefined:p.v-pressureLow})),pressureTop,now);
   const chartGrid=(top:number,unit:string,bottom=0)=>svg`<text x="8" y="15">${unit}</text>${[0,.5,1].map(f=>svg`<line x1="42" x2="462" y1=${126-f*96} y2=${126-f*96}/><text x="32" y=${130-f*96} text-anchor="end">${fmt(bottom+top*f,0)}</text>`)}`;
-  const timeLabels=()=>[0,2,4,6].map(h=>svg`<text x=${42+h/6*420} y="148" text-anchor="middle">${new Intl.DateTimeFormat('fr',{timeZone:hass.config?.time_zone,hour:'2-digit',minute:'2-digit'}).format(new Date(now.getTime()-(6-h)*3600_000))}</text>`);
+  const timeLabels=()=>[0,2,4,6].map(h=>svg`<text x=${42+h/6*420} y="148" text-anchor="middle">${dateFormat('fr',{timeZone:hass.config?.time_zone,hour:'2-digit',minute:'2-digit'}).format(new Date(now.getTime()-(6-h)*3600_000))}</text>`);
   const measuredRain=headlineRain!==undefined;
   const bearing=windMetric?.bearing,compass=bearing===undefined?'Direction indisponible':['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'][Math.round(((bearing%360+360)%360)/22.5)%16];
   const status=columnStatus(model);
@@ -173,7 +174,7 @@ export function renderRecentDetails(hass:HomeAssistant,config:WeatherCardConfig,
       </div><details class="nw-statistics"><summary>Statistiques</summary>
       ${config.max_daily_gust_entity||computedMax?.value!==undefined?metric(maximum,'km/h',`Rafale max. du jour${computedMax?` · ${computedMax.partial?'historique partiel':'calculée'}`:windSource==='Station locale'?'':' · station'}`,config.max_daily_gust_entity??config.wind_gust_entity):nothing}
       <div class="nw-wind-scale" aria-label=${`Échelle de 0 à ${scale} kilomètres par heure`}><div class="nw-wind-axis">${[0,.25,.5,.75,1].map(f=>html`<span style=${`left:${f*100}%`}>${fmt(scale*f,0)}${f===1?' km/h':''}</span>`)}${wind===undefined?nothing:html`<i class="nw-wind-marker" style=${`left:${wind/scale*100}%`} title=${`${windLabel} : ${fmt(wind,0)} km/h`}></i>`}${maximum===undefined?nothing:html`<i class="nw-wind-marker nw-wind-marker--max" style=${`left:${maximum/scale*100}%`} title=${`Maximum du jour : ${fmt(maximum,0)} km/h`}></i>`}</div><div class="nw-wind-legend"><span>● ${isGustPrimary?'Rafales actuelles':'Vent moyen actuel'}</span>${maximum===undefined?nothing:html`<span>│ Rafale max. du jour</span>`}</div></div>
-      <div class="nw-history-chart"><h4>Vent des 6 dernières heures</h4>${windChart?svg`<svg viewBox="0 0 480 156" role="img" aria-label="Vent moyen et rafales regroupés par dix minutes ; les données indisponibles restent des coupures"><defs><linearGradient id="nw-wind-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgb(40,130,240)" stop-opacity=".18"/><stop offset="100%" stop-color="rgb(40,130,240)" stop-opacity=".015"/></linearGradient></defs>${chartGrid(windTop,'km/h')}${meanPaths.map(d=>svg`<path class="nw-history-area" d=${d.area} fill="url(#nw-wind-area)"/><path class="nw-wind-curve" d=${d.line} fill="none"/>`)}${gustPaths.map(d=>svg`<path class="nw-wind-curve nw-wind-curve--gust" d=${d.line} fill="none"/>`)}${[0,2,4,6].map(h=>svg`<text x=${42+h/6*420} y="148" text-anchor="middle">${new Intl.DateTimeFormat('fr',{timeZone:hass.config?.time_zone,hour:'2-digit',minute:'2-digit'}).format(new Date(now.getTime()-(6-h)*3600_000))}</text>`)}</svg>`:html`<p class="nw-history-empty">Historique du vent indisponible ou insuffisant</p>`}
+      <div class="nw-history-chart"><h4>Vent des 6 dernières heures</h4>${windChart?svg`<svg viewBox="0 0 480 156" role="img" aria-label="Vent moyen et rafales regroupés par dix minutes ; les données indisponibles restent des coupures"><defs><linearGradient id="nw-wind-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgb(40,130,240)" stop-opacity=".18"/><stop offset="100%" stop-color="rgb(40,130,240)" stop-opacity=".015"/></linearGradient></defs>${chartGrid(windTop,'km/h')}${meanPaths.map(d=>svg`<path class="nw-history-area" d=${d.area} fill="url(#nw-wind-area)"/><path class="nw-wind-curve" d=${d.line} fill="none"/>`)}${gustPaths.map(d=>svg`<path class="nw-wind-curve nw-wind-curve--gust" d=${d.line} fill="none"/>`)}${[0,2,4,6].map(h=>svg`<text x=${42+h/6*420} y="148" text-anchor="middle">${dateFormat('fr',{timeZone:hass.config?.time_zone,hour:'2-digit',minute:'2-digit'}).format(new Date(now.getTime()-(6-h)*3600_000))}</text>`)}</svg>`:html`<p class="nw-history-empty">Historique du vent indisponible ou insuffisant</p>`}
       ${windChart?html`<div class="nw-wind-chart-legend">${meanPaths.length?html`<span>${isGustPrimary?'Rafales · pics 10 min':'Vent moyen · moyenne 10 min'}</span>`:nothing}${gustPaths.length?html`<span class="nw-wind-chart-legend--gust">Rafales · pics 10 min</span>`:nothing}</div>`:nothing}</div></details>
     </section>`:nothing}
     ${hasPressure?html`<section class="nw-history-card me-bl" style="--history-accent:135,117,190" aria-label="Bilan pression"><header><h3><ha-icon icon="mdi:gauge"></ha-icon>Pression</h3><span class="nw-history-source">${pressureMetric?`${pressureMetric.source}${pressureMetric.fallback?' · repli':''}`:'Station locale'}</span></header>${pill(status.pressure)}

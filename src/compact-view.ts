@@ -5,6 +5,7 @@ import type { Bulletin } from './bulletin';
 import type { CurrentWeather } from './current-weather';
 import { alertPoint, tickerPoints, type TickerPoint } from './compact-points';
 import type { WeatherBrief } from './weather-brief';
+import { numberFormat } from './intl-cache';
 
 /** Shows the points of the brief one at a time, every 5 s. Hovering or focusing the card pauses it. */
 @customElement('niak-brief-ticker')
@@ -72,7 +73,7 @@ export interface CompactParts {
 export function renderCompact(p: CompactParts): TemplateResult {
   const alert = alertPoint(p.brief), points = tickerPoints(p.brief).filter(x => x.text !== alert?.source);
   const dark = ['lightning', 'lightning-rainy', 'pouring'].includes(p.now.condition);
-  const degrees = p.now.temperature === undefined ? undefined : new Intl.NumberFormat(p.language || 'fr', { maximumFractionDigits: 1 }).format(p.now.temperature);
+  const degrees = p.now.temperature === undefined ? undefined : numberFormat(p.language || 'fr', { maximumFractionDigits: 1 }).format(p.now.temperature);
   const now = html`<div class="nw-c-now">${p.format === 'intermediate' ? html`<span class="nw-c-kicker">En ce moment</span>` : nothing}
     <span class="nw-c-cond"><ha-icon icon=${p.now.icon}></ha-icon>${p.now.label}</span>
     ${degrees === undefined ? html`<span class="nw-c-missing">Température indisponible</span>` : html`<span class="nw-c-temp">${degrees}<small>°C</small></span>`}

@@ -30,10 +30,10 @@ export class NiakWeatherSky extends LitElement {
   }
   disconnectedCallback() {super.disconnectedCallback();this.observer?.disconnect();document.removeEventListener('visibilitychange',this.visibility);}
   private cloud(layer:string) {
-    return html`<svg class=${`cloud ${layer}`} viewBox="0 0 180 112" aria-hidden="true">
+    return html`<div class=${`cloud ${layer}`}><svg viewBox="0 0 180 112" aria-hidden="true">
       <path class="cloud-rear" d="M42 103C21 103 7 90 7 70C7 53 17 40 33 36C35 16 50 5 69 5C91 5 107 19 109 40C116 37 123 36 130 36C154 36 172 51 172 73C172 92 157 103 137 103Z"/>
       <path class="cloud-near" d="M38 103C26 103 19 95 19 84C19 73 27 65 36 64C38 52 47 45 59 45C72 45 82 54 83 65C99 62 116 72 116 85C116 96 108 103 94 103Z"/>
-    </svg>`;
+    </svg></div>`;
   }
   /** Deterministic star field over the artwork side; each star twinkles on its own rhythm. */
   private stars(count:number) {
@@ -46,7 +46,7 @@ export class NiakWeatherSky extends LitElement {
   private fog() {
     const bands=this.quality==='low'?3:5;
     return html`${this.phase==='day'||this.phase==='twilight'?html`<div class="fog-sun"></div>`:nothing}
-      ${Array.from({length:bands},(_,i)=>html`<svg class=${`fog-band depth-${i%3}`} viewBox="0 0 600 60" preserveAspectRatio="none" style=${`--fy:${6+i*16}%;--fl:${[-10,18,-25,30,0][i]}%;--fw:${[120,95,140,85,130][i]}%;--fd:${13+i*3}s;--fdelay:${-i*2.7}s;--dir:${i%2?-1:1}`}><path d="M0 34C60 16 130 20 190 30S330 48 400 32 520 14 600 28V60H0Z"/></svg>`)}`;
+      ${Array.from({length:bands},(_,i)=>html`<div class=${`fog-band depth-${i%3}`} style=${`--fy:${6+i*16}%;--fl:${[-10,18,-25,30,0][i]}%;--fw:${[120,95,140,85,130][i]}%;--fd:${13+i*3}s;--fdelay:${-i*2.7}s;--dir:${i%2?-1:1}`}><svg viewBox="0 0 600 60" preserveAspectRatio="none"><path d="M0 34C60 16 130 20 190 30S330 48 400 32 520 14 600 28V60H0Z"/></svg></div>`)}`;
   }
   /** Six-armed snowflake centred on 0,0: main arms, two pairs of side branches and an inner star. */
   private static flake(r:number):string {
@@ -91,7 +91,7 @@ export class NiakWeatherSky extends LitElement {
     // Autumn leaves fly in rain and storms too; only snow and hail hide them.
     if(this.season==='autumn'&&!['snowy','snowy-rainy','hail'].includes(this.condition)) return drift(5,i=>html`<svg class=${`plane plane-${i%3}`} viewBox="0 0 44 44"><defs>${NiakWeatherSky.planeTint(i%3)}</defs>
       <path class="stem" d="M22 30.5Q23 37 21 42.5"/><path class="blade" fill=${`url(#nw-plane-${i%3})`} d="M22 32Q14 34 8 31L4 28.5L7.5 27Q11 25.5 10 22.5L4.5 21L6.5 19.5L1 13L4.5 12.5L3 9Q8 9 10.5 12L11.5 10Q14.5 13 16 16Q15.3 11 16.8 7.6L15.4 6.2L18.8 5.3Q20.8 3.6 22 1Q23.2 3.6 25.2 5.3L28.6 6.2L27.2 7.6Q28.7 11 28 16Q29.5 13 32.5 10L33.5 12Q36 9 41 9L39.5 12.5L43 13L37.5 19.5L39.5 21L34 22.5Q33 25.5 36.5 27L40 28.5L36 31Q30 34 22 32Z"/><path class="veins" d="M22 31V4M22 31Q14 22 3.5 10M22 31Q30 22 40.5 10M22 31Q14 29 5 28.5M22 31Q30 29 39 28.5M22 19L17 13.5M22 19L27 13.5M22 12L19 8.5M22 12L25 8.5M13.5 21.5L8.5 18.5M30.5 21.5L35.5 18.5M10 17L6.5 12.5M34 17L37.5 12.5"/></svg>`);
-    if(this.season==='summer'&&this.phase==='day'&&['sunny','partlycloudy'].includes(this.condition)) return html`<div class="heat">${Array.from({length:few?3:7},(_,i)=>html`<svg class="heat-plume" viewBox="0 0 24 120" preserveAspectRatio="none" style=${`--hx:${47+(i*13)%46}%;--hh:${70+(i*17)%45}px;--hd:${-(i*.9)%4.2}s;--hs:${1.6+(i%3)*.35}s`}><defs><linearGradient id=${`nw-heat-${i}`} x1="0" y1="1" x2="0" y2="0"><stop offset="0" class="heat-stop" stop-opacity="0"/><stop offset=".35" class="heat-stop" stop-opacity=".6"/><stop offset="1" class="heat-stop" stop-opacity="0"/></linearGradient></defs><path stroke=${`url(#nw-heat-${i})`} d="M12 120C4 104 20 92 12 76S4 48 12 32S20 10 12 0"/></svg>`)}</div>`;
+    if(this.season==='summer'&&this.phase==='day'&&['sunny','partlycloudy'].includes(this.condition)) return html`<div class="heat">${Array.from({length:few?3:7},(_,i)=>html`<div class="heat-plume" style=${`--hx:${47+(i*13)%46}%;--hh:${70+(i*17)%45}px;--hd:${-(i*.9)%4.2}s;--hs:${1.6+(i%3)*.35}s`}><svg viewBox="0 0 24 120" preserveAspectRatio="none"><defs><linearGradient id=${`nw-heat-${i}`} x1="0" y1="1" x2="0" y2="0"><stop offset="0" class="heat-stop" stop-opacity="0"/><stop offset=".35" class="heat-stop" stop-opacity=".6"/><stop offset="1" class="heat-stop" stop-opacity="0"/></linearGradient></defs><path stroke=${`url(#nw-heat-${i})`} d="M12 120C4 104 20 92 12 76S4 48 12 32S20 10 12 0"/></svg></div>`)}</div>`;
     if(this.season==='winter') return this.frostPane();
     return nothing;
   }
@@ -120,11 +120,11 @@ export class NiakWeatherSky extends LitElement {
         ${this.condition!=='unknown'?this.seasonal(rain||snow,storm,fog):nothing}
         ${rain?particles('rain'):nothing}${snow?particles(this.condition==='hail'?'hailstone':'snow'):nothing}
         ${windy?html`
-          <svg class="gust" viewBox="0 0 420 100"><path d="M0 32h270c50 0 50-28 18-28M65 59h290c48 0 50 33 18 33M130 80h90"/></svg>
-          <svg class="gust second" viewBox="0 0 420 100"><path d="M0 28h300c40 0 40-24 15-24M50 58h210c48 0 48 33 17 33"/></svg>
-          ${Array.from({length:this.quality==='low'?2:5},(_,i)=>html`<div class="leaf-track" style=${`--leaf-top:${28+i*12}%;--leaf-delay:${-i*1.3}s;--leaf-time:${3.8+i*.5}s`}><svg class="leaf" viewBox="0 0 28 18"><path d="M2 9C8-2 21 1 27 4C23 17 9 20 2 9Z"/><path d="M0 10 22 6"/></svg></div>`)}
+          <div class="gust"><svg viewBox="0 0 420 100"><path d="M0 32h270c50 0 50-28 18-28M65 59h290c48 0 50 33 18 33M130 80h90"/></svg></div>
+          <div class="gust second"><svg viewBox="0 0 420 100"><path d="M0 28h300c40 0 40-24 15-24M50 58h210c48 0 48 33 17 33"/></svg></div>
+          ${Array.from({length:this.quality==='low'?2:5},(_,i)=>html`<div class="leaf-track" style=${`--leaf-top:${28+i*12}%;--leaf-delay:${-i*1.3}s;--leaf-time:${3.8+i*.5}s`}><div class="leaf"><svg viewBox="0 0 28 18"><path d="M2 9C8-2 21 1 27 4C23 17 9 20 2 9Z"/><path d="M0 10 22 6"/></svg></div></div>`)}
         `:nothing}
-        ${storm?html`${BOLTS.map((b,i)=>html`<svg class=${`bolt b${i+1}`} viewBox="0 0 120 220" style=${`animation-delay:${b.delay}s`}><path d=${b.d}/></svg>`)}
+        ${storm?html`${BOLTS.map((b,i)=>html`<div class=${`bolt b${i+1}`} style=${`animation-delay:${b.delay}s`}><svg viewBox="0 0 120 220"><path d=${b.d}/></svg></div>`)}
           ${BOLTS.map((b,i)=>html`<div class=${`flash f${i+1}`} style=${`animation-delay:${b.delay}s`}></div>`)}`:nothing}
       `:nothing}</div>
     </div>`;
@@ -142,7 +142,8 @@ export class NiakWeatherSky extends LitElement {
     .season-autumn {--season-light:radial-gradient(ellipse 65% 90% at 85% 90%,rgba(230,140,60,.14),transparent 70%);}
     .season-winter {--season-light:radial-gradient(ellipse 60% 90% at 85% 10%,rgba(190,225,255,.18),transparent 70%);}
     .season-summer .sun {box-shadow:0 0 50px 22px #ffc96a66;}
-    .drift {position:absolute;left:var(--dx);top:-8%;animation:drift-fall var(--dt) linear var(--dd) infinite;}
+    /* Full-height track moved by translate only (top would relayout every frame); the leaf sits at its top. */
+    .drift {position:absolute;left:var(--dx);top:0;height:100%;translate:0 -8%;animation:drift-fall var(--dt) linear var(--dd) infinite;}
     .drift>i {display:block;animation:sway var(--sw) ease-in-out infinite alternate;}
     .drift--gusty {animation-name:drift-gust;}
     .petal {width:14px;height:14px;filter:drop-shadow(0 1px 1px #0002);}.petal-0 {fill:#f2a9c6;}.petal-1 {fill:#fbe3ec;}
@@ -186,6 +187,8 @@ export class NiakWeatherSky extends LitElement {
     .star.bright::before,.star.bright::after {content:'';position:absolute;left:50%;top:50%;width:11px;height:1px;translate:-50% -50%;background:linear-gradient(90deg,transparent,#fffe,transparent);}
     .star.bright::after {rotate:90deg;}
     .cloud {position:absolute;width:190px;height:120px;overflow:visible;filter:drop-shadow(0 5px 7px #172d4317);animation:clouds var(--cloud-duration,32s) ease-in-out infinite alternate;}
+    /* Animated artwork is wrapped in a div: Chrome can only hand HTML boxes to the GPU, an animated <svg> restyles every frame. */
+    :is(.cloud,.fog-band,.heat-plume,.gust,.leaf,.bolt)>svg {display:block;width:100%;height:100%;overflow:visible;}
     .cloud-rear {fill:#d6dde3;}.cloud-near {fill:#f4f7f8;}
     .cloud.back {left:55%;top:15px;width:220px;height:140px;opacity:.62;animation-delay:-12s;}
     .cloud.front {left:73%;top:90px;animation-delay:-4s;}
@@ -225,7 +228,7 @@ export class NiakWeatherSky extends LitElement {
     .flash {position:absolute;inset:0;--fx:76%;--fy:30%;background:radial-gradient(ellipse 48% 105% at var(--fx) var(--fy),#f4f9ff,#c9dff7a6 30%,transparent 68%);mix-blend-mode:screen;opacity:0;animation:storm-flash 6s linear infinite;}
     .flash.f2 {--fx:92%;--fy:22%;}.flash.f3 {--fx:62%;--fy:18%;}
     .scene *, .scene *::after, .scene *::before {animation-play-state:var(--play,paused);}
-    .scene[data-still] * {animation:none;}.scene[data-still] .particle {translate:0 var(--rest);}.scene[data-still] .drift {top:var(--rest);}.scene[data-still] .frost-bokeh {opacity:.6;}
+    .scene[data-still] * {animation:none;}.scene[data-still] .particle {translate:0 var(--rest);}.scene[data-still] .drift {translate:0 var(--rest);}.scene[data-still] .frost-bokeh {opacity:.6;}
     .scene[data-still] .bolt.b1 {opacity:.8;}.scene[data-still] .flash {opacity:0;}
     @keyframes clouds {from{translate:-24px 0;}to{translate:32px 4px;}}
     @keyframes wind-clouds {from{translate:-75px -3px;}to{translate:90px 6px;}}
@@ -237,8 +240,8 @@ export class NiakWeatherSky extends LitElement {
     @keyframes hail {0%{translate:0 0;}85%{translate:-12px 85%;}100%{translate:5px 75%;}}
     @keyframes fog-drift {from{translate:calc(var(--dir) * -7%) 0;}to{translate:calc(var(--dir) * 7%) 6px;}}
     @keyframes fog-sun {from{opacity:.55;}to{opacity:.9;}}
-    @keyframes drift-fall {from{top:-8%;translate:0 0;}to{top:108%;translate:-40px 0;}}
-    @keyframes drift-gust {from{top:-8%;translate:60px 0;}to{top:108%;translate:-160px 0;}}
+    @keyframes drift-fall {from{translate:0 -8%;}to{translate:-40px 108%;}}
+    @keyframes drift-gust {from{translate:60px -8%;}to{translate:-160px 108%;}}
     @keyframes sway {from{translate:-10px 0;rotate:-25deg;}to{translate:10px 0;rotate:35deg;}}
     @keyframes heat-rise {0%{translate:0 18px;opacity:0;}30%{opacity:.85;}70%{opacity:.55;}100%{translate:0 -40px;opacity:0;}}
     @keyframes heat-sway {from{transform:skewX(-9deg) scaleX(.85);}to{transform:skewX(9deg) scaleX(1.2);}}

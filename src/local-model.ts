@@ -1,6 +1,7 @@
 import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
 import { buildWeatherVerdict, round } from './weather-model';
 import { comfortWord, dewPoint, frostPoint, humidex, humidexFeel, humidityFeel } from './humidity';
+import { dateFormat } from './intl-cache';
 
 export type History = Record<string, Array<{ s: string; lu?: number; lc?: number }>>;
 export const sourceFields = {
@@ -36,7 +37,7 @@ export function kindFor(key: string): string {
 }
 
 function parts(date: Date, timeZone?: string) {
-  return Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+  return Object.fromEntries(dateFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date).map(p => [p.type, p.value]));
 }
 /** Strongest wind and prevailing direction (speed-weighted) per local day, from hourly forecasts; daily forecasts carry no wind. */

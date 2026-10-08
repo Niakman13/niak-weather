@@ -1,4 +1,5 @@
 import type { HomeAssistant, WeatherCardConfig } from './types';
+import { dateFormat } from './intl-cache';
 
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 export interface SeasonInfo { season: Season; source: 'sensor' | 'date'; label: string; icon: string; dayLength?: number; dayChange?: number;
@@ -13,7 +14,7 @@ const aliases: Record<string, Season> = { spring: 'spring', printemps: 'spring',
   autumn: 'autumn', fall: 'autumn', automne: 'autumn', winter: 'winter', hiver: 'winter' };
 
 function localDate(now: Date, timeZone?: string) {
-  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now).map(x => [x.type, x.value]));
+  const p = Object.fromEntries(dateFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now).map(x => [x.type, x.value]));
   return { year: +p.year, month: +p.month, day: +p.day };
 }
 

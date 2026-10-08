@@ -1,5 +1,6 @@
 import type { AtmoField, AtmoMetric, HassEntity, HomeAssistant, WeatherCardConfig, HomeAssistantEntityRegistryEntry as Registry } from './types';
 import type { RegistryContext } from './station-detection';
+import { dateFormat } from './intl-cache';
 
 // Contract verified against sebcaps/atmofrance const.py and sensor.py (2.1.2).
 // Pollution sensors are indices, NOT pollutant concentrations. Pollen levels use 1..6; 0 is missing.
@@ -108,7 +109,7 @@ export function atmoReading(hass: Pick<HomeAssistant, 'states' | 'config'>, id: 
   // Atmo exposes date_maj (publication), not date_ech (forecast validity): don't claim a date_ech we cannot verify.
   const date = typeof stamp === 'string' ? new Date(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(stamp) ? stamp + 'Z' : stamp) : null;
   const dated = date && Number.isFinite(date.getTime());
-  const updated = dated ? new Intl.DateTimeFormat('fr-FR', { timeZone: hass.config?.time_zone, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(date) : '';
+  const updated = dated ? dateFormat('fr-FR', { timeZone: hass.config?.time_zone, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(date) : '';
   return { id, label, value: valid ? n : undefined, color, zone: String(a['Nom de la zone'] ?? ''), updated,
     unit: concentration ? String(a.unit_of_measurement ?? '') : undefined, stale: !!dated && now.getTime() - date.getTime() > 48 * 3600_000 };
 }
