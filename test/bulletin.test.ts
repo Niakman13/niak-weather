@@ -12,14 +12,14 @@ describe('Daily bulletin', () => {
     const b = buildBulletin(plan('2026-10-08T08:00:00Z', 24, h => ({ condition: h < 10 ? 'sunny' : 'clear-night', temperature: 15 + Math.sin(h / 4) * 4, precipitation: 0, wind_speed: 8, wind_bearing: 270 })),
       paris('2026-10-08T07:30:00Z'), 'Europe/Paris')!;
     expect(b.periods.map(p => p.label)).toEqual(['Ce matin', 'Cet après-midi', 'Ce soir', 'Cette nuit']);
-    expect(b.summary).toMatch(/^Beau temps ce matin, cet après-midi, ce soir et cette nuit\./);
+    expect(b.summary).toMatch(/^Beau temps ce matin et jusqu’à cette nuit\./);
     expect(b.summary).toContain('Pas de pluie attendue.');
     expect(b.summary).not.toMatch(/Vent/);
   });
   it('switches to tonight and tomorrow in the evening', () => {
     const b = buildBulletin(plan('2026-10-08T17:00:00Z', 24, () => ({ condition: 'cloudy', temperature: 12, wind_speed: 5 })), paris('2026-10-08T16:30:00Z'), 'Europe/Paris')!;
     expect(b.periods.map(p => p.label)).toEqual(['Ce soir', 'Cette nuit', 'Demain matin', 'Demain après-midi']);
-    expect(b.summary).toMatch(/^Ciel couvert ce soir, cette nuit, demain matin et demain après-midi\. Autour de 12 °C\./);
+    expect(b.summary).toMatch(/^Ciel couvert ce soir et jusqu’à demain après-midi\. Autour de 12 °C\./);
   });
   it('lets storms and real rain lead, with amounts, and names strong wind with gusts', () => {
     // From 10:00 Paris: storm 14–18 h, light rain 18–20 h.
@@ -38,7 +38,7 @@ describe('Daily bulletin', () => {
     // From 10:00 Paris: cloudy until 15 h, then sunny.
     const b = buildBulletin(plan('2026-10-08T08:00:00Z', 20, h => ({ condition: h < 5 ? 'cloudy' : 'sunny', temperature: 20 })), paris('2026-10-08T07:30:00Z'), 'Europe/Paris')!;
     expect(b.periods.find(p => p.label === 'Cet après-midi')!.text.startsWith('Ciel couvert, puis ensoleillé.')).toBe(true);
-    expect(b.summary).toMatch(/^Ciel couvert ce matin et cet après-midi, puis beau temps en cours d’après-midi, ce soir et cette nuit\./);
+    expect(b.summary).toMatch(/^Ciel couvert ce matin et en début d’après-midi, puis beau temps en fin d’après-midi et jusqu’à cette nuit\./);
   });
   it('needs at least two parts of the day', () => {
     expect(buildBulletin(plan('2026-10-08T10:00:00Z', 2, () => ({ condition: 'sunny', temperature: 20 })), paris('2026-10-08T09:30:00Z'), 'Europe/Paris')).toBeUndefined();

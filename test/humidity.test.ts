@@ -38,7 +38,7 @@ describe('Moisture computed by the card, without Thermal Comfort', () => {
     expect(bulletin.rosee).toBeCloseTo(dewPoint(18, 90)!, 1);
     const broken = buildLocalModel(hass({ 'weather.city': weather, 'sensor.h': e('sensor.h', 'unavailable') }), { ...base, humidity_entity: 'sensor.h' }, [], {}, now).attributes;
     expect(broken).toMatchObject({ base: 'thermometre', humidex: -999 });
-    expect(broken.phrase_ressenti).toBe('humidité indisponible — elle n’est pas comptée');
+    expect(broken.phrase_ressenti).toBe('Humidité inconnue : non prise en compte');
   });
   it('does not call bulletin humidity a fog observed by the station', () => {
     const a = buildLocalModel(hass({ 'weather.city': e('weather.city', 'cloudy', { temperature: 8, humidity: 100 }) }), base, [], {}, now).attributes;
@@ -56,9 +56,9 @@ describe('Tonight in the brief: frost and fog', () => {
   const brief = (a: Record<string, unknown>, points: BriefPoint[]) => buildWeatherBrief(hass({}), base, model(a), points, now).signals;
   it('warns of frost on the ground from +3 °C, white frost when the air is humid enough', () => {
     // now + 18 h = 06:00 in Paris
-    expect(brief({ gelee: 1 }, night(2)).find(s => s.key === 'frost-night')).toMatchObject({ severity: 1, text: 'Gelée blanche possible vers 6 h (2 °C prévus)' });
-    expect(brief({ gelee: -8 }, night(2)).find(s => s.key === 'frost-night')?.text).toBe('Risque de gel au sol vers 6 h (2 °C prévus)');
-    expect(brief({ gelee: -2 }, night(-1)).find(s => s.key === 'frost-night')?.text).toBe('Gel prévu vers 6 h (-1 °C)');
+    expect(brief({ gelee: 1 }, night(2)).find(s => s.key === 'frost-night')).toMatchObject({ severity: 1, text: 'Gelée blanche possible vers 6 h : 2 °C prévus' });
+    expect(brief({ gelee: -8 }, night(2)).find(s => s.key === 'frost-night')?.text).toBe('Gel au sol possible vers 6 h : 2 °C prévus');
+    expect(brief({ gelee: -2 }, night(-1)).find(s => s.key === 'frost-night')?.text).toBe('Gel vers 6 h : -1 °C prévus');
     expect(brief({ gelee: 1 }, night(6)).some(s => s.key === 'frost-night')).toBe(false);
   });
   it('announces fog only when the air will saturate on a calm, dry night', () => {

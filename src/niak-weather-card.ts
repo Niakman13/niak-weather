@@ -47,7 +47,7 @@ export class NiakWeatherCard extends LitElement {
   private hassSnapshot = '';
 
   public setConfig(config: WeatherCardConfig): void {
-    if (!config.weather_entity?.startsWith('weather.')) throw new Error('Choisis une entité weather pour Niak Weather.');
+    if (!config.weather_entity?.startsWith('weather.')) throw new Error('Choisissez une entité météo (weather.*) pour Niak Weather.');
     const next = cleanConfig(config), old = this.config;
     if (old && JSON.stringify(old) === JSON.stringify(next)) return;
     this.config = next;

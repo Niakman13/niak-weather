@@ -5,6 +5,16 @@ import type { HomeAssistant, WeatherCardConfig, HassEntity } from '../src/types'
 import { candidates, detectEcowittStation } from '../src/station-detection';
 import { renderLocal } from '../src/local-renderer';
 
+/** The feel sentence was rewritten in plain French; the cause the card picks must still match the template's. */
+const plainFeel = (old: string) => old
+  .replace('le ressenti colle au thermomètre', 'Ressenti égal au thermomètre')
+  .replace('humidité indisponible — elle n’est pas comptée', 'Humidité inconnue : non prise en compte')
+  .replace(/ — le vent en emporte [\d,]+ °C$/, ', à cause du vent')
+  .replace(/ — l’averse en emporte [\d,]+ °C$/, ', à cause de la pluie')
+  .replace(/ — le ciel dégagé en emporte [\d,]+ °C$/, ', à cause du ciel dégagé')
+  .replace(/ — le soleil y est pour [\d,]+ °C$/, ', à cause du soleil')
+  .replace(' — même le vent réchauffe, il n’apporte plus rien', ', à cause du vent chaud')
+  .replace(' — c’est l’humidité qui pèse', ', à cause de l’humidité');
 describe('original Jinja parity (96 independent weather situations)', () => {
   for (const [index, fixture] of fixtures.entries()) it(`matches original template ${index}`, () => {
     const config: WeatherCardConfig = { type: 'custom:niak-weather-card', weather_entity: 'weather.test' };
@@ -25,7 +35,8 @@ describe('original Jinja parity (96 independent weather situations)', () => {
       // Deliberate change: the template said "humidex indisponible" without Thermal Comfort; the card now knows
       // the humidity and explains the feel instead, so that phrase is no longer the template's.
       if (key === 'phrase_ressenti' && !((fixture.values as any).humidex > -900)) continue;
-      expect(a[key], `case ${index}: ${key}`).toEqual((fixture.expected as any)[key]);
+      const expected = key === 'phrase_ressenti' ? plainFeel(String((fixture.expected as any)[key])) : (fixture.expected as any)[key];
+      expect(a[key], `case ${index}: ${key}`).toEqual(expected);
     }
   });
 });

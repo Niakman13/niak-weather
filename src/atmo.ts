@@ -93,7 +93,7 @@ export function detectAtmo(hass: Pick<HomeAssistant, 'states'>, context?: Regist
   return found;
 }
 
-const airLabels = ['Indisponible', 'Bon', 'Moyen', 'Dégradé', 'Mauvais', 'Très mauvais', 'Extrêmement mauvais', 'Évènement'];
+const airLabels = ['Indisponible', 'Bon', 'Moyen', 'Dégradé', 'Mauvais', 'Très mauvais', 'Extrêmement mauvais', 'Événement'];
 const pollenLabels = ['Indisponible', 'Très faible', 'Faible', 'Modéré', 'Élevé', 'Très élevé', 'Extrêmement élevé'];
 const colors = ['#969696', '#50f0e6', '#50ccaa', '#f0e641', '#ff5050', '#960032', '#872181', '#888888'];
 export interface AtmoReading { id: string; label: string; value?: number; color: string; zone: string; updated: string; unit?: string; stale: boolean; }
