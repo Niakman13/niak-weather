@@ -27,3 +27,10 @@ export function vigilanceBadge(brief?: WeatherBrief): VigilanceBadge | undefined
   if (!s || s.severity === 0) return undefined;
   return { level: s.severity as 1 | 2 | 3, label: s.text, entity: s.entity };
 }
+
+/** "Vigilance jaune · vent violent" → level above ("Vigilance jaune"), phenomena below ("Vent violent"). Other texts stay on one line. */
+export function vigilanceParts(text: string): { level?: string; detail: string } {
+  const [level, ...rest] = text.split(' · ');
+  const detail = rest.join(' · ');
+  return /^Vigilance (jaune|orange|rouge)$/.test(level) && detail ? { level, detail: detail[0].toUpperCase() + detail.slice(1) } : { detail: text };
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { tickerPoints, vigilanceBadge } from '../src/compact-points';
+import { tickerPoints, vigilanceBadge, vigilanceParts } from '../src/compact-points';
 import type { BriefSignal, WeatherBrief } from '../src/weather-brief';
 const signal = (key: string, group: BriefSignal['group'], severity: BriefSignal['severity'], text = key): BriefSignal => ({key,group,severity,text,explanation:key,icon:'mdi:weather-sunny'});
 const brief = (signals: BriefSignal[]): WeatherBrief => ({signals,title:'',summary:'',label:'',rgb:'',icon:'',available:true,caveats:[]});
@@ -26,5 +26,11 @@ describe('Tile and intermediate brief', () => {
     const badge=vigilanceBadge(brief([signal('official','official',2,'Vigilance orange · orages, vent violent (jaune)')]));
     expect(badge).toMatchObject({level:2,label:'Vigilance orange · orages, vent violent (jaune)'});
     expect(vigilanceBadge(brief([signal('wind','now',2)]))).toBeUndefined();
+  });
+  it('puts the vigilance level above its phenomena, other texts on one line', () => {
+    expect(vigilanceParts('Vigilance jaune · vent violent')).toEqual({level:'Vigilance jaune',detail:'Vent violent'});
+    expect(vigilanceParts('Vigilance orange · orages, vent violent (jaune)')).toEqual({level:'Vigilance orange',detail:'Orages, vent violent (jaune)'});
+    expect(vigilanceParts('Vigilance jaune')).toEqual({detail:'Vigilance jaune'});
+    expect(vigilanceParts('Vent soutenu, rafales à 43,9 km/h')).toEqual({detail:'Vent soutenu, rafales à 43,9 km/h'});
   });
 });
