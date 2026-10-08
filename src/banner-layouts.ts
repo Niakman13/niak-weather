@@ -2,10 +2,12 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 import type { Bulletin } from './bulletin';
 import type { BriefSignal, WeatherBrief } from './weather-brief';
 
-export type BannerLayout = 'classic' | 'editorial' | 'timeline' | 'focus';
+export type BannerLayout = 'classic' | 'editorial' | 'timeline' | 'focus' | 'hybrid';
 export interface BannerParts {
   layout: Exclude<BannerLayout, 'classic'>;
   brief?: WeatherBrief; headline?: string; icon: string; attention: boolean; secondary: BriefSignal[];
+  /** Severity of the leading point: 1 yellow, 2 orange, 3 red, as Météo-France vigilance colours. */
+  level?: number;
   bulletin?: Bulletin; header: TemplateResult | typeof nothing; sky: TemplateResult; current: TemplateResult; dateLabel: string; rgb: string;
 }
 
@@ -33,6 +35,18 @@ export function renderBanner(p: BannerParts): TemplateResult {
       ${chips(p.secondary)}
     </div>${p.current}</section>`;
 
+  const alertBar = p.attention ? html`<div class="nw-b-alert" role="status"><ha-icon icon=${p.icon}></ha-icon><strong>${p.headline}</strong>${pill}${p.secondary.length ? html`<span class="nw-b-more">${p.secondary.map(s => s.text).join(' · ')}</span>` : nothing}</div>` : nothing;
+  // D: the timeline, with a vigilance-coloured alert bar under the heading; Now / Coming chips stay as in B.
+  const level = Math.min(3, Math.max(1, p.level ?? 1));
+  if (p.layout === 'hybrid') return html`<section id="heros" class="nw-section nw-synthesis nw-banner nw-banner--hybrid" aria-labelledby="nw-synthesis-title" style=${`--vc:${p.rgb}`}>
+    ${p.sky}<header class="nw-section-heading nw-b-head">${p.header}<span class="nw-b-date">${p.dateLabel}</span></header>
+    ${p.attention ? html`<div class=${`nw-b-alert nw-b-alert--level${level}`} role="status"><ha-icon icon=${p.icon}></ha-icon><strong>${p.headline}</strong></div>` : nothing}
+    <div class="nw-b-main">
+      ${p.bulletin ? html`<h3 class="nw-b-headline">${firstSentence(p.bulletin.summary)}</h3>` : p.attention ? nothing : html`<h3 class="nw-b-headline">${p.headline ?? ''}</h3>`}
+      ${chips(p.secondary)}
+    </div>${p.current}
+    ${periods('nw-b-tiles')}</section>`;
+
   if (p.layout === 'timeline') return html`<section id="heros" class="nw-section nw-synthesis nw-banner nw-banner--timeline" aria-labelledby="nw-synthesis-title" style=${`--vc:${p.rgb}`}>
     ${p.sky}<header class="nw-section-heading nw-b-head">${p.header}<span class="nw-b-date">${p.dateLabel}</span></header>
     <div class="nw-b-main">
@@ -43,7 +57,7 @@ export function renderBanner(p: BannerParts): TemplateResult {
 
   return html`<section id="heros" class="nw-section nw-synthesis nw-banner nw-banner--focus" aria-labelledby="nw-synthesis-title" style=${`--vc:${p.rgb}`}>
     ${p.sky}
-    ${p.attention ? html`<div class="nw-b-alert" role="status"><ha-icon icon=${p.icon}></ha-icon><strong>${p.headline}</strong>${pill}${p.secondary.length ? html`<span class="nw-b-more">${p.secondary.map(s => s.text).join(' · ')}</span>` : nothing}</div>` : nothing}
+    ${alertBar}
     <header class="nw-section-heading nw-b-head">${p.header}<span class="nw-b-date">${p.dateLabel}</span></header>
     <div class="nw-b-main">
       <span class="nw-b-kicker">Bulletin du jour</span>
@@ -71,11 +85,11 @@ export const bannerStyles = css`
   .nw-b-chip { display:flex; align-items:center; gap:7px; padding:5px 11px 5px 8px; border-radius:999px; font-size:12px; line-height:1.3;
     background:color-mix(in srgb,var(--card-background-color,#fff) 78%,transparent); border:1px solid var(--divider-color,rgba(150,150,150,.25)); backdrop-filter:blur(6px); }
   .nw-b-chip ha-icon { --mdc-icon-size:15px; color:var(--secondary-text-color); }
-  .nw-b-chip b { font-weight:650; font-size:10px; letter-spacing:.4px; text-transform:uppercase; color:var(--secondary-text-color); }
+  .nw-b-chip b { white-space:nowrap; font-weight:650; font-size:10px; letter-spacing:.4px; text-transform:uppercase; color:var(--secondary-text-color); }
   .nw-b-chip--official { border-color:rgba(230,125,45,.55); } .nw-b-chip--official ha-icon { color:rgb(230,125,45); }
   /* Timeline: four glass tiles along the bottom of the sky. */
   .nw-b-tiles { grid-area:tiles; list-style:none; margin:18px 0 0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; position:relative; z-index:1; }
-  .nw-b-tiles li { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; column-gap:8px; row-gap:3px; padding:11px 13px; border-radius:14px;
+  .nw-b-tiles li { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; align-content:start; column-gap:8px; row-gap:3px; padding:11px 13px; border-radius:14px;
     background:color-mix(in srgb,var(--card-background-color,#fff) 72%,transparent); border:1px solid var(--divider-color,rgba(150,150,150,.25)); backdrop-filter:blur(10px); }
   .nw-b-tiles li>:not(ha-icon):not(strong) { grid-column:1/-1; }
   .nw-b-tiles .nw-b-when { font-size:10px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--secondary-text-color); }
@@ -91,6 +105,13 @@ export const bannerStyles = css`
   .nw-b-alert strong { font-size:14px; font-weight:700; }
   .nw-b-alert .nw-attention { padding:3px 9px; }
   .nw-b-more { flex-basis:100%; font-size:12px; color:var(--secondary-text-color); padding-left:32px; }
+  .nw-banner--hybrid.nw-synthesis { grid-template-areas:"head aside" "alert aside" "main aside" "tiles tiles"; grid-template-rows:auto auto 1fr auto; }
+  .nw-banner--hybrid .nw-b-alert { margin:0 0 14px; justify-self:start; max-width:100%; }
+  /* Official vigilance colours; the text stays in the theme colour for contrast. */
+  .nw-b-alert--level1 { --al:232,184,20; } .nw-b-alert--level2 { --al:238,124,30; } .nw-b-alert--level3 { --al:214,52,58; }
+  .nw-banner--hybrid .nw-b-alert { background:color-mix(in srgb,var(--card-background-color,#fff) 76%,rgb(var(--al)) 24%); border-color:rgba(var(--al),.75); }
+  .nw-banner--hybrid .nw-b-alert>ha-icon { color:color-mix(in srgb,rgb(var(--al)) 80%,var(--primary-text-color) 20%); }
+  .nw-b-headline { margin:0; font-size:21px; font-weight:700; letter-spacing:-.4px; line-height:1.3; max-width:38ch; }
   .nw-b-kicker { font-size:10px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--secondary-text-color); }
   .nw-b-lead { margin:0; font-size:17px; line-height:1.55; font-weight:500; max-width:56ch; }
   .nw-b-strip { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:6px 18px; }
@@ -103,6 +124,8 @@ export const bannerStyles = css`
     /* Phone: the current weather sits on the sky, the text below it on the calm part of the banner. */
     .nw-synthesis.nw-banner { grid-template-columns:minmax(0,1fr); grid-template-rows:auto; grid-template-areas:"head" "aside" "main" "tiles"; }
     .nw-banner--focus.nw-synthesis { grid-template-areas:"alert" "head" "aside" "main"; }
+    .nw-banner--hybrid.nw-synthesis { grid-template-areas:"head" "alert" "aside" "main" "tiles"; }
+    .nw-b-headline { font-size:18px; }
     .nw-banner .nw-current-weather { min-height:150px; margin:0 0 14px; }
     .nw-b-title h3 { font-size:20px; }
     .nw-b-lead { font-size:15px; }
