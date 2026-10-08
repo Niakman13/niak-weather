@@ -8,7 +8,8 @@ const icons=JSON.stringify(mdi);
 const server=createServer((req,res)=>{
   const path=new URL(req.url,'http://localhost').pathname;
   res.setHeader('Cache-Control','no-store');
-  if(path==='/'||path==='/formats') {res.setHeader('Content-Type','text/html; charset=utf-8');res.end(page(path==='/'?'current-weather':'formats'));}
+  if(path==='/'||path==='/formats'||path==='/maquette') {res.setHeader('Content-Type','text/html; charset=utf-8');res.end(page(path==='/'?'current-weather':path.slice(1)));}
+  else if(path==='/demo-hass.js') {res.setHeader('Content-Type','text/javascript');res.end(readFileSync(new URL('../demo/demo-hass.js',import.meta.url)));}
   else if(path==='/card.js') {res.setHeader('Content-Type','text/javascript');res.end(readFileSync(bundlePath));}
   else if(path==='/icons.json') {res.setHeader('Content-Type','application/json');res.end(icons);}
   else {res.writeHead(404);res.end();}
