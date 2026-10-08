@@ -40,9 +40,11 @@ export function renderBanner(p: BannerParts): TemplateResult {
   const level = Math.min(3, Math.max(1, p.level ?? 1));
   if (p.layout === 'hybrid') return html`<section id="heros" class="nw-section nw-synthesis nw-banner nw-banner--hybrid" aria-labelledby="nw-synthesis-title" style=${`--vc:${p.rgb}`}>
     ${p.sky}<header class="nw-section-heading nw-b-head">${p.header}<span class="nw-b-date">${p.dateLabel}</span></header>
-    ${p.attention ? html`<div class=${`nw-b-alert nw-b-alert--level${level}`} role="status"><ha-icon icon=${p.icon}></ha-icon><strong>${p.headline}</strong></div>` : nothing}
+    ${p.attention ? html`<div class=${`nw-b-vigil nw-b-vigil--level${level}`} role="status">
+      <span class="nw-b-vigil-mark" aria-hidden="true"><i class="nw-b-vigil-halo"></i><ha-icon icon=${p.icon}></ha-icon></span>
+      <strong>${p.headline}</strong></div>` : nothing}
     <div class="nw-b-main">
-      ${p.bulletin ? html`<h3 class="nw-b-headline">${firstSentence(p.bulletin.summary)}</h3>` : p.attention ? nothing : html`<h3 class="nw-b-headline">${p.headline ?? ''}</h3>`}
+      ${p.bulletin ? html`<span class="nw-b-kicker">Bulletin du jour</span><h3 class="nw-b-headline">${firstSentence(p.bulletin.summary)}</h3>` : p.attention ? nothing : html`<h3 class="nw-b-headline">${p.headline ?? ''}</h3>`}
       ${chips(p.secondary)}
     </div>${p.current}
     ${periods('nw-b-tiles')}</section>`;
@@ -90,7 +92,9 @@ export const bannerStyles = css`
   /* Timeline: four glass tiles along the bottom of the sky. */
   .nw-b-tiles { grid-area:tiles; list-style:none; margin:18px 0 0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; position:relative; z-index:1; }
   .nw-b-tiles li { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; align-content:start; column-gap:8px; row-gap:3px; padding:11px 13px; border-radius:14px;
-    background:color-mix(in srgb,var(--card-background-color,#fff) 72%,transparent); border:1px solid var(--divider-color,rgba(150,150,150,.25)); backdrop-filter:blur(10px); }
+    /* Light glass: the animated sky shows through, a soft blur keeps the text readable. */
+    background:linear-gradient(rgba(128,128,128,.07),rgba(128,128,128,.07)),color-mix(in srgb,var(--card-background-color,#fff) 38%,transparent);
+    border:1px solid color-mix(in srgb,var(--primary-text-color,#253047) 13%,transparent); backdrop-filter:blur(3px) saturate(1.15); box-shadow:inset 0 1px 0 rgba(255,255,255,.18); }
   .nw-b-tiles li>:not(ha-icon):not(strong) { grid-column:1/-1; }
   .nw-b-tiles .nw-b-when { font-size:10px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--secondary-text-color); }
   .nw-b-tiles ha-icon { --mdc-icon-size:26px; color:var(--primary-text-color); }
@@ -105,13 +109,21 @@ export const bannerStyles = css`
   .nw-b-alert strong { font-size:14px; font-weight:700; }
   .nw-b-alert .nw-attention { padding:3px 9px; }
   .nw-b-more { flex-basis:100%; font-size:12px; color:var(--secondary-text-color); padding-left:32px; }
-  .nw-banner--hybrid.nw-synthesis { grid-template-areas:"head aside" "alert aside" "main aside" "tiles tiles"; grid-template-rows:auto auto 1fr auto; }
-  .nw-banner--hybrid .nw-b-alert { margin:0 0 14px; justify-self:start; max-width:100%; }
-  /* Official vigilance colours; the text stays in the theme colour for contrast. */
-  .nw-b-alert--level1 { --al:232,184,20; } .nw-b-alert--level2 { --al:238,124,30; } .nw-b-alert--level3 { --al:214,52,58; }
-  .nw-banner--hybrid .nw-b-alert { background:color-mix(in srgb,var(--card-background-color,#fff) 76%,rgb(var(--al)) 24%); border-color:rgba(var(--al),.75); }
-  .nw-banner--hybrid .nw-b-alert>ha-icon { color:color-mix(in srgb,rgb(var(--al)) 80%,var(--primary-text-color) 20%); }
-  .nw-b-headline { margin:0; font-size:21px; font-weight:700; letter-spacing:-.4px; line-height:1.3; max-width:38ch; }
+  .nw-banner--hybrid.nw-synthesis { grid-template-areas:"head aside" "vigil aside" "main aside" "tiles tiles"; grid-template-rows:auto auto 1fr auto; }
+  .nw-b-headline { margin:2px 0 0; font-size:17px; font-weight:600; letter-spacing:-.2px; line-height:1.45; max-width:44ch; }
+  /* Vigilance: a glass pill in the official colour, its icon glowing with the same halo as the alert emblem. */
+  .nw-b-vigil { --al:232,184,20; grid-area:vigil; justify-self:start; position:relative; z-index:2; display:flex; align-items:center; gap:12px; margin:0 0 16px; padding:7px 18px 7px 7px; border-radius:999px;
+    background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 62%,rgb(var(--al)) 38%),color-mix(in srgb,var(--card-background-color,#fff) 86%,rgb(var(--al)) 14%));
+    border:1px solid rgba(var(--al),.55); box-shadow:0 6px 24px -10px rgba(var(--al),.7),inset 0 1px 0 rgba(255,255,255,.25); backdrop-filter:blur(8px); }
+  .nw-b-vigil--level2 { --al:238,124,30; } .nw-b-vigil--level3 { --al:214,52,58; }
+  .nw-b-vigil strong { font-size:14px; font-weight:700; letter-spacing:-.1px; }
+  .nw-b-vigil-mark { position:relative; flex:0 0 34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#fff;
+    background:radial-gradient(circle at 35% 30%,color-mix(in srgb,rgb(var(--al)) 70%,#fff 30%),rgb(var(--al))); box-shadow:0 0 10px rgba(var(--al),.55); animation:nwVigilGlow 5.2s ease-in-out infinite; }
+  .nw-b-vigil-mark ha-icon { --mdc-icon-size:19px; position:relative; z-index:1; }
+  .nw-b-vigil-halo { position:absolute; inset:-22px; border-radius:50%; background:radial-gradient(circle,rgba(var(--al),.45),rgba(var(--al),0) 70%); filter:blur(8px); animation:nwVigilHalo 5.2s ease-in-out infinite; pointer-events:none; }
+  @keyframes nwVigilHalo { 0%,100% { opacity:.55; transform:scale(.9); } 50% { opacity:1; transform:scale(1.12); } }
+  @keyframes nwVigilGlow { 0%,100% { box-shadow:0 0 8px rgba(var(--al),.45); } 50% { box-shadow:0 0 18px rgba(var(--al),.8); } }
+  @media (prefers-reduced-motion:reduce) { .nw-b-vigil-mark, .nw-b-vigil-halo { animation:none; } }
   .nw-b-kicker { font-size:10px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--secondary-text-color); }
   .nw-b-lead { margin:0; font-size:17px; line-height:1.55; font-weight:500; max-width:56ch; }
   .nw-b-strip { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:6px 18px; }
@@ -124,8 +136,21 @@ export const bannerStyles = css`
     /* Phone: the current weather sits on the sky, the text below it on the calm part of the banner. */
     .nw-synthesis.nw-banner { grid-template-columns:minmax(0,1fr); grid-template-rows:auto; grid-template-areas:"head" "aside" "main" "tiles"; }
     .nw-banner--focus.nw-synthesis { grid-template-areas:"alert" "head" "aside" "main"; }
-    .nw-banner--hybrid.nw-synthesis { grid-template-areas:"head" "alert" "aside" "main" "tiles"; }
-    .nw-b-headline { font-size:18px; }
+    .nw-banner--hybrid.nw-synthesis { grid-template-areas:"head" "vigil" "aside" "main" "tiles"; }
+    .nw-b-headline { margin:2px 0 0; font-size:17px; font-weight:600; letter-spacing:-.2px; line-height:1.45; max-width:44ch; }
+  /* Vigilance: a glass pill in the official colour, its icon glowing with the same halo as the alert emblem. */
+  .nw-b-vigil { --al:232,184,20; grid-area:vigil; justify-self:start; position:relative; z-index:2; display:flex; align-items:center; gap:12px; margin:0 0 16px; padding:7px 18px 7px 7px; border-radius:999px;
+    background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 62%,rgb(var(--al)) 38%),color-mix(in srgb,var(--card-background-color,#fff) 86%,rgb(var(--al)) 14%));
+    border:1px solid rgba(var(--al),.55); box-shadow:0 6px 24px -10px rgba(var(--al),.7),inset 0 1px 0 rgba(255,255,255,.25); backdrop-filter:blur(8px); }
+  .nw-b-vigil--level2 { --al:238,124,30; } .nw-b-vigil--level3 { --al:214,52,58; }
+  .nw-b-vigil strong { font-size:14px; font-weight:700; letter-spacing:-.1px; }
+  .nw-b-vigil-mark { position:relative; flex:0 0 34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#fff;
+    background:radial-gradient(circle at 35% 30%,color-mix(in srgb,rgb(var(--al)) 70%,#fff 30%),rgb(var(--al))); box-shadow:0 0 10px rgba(var(--al),.55); animation:nwVigilGlow 5.2s ease-in-out infinite; }
+  .nw-b-vigil-mark ha-icon { --mdc-icon-size:19px; position:relative; z-index:1; }
+  .nw-b-vigil-halo { position:absolute; inset:-22px; border-radius:50%; background:radial-gradient(circle,rgba(var(--al),.45),rgba(var(--al),0) 70%); filter:blur(8px); animation:nwVigilHalo 5.2s ease-in-out infinite; pointer-events:none; }
+  @keyframes nwVigilHalo { 0%,100% { opacity:.55; transform:scale(.9); } 50% { opacity:1; transform:scale(1.12); } }
+  @keyframes nwVigilGlow { 0%,100% { box-shadow:0 0 8px rgba(var(--al),.45); } 50% { box-shadow:0 0 18px rgba(var(--al),.8); } }
+  @media (prefers-reduced-motion:reduce) { .nw-b-vigil-mark, .nw-b-vigil-halo { animation:none; } }
     .nw-banner .nw-current-weather { min-height:150px; margin:0 0 14px; }
     .nw-b-title h3 { font-size:20px; }
     .nw-b-lead { font-size:15px; }
