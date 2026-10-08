@@ -2,6 +2,25 @@
 
 Ces réglages sont disponibles dans la version stable **1.4.0**.
 
+## Choisir le format
+
+Dans **Général**, le premier réglage choisit le format de la carte :
+
+- **Complète** : Synthèse, Aujourd’hui et Prévisions, avec les réglages habituels.
+- **Intermédiaire** : la Synthèse seule, pour une page d’accueil. En-tête, vigilance, points du brief qui défilent, « En ce moment » et, en option, les quatre moments de la journée (**Afficher les prévisions du jour**).
+- **Tuile** : une bande compacte, en pleine ou demi-largeur. Vigilance en petite bulle, points du brief qui défilent et météo du moment.
+
+Les trois formats gardent le ciel animé, réduit à leur taille. Dans la tuile et l’intermédiaire, les points du brief défilent toutes les 5 secondes ; survoler la carte met en pause. Un simple appui ouvre la page indiquée dans **Page ouverte d’un appui** (par exemple `/meteo`), où vous placez la carte complète. Sans page, l’appui ouvre l’entité météo.
+
+Les sources (météo, station, Atmo France) sont les mêmes pour les trois formats : vous pouvez copier la configuration d’une carte à l’autre et changer seulement `format`.
+
+```yaml
+type: custom:niak-weather-card
+format: tile
+weather_entity: weather.ma_commune
+weather_path: /meteo
+```
+
 ## Choisir les sections
 
 Dans **Général**, trois interrupteurs permettent d’afficher ou de masquer indépendamment le bandeau **Synthèse / météo actuelle**, la section **Aujourd’hui** et la section **Prévisions**. Les trois sont activés par défaut.

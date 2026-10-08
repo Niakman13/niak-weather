@@ -42,13 +42,14 @@ Niak Weather **ne génère pas son propre bulletin météo**, ne corrige pas les
 | `pollen_source` | `atmo` (Atmo France), `legacy` (Polleninformation), ou `none` (masquer les pollens) |
 | `show_atmo_details`, `show_atmo_tomorrow` | Détails et prévisions facultatifs (activés par défaut en complet) |
 | `show_synthesis`, `show_today`, `show_predictions` | Afficher les trois sections indépendamment (activées par défaut) |
-| `show_bulletin` | Afficher le bulletin du jour et ses quatre périodes dans le bandeau (activé par défaut) |
+| `format` | `full` (complète, par défaut), `intermediate` (la Synthèse seule) ou `tile` (une bande compacte) |
+| `show_bulletin` | Afficher le bulletin du jour et ses quatre périodes dans le bandeau (activé par défaut) ; pour l’intermédiaire, affiche ou masque les quatre moments de la journée |
 
 L’humidex, le point de rosée et le point de gelée sont **calculés par la carte** à partir de la température et de l’humidité (station, sinon bulletin). Les anciens réglages Thermal Comfort (`humidex_entity`, `humidex_perception_entity`, `thermal_dew_point_entity`, `heat_index_entity`, `absolute_humidity_entity`, `thermal_perception_entity`, `thermal_device_id`) sont ignorés et retirés à l’enregistrement.
 
 `season_entity` (facultatif) désigne le capteur de l’intégration Saison ; sans lui, ou s’il est indisponible, la saison astronomique est calculée d’après la date et l’hémisphère. La durée du jour tient compte de la latitude et de l’altitude de Home Assistant.
 
-`location` personnalise le lieu, sinon le nom de l’entité météo est utilisé. `forecast_source` personnalise le fournisseur. `weather_path` configure la navigation sur appui long.
+`location` personnalise le lieu, sinon le nom de l’entité météo est utilisé. `forecast_source` personnalise le fournisseur. `weather_path` configure la navigation sur appui long ; pour la tuile et l’intermédiaire, un simple appui ouvre cette page.
 
 Atmo France est désormais proposé en priorité. L’air extérieur, les polluants, les niveaux de pollens et leurs concentrations sont traités séparément du modèle météo : aucun indice Atmo n’entre dans le calcul du ressenti. La détection utilise le registre et les attributs géographiques ; un choix ambigu reste vide. Les 38 champs (19 mesures × aujourd’hui/demain) sont disponibles dans l’éditeur. [Contrat des données et guide](atmo-france.md).
 

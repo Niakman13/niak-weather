@@ -27,11 +27,16 @@ export function renderBanner(p: BannerParts): TemplateResult {
         : !p.attention && p.headline ? html`<h3 class="nw-b-headline">${p.headline}</h3>` : nothing}
       ${chips(p.secondary)}
     </div>${p.current}
-    ${p.bulletin ? html`<ol class="nw-b-tiles">${p.bulletin.periods.map(x => html`<li title=${x.text}>
+    ${p.bulletin ? bulletinTiles(p.bulletin) : nothing}
+  </section>`;
+}
+
+/** The four parts of the day, see-through over the sky. Shared with the intermediate format. */
+export function bulletinTiles(bulletin: Bulletin): TemplateResult {
+  return html`<ol class="nw-b-tiles">${bulletin.periods.map(x => html`<li title=${x.text}>
       <span class="nw-b-when">${x.label}</span><ha-icon icon=${x.icon}></ha-icon><strong>${temps(x)}</strong>
       <span class="nw-b-sky">${x.phrase}</span>${x.rain >= 1 ? html`<span class="nw-b-rain">${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(x.rain)} mm</span>` : nothing}
-      ${(x.wind ?? 0) >= 20 ? html`<span class="nw-b-wind">${x.wind} km/h${(x.gust ?? 0) >= 40 ? html` · raf. ${x.gust}` : nothing}</span>` : nothing}</li>`)}</ol>` : nothing}
-  </section>`;
+      ${(x.wind ?? 0) >= 20 ? html`<span class="nw-b-wind">${x.wind} km/h${(x.gust ?? 0) >= 40 ? html` · raf. ${x.gust}` : nothing}</span>` : nothing}</li>`)}</ol>`;
 }
 
 export const bannerStyles = css`
@@ -51,7 +56,7 @@ export const bannerStyles = css`
   .nw-b-tiles li { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; align-content:start; column-gap:8px; row-gap:3px; padding:11px 13px; border-radius:14px;
     /* Light glass: the animated sky shows through, a soft blur keeps the text readable. */
     background:linear-gradient(rgba(128,128,128,.07),rgba(128,128,128,.07)),color-mix(in srgb,var(--card-background-color,#fff) 38%,transparent);
-    border:1px solid color-mix(in srgb,var(--primary-text-color,#253047) 13%,transparent); backdrop-filter:blur(3px) saturate(1.15); box-shadow:inset 0 1px 0 rgba(255,255,255,.18); }
+    border:1px solid color-mix(in srgb,var(--primary-text-color,#253047) 13%,transparent); backdrop-filter:blur(3px) saturate(1.15); }
   .nw-b-tiles li>:not(ha-icon):not(strong) { grid-column:1/-1; }
   .nw-b-tiles .nw-b-when { font-size:10px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--secondary-text-color); }
   .nw-b-tiles ha-icon { --mdc-icon-size:26px; color:var(--primary-text-color); }
