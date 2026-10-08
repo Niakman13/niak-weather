@@ -136,6 +136,9 @@ export const compactStyles = css`
   .nw-compact--tile .nw-c-temp { font-size:30px; letter-spacing:-1px; } .nw-compact--tile .nw-c-temp small { font-size:14px; }
   .nw-compact--tile .nw-c-cond { font-size:13px; } .nw-compact--tile .nw-c-cond ha-icon { --mdc-icon-size:17px; }
   .nw-compact--tile.nw-compact--quiet { grid-template-areas:"meta now"; }
+  /* Nothing to scroll: the place on top, the vigilance under it, both in the top left corner. */
+  .nw-compact--quiet .nw-c-meta { flex-direction:column; align-items:flex-start; align-self:start; gap:6px; }
+  .nw-compact--quiet .nw-c-place { order:-1; }
   /* Vigilance: a small bubble in the official colour, plainer than the full card's pill. */
   .nw-c-vig { --al:232,184,20; flex:none; display:inline-flex; align-items:center; gap:5px; padding:1px 9px 1px 2px; border-radius:999px; font-size:11px; font-weight:650;
     background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 80%,rgb(var(--al)) 20%),color-mix(in srgb,var(--card-background-color,#fff) 92%,rgb(var(--al)) 8%));
@@ -150,7 +153,7 @@ export const compactStyles = css`
   @container (max-width:480px) {
     .nw-compact--tile { --k:.42; --nw-orb-x:calc(100% - 300px); --v1:0%; --v2:12%; --v3:34%; --v4:60%; grid-template-areas:"meta now" "txt txt"; grid-template-rows:auto 46px;
       column-gap:10px; padding:12px 14px; }
-    .nw-c-meta { align-self:center; } .nw-c-meta:has(.nw-c-vig) .nw-c-place { display:none; }
+    .nw-compact:not(.nw-compact--quiet) .nw-c-meta { align-self:center; } .nw-compact:not(.nw-compact--quiet) .nw-c-meta:has(.nw-c-vig) .nw-c-place { display:none; }
     .nw-compact--tile .nw-c-ticker { align-self:center; }
     .nw-compact--tile .nw-c-temp { font-size:26px; } .nw-compact--tile .nw-c-cond { font-size:12px; }
     .nw-compact--tile.nw-compact--quiet { grid-template-rows:auto; }
