@@ -4,7 +4,7 @@
 
 Pour commencer, il faut seulement Home Assistant **2025.1 ou plus récent** et une entité météo `weather.*`. **Météo-France est la source recommandée**, mais une autre intégration météo peut convenir si elle fournit les prévisions utilisées par la carte. Les autres sources sont des enrichissements, pas des prérequis.
 
-![Illustration du bandeau supérieur Niak Weather : synthèse utile, ciel animé et météo actuelle](docs/images/niak-weather-banner.png)
+![Niak Weather — votre station météo et les prévisions, réunies en une carte qui parle](docs/images/niak-weather-banner.png)
 
 Illustration de présentation avec des données d’exemple ; le rendu réel du bandeau dépend de votre météo, de vos capteurs et du thème Home Assistant.
 
