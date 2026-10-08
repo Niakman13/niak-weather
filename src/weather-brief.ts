@@ -60,8 +60,10 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   // Use timestamps/explicit offsets, not array positions; ignore past and invalid points.
   const upcoming = points.filter(p => Number.isFinite(p.hours) && p.hours >= 0 && p.hours <= 6).sort((x, y) => x.hours - y.hours);
   const rains = upcoming.filter(p => finite(p.precipitation) !== undefined && p.precipitation! >= .3);
-  if (rains.length) {
-    const total = upcoming.reduce((sum, p) => sum + Math.max(0, finite(p.precipitation) ?? 0), 0), peak = Math.max(...rains.map(p => p.precipitation!));
+  const total = upcoming.reduce((sum, p) => sum + Math.max(0, finite(p.precipitation) ?? 0), 0);
+  // Less than 1 mm over 6 h is a few drops: not worth a line.
+  if (rains.length && total >= 1) {
+    const peak = Math.max(...rains.map(p => p.precipitation!));
     add({ key: 'rain-future', group: 'future', severity: peak >= 5 || total >= 20 ? 2 : total >= 5 ? 1 : 0,
       text: `${peak >= 5 || total >= 20 ? 'Fortes pluies' : 'Pluie'} ${timing(rains[0].hours)} : ${upcoming.some(p => finite(p.precipitation) === undefined) ? 'au moins ' : ''}${format(total)} mm prévus`,
       explanation: 'Total prévu sur les 6 prochaines heures.', entity: config.weather_entity, icon: 'mdi:weather-pouring' });
