@@ -10,7 +10,7 @@ import { buildCurrentWeather } from './current-weather';
 import { currentMetrics, meaningfulComfort, weatherSourceLabel } from './current-measurements';
 import { renderForecastChart } from './forecast-chart';
 import { buildBulletin } from './bulletin';
-import { renderBanner, type BannerLayout } from './banner-layouts';
+import { renderBanner } from './banner-layouts';
 import { currentSeason, daylightText } from './season';
 import './weather-sky';
 import type { WeatherBrief } from './weather-brief';
@@ -89,22 +89,10 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
           <span class="nw-current-temperature-source nw-metric-source">${weatherNow.temperatureSource}</span>
         </div>
       </aside>`;
-  const layout=(config.banner_layout ?? 'classic') as BannerLayout;
-  const bulletin=layout==='classic'?undefined:buildBulletin(hourly,now,hass.config?.time_zone,String(hass.states[config.weather_entity]?.attributes.wind_speed_unit ?? 'km/h'));
+  const bulletin=buildBulletin(hourly,now,hass.config?.time_zone,String(hass.states[config.weather_entity]?.attributes.wind_speed_unit ?? 'km/h'));
   const dateLabel=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:hass.config?.time_zone}).format(now);
   return html`
-    ${config.show_synthesis===false?nothing:layout!=='classic'?renderBanner({layout,brief,headline,icon:preview?.icon ?? 'mdi:information-outline',attention:!!preview?.selected.length,level:preview?.selected[0]?.severity,secondary,bulletin,header:brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`,sky:skyLayer,current:currentLayer,dateLabel,rgb:brief?.rgb ?? '61,155,233'}):html`<section id="heros" class=${`nw-section nw-synthesis${headline?'':' nw-synthesis--weather-only'}`} aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
-      ${skyLayer}
-      <header class="nw-section-heading">${brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`}</header>
-      ${brief&&headline?html`<div class="nw-summary-emblem me-bulle" aria-hidden="true"><div class="me-halo"></div>
-        <div class="me-rond"><ha-icon icon=${preview?.icon ?? 'mdi:information-outline'}></ha-icon></div></div>
-      <div class="nw-summary-lead"><h3>${headline}</h3>
-        ${preview?.selected.length ? html`<span class="nw-attention"><i aria-hidden="true"></i>${brief.label}</span>` : nothing}</div>
-      <div class="nw-summary-lines">
-        ${secondary.map(s => html`<p><span>${s.group === 'future' ? 'À venir' : s.group === 'environment' ? 'Environnement' : s.group === 'official' ? 'Vigilance' : 'Maintenant'}</span>${s.text}</p>`)}
-      </div>`:nothing}
-      ${currentLayer}
-    </section>`}
+    ${config.show_synthesis===false?nothing:renderBanner({brief,headline,icon:preview?.icon ?? 'mdi:information-outline',attention:!!preview?.selected.length,level:preview?.selected[0]?.severity,secondary,bulletin,header:brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`,sky:skyLayer,current:currentLayer,dateLabel,rgb:brief?.rgb ?? '61,155,233'})}
     ${config.show_today===false?nothing:html`<section id="today" class="nw-section" aria-labelledby="nw-today-title" style="--vc:61,155,233">
       <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>${showComfort ? 'Mesures et ressenti' : 'Conditions actuelles'}</span></header>
       ${showComfort?html`<div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}>
