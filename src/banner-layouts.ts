@@ -73,32 +73,28 @@ export const bannerStyles = css`
   .nw-synthesis.nw-banner { grid-template-areas:"head aside" "main aside" "tiles tiles"; grid-template-rows:auto 1fr auto; }
   .nw-b-headline { margin:0; font-size:15px; font-weight:600; letter-spacing:-.1px; line-height:1.4; max-width:56ch; }
   /* Vigilance: a glass pill in the official colour, its icon glowing with the same halo as the alert emblem. */
-  .nw-b-vigil { --al:232,184,20; position:relative; z-index:2; display:flex; align-items:center; gap:12px; margin:2px 0 0; padding:6px 18px 6px 7px; border-radius:999px;
+  /* The alert has the brief bubble's shape (label above, icon across both lines); only its colour and halo set it apart. */
+  .nw-b-vigil { --al:232,184,20; position:relative; z-index:2; display:inline-grid; grid-template-columns:auto minmax(0,1fr); column-gap:10px; align-items:center;
+    max-width:100%; box-sizing:border-box; margin:2px 0 0; padding:6px 14px 7px 10px; border-radius:14px;
     background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 80%,rgb(var(--al)) 20%),color-mix(in srgb,var(--card-background-color,#fff) 92%,rgb(var(--al)) 8%));
-    border:1px solid rgba(var(--al),.38); box-shadow:0 4px 18px -10px rgba(var(--al),.5); backdrop-filter:blur(8px); }
+    border:1px solid rgba(var(--al),.38); backdrop-filter:blur(8px); animation:nwVigilGlow 5.2s ease-in-out infinite; }
   .nw-b-vigil--level2 { --al:238,124,30; } .nw-b-vigil--level3 { --al:214,52,58; }
-  .nw-b-vigil strong { font-size:14px; font-weight:650; letter-spacing:-.1px; }
-  .nw-vigil-text { display:flex; flex-direction:column; min-width:0; line-height:1.2; }
-  .nw-vigil-text small { font-size:9px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; line-height:13px; color:color-mix(in srgb,rgb(var(--al)) 62%,var(--primary-text-color) 38%); }
-  .nw-vigil-text strong { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .nw-b-vigil-mark { position:relative; flex:0 0 32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%;
-    color:color-mix(in srgb,rgb(var(--al)) 78%,var(--primary-text-color) 22%); background:radial-gradient(circle at 35% 25%,rgba(var(--al),.24),rgba(var(--al),.08)); border:1.5px solid rgba(var(--al),.6); animation:nwVigilGlow 5.2s ease-in-out infinite; }
-  .nw-b-vigil-mark ha-icon { --mdc-icon-size:17px; position:relative; z-index:1; display:flex; line-height:0; /* HA's ha-icon is inline and would sit low */ }
-  .nw-b-vigil-halo { position:absolute; inset:-20px; border-radius:50%; background:radial-gradient(circle,rgba(var(--al),.22),rgba(var(--al),.08) 45%,rgba(var(--al),0) 75%); filter:blur(10px); animation:nwVigilHalo 5.2s ease-in-out infinite; pointer-events:none; }
-  @keyframes nwVigilHalo { 0%,100% { opacity:.5; transform:scale(.94); } 50% { opacity:.85; transform:scale(1.08); } }
-  @keyframes nwVigilGlow { 0%,100% { box-shadow:0 0 6px rgba(var(--al),.18); } 50% { box-shadow:0 0 12px rgba(var(--al),.32); } }
-  @media (prefers-reduced-motion:reduce) { .nw-b-vigil-mark, .nw-b-vigil-halo { animation:none; } }
+  .nw-vigil-text { display:flex; flex-direction:column; row-gap:1px; min-width:0; }
+  .nw-vigil-text small { font-size:9px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; line-height:13px; white-space:nowrap; color:color-mix(in srgb,rgb(var(--al)) 62%,var(--primary-text-color) 38%); }
+  .nw-vigil-text strong { font-size:13px; font-weight:600; line-height:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .nw-b-vigil-mark { position:relative; width:18px; height:18px; display:flex; align-items:center; justify-content:center; color:color-mix(in srgb,rgb(var(--al)) 85%,var(--primary-text-color) 15%); }
+  .nw-b-vigil-mark ha-icon { --mdc-icon-size:18px; position:relative; z-index:1; display:flex; line-height:0; /* HA's ha-icon is inline and would sit low */ }
+  .nw-b-vigil-halo { position:absolute; inset:-12px; border-radius:50%; background:radial-gradient(circle,rgba(var(--al),.3),rgba(var(--al),.1) 45%,rgba(var(--al),0) 75%); filter:blur(6px); animation:nwVigilHalo 5.2s ease-in-out infinite; pointer-events:none; }
+  @keyframes nwVigilHalo { 0%,100% { opacity:.55; transform:scale(.94); } 50% { opacity:.9; transform:scale(1.08); } }
+  /* The glowing halo around the whole bubble, breathing in the alert's colour. */
+  @keyframes nwVigilGlow { 0%,100% { box-shadow:0 0 6px 0 rgba(var(--al),.22),0 4px 18px -10px rgba(var(--al),.5); } 50% { box-shadow:0 0 16px 2px rgba(var(--al),.42),0 4px 18px -10px rgba(var(--al),.5); } }
+  @media (prefers-reduced-motion:reduce) { .nw-b-vigil, .nw-b-vigil-halo { animation:none; } }
   .nw-b-kicker { font-size:10px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--secondary-text-color); }
   @container (max-width:650px) {
     /* Order: heading, current weather, then the bulletin column (bulletin, vigilance, Now / Coming bubbles). */
     .nw-synthesis.nw-banner { grid-template-columns:minmax(0,1fr); grid-template-rows:auto; grid-template-areas:"head" "aside" "main" "tiles"; }
     .nw-b-headline { font-size:14px; }
     .nw-banner .nw-current-weather { min-height:130px; margin:0 0 10px; }
-    /* A smaller pill on phones: same colour and halo, half the room. */
-    .nw-b-vigil { padding:4px 14px 4px 4px; gap:9px; }
-    .nw-b-vigil strong { font-size:13px; }
-    .nw-b-vigil-mark { flex-basis:24px; height:24px; } .nw-b-vigil-mark ha-icon { --mdc-icon-size:13px; }
-    .nw-b-vigil-halo { inset:-12px; }
     .nw-b-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
   }
   @container (max-width:360px) {

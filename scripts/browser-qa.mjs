@@ -369,17 +369,18 @@ try {
   await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-panel').hidePopover();});
   await page.emulateMedia({reducedMotion:'no-preference'});
   const haloMotion=await page.evaluate(async()=>{
-    const root=window.briefCard.shadowRoot, circle=root.querySelector('.nw-b-vigil-mark'), halo=root.querySelector('.nw-b-vigil-halo');
-    const animated=getComputedStyle(circle).animationName==='nwVigilGlow'&&getComputedStyle(halo).animationName==='nwVigilHalo';
+    // The glow breathes around the whole alert bubble; the icon keeps its own halo.
+    const root=window.briefCard.shadowRoot, bubble=root.querySelector('.nw-b-vigil'), halo=root.querySelector('.nw-b-vigil-halo');
+    const animated=getComputedStyle(bubble).animationName==='nwVigilGlow'&&getComputedStyle(halo).animationName==='nwVigilHalo';
     if(getComputedStyle(root.querySelector('.nw-synthesis')).borderLeftWidth!=='0px') throw new Error('Unexpected synthesis stripe');
     const before=halo.getAnimations()[0]?.currentTime;
     await new Promise(r=>setTimeout(r,150));
     const advancing=halo.getAnimations()[0]?.currentTime>before;
     return {animated,advancing};
   });
-  assert.equal(haloMotion.animated,true,'Circle and halo animation enabled');assert.equal(haloMotion.advancing,true,'Halo animation actually advances');
+  assert.equal(haloMotion.animated,true,'Bubble glow and icon halo animation enabled');assert.equal(haloMotion.advancing,true,'Halo animation actually advances');
   await page.emulateMedia({reducedMotion:'reduce'});
-  haloMotion.reduced=await page.evaluate(()=>[...window.briefCard.shadowRoot.querySelectorAll('.nw-b-vigil-mark,.nw-b-vigil-halo')].every(e=>getComputedStyle(e).animationName==='none'));
+  haloMotion.reduced=await page.evaluate(()=>[...window.briefCard.shadowRoot.querySelectorAll('.nw-b-vigil,.nw-b-vigil-halo')].every(e=>getComputedStyle(e).animationName==='none'));
   assert.equal(haloMotion.reduced,true,'Reduced motion disables both animations');
   const briefReports=[];
   for(const dark of [false,true]) for(const width of [375,768,1440]){

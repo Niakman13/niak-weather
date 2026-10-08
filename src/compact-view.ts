@@ -1,6 +1,6 @@
 import { css, html, LitElement, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { alertPill, alertText, bulletinTiles } from './banner-layouts';
+import { alertPill, bulletinTiles } from './banner-layouts';
 import type { Bulletin } from './bulletin';
 import type { CurrentWeather } from './current-weather';
 import { alertPoint, tickerPoints, type TickerPoint } from './compact-points';
@@ -41,7 +41,8 @@ export class NiakBriefTicker extends LitElement {
     /* Label above the sentence: the sentence gets the whole width; the icon spans both lines. */
     .chip { display:inline-grid; grid-template-columns:auto minmax(0,1fr); column-gap:10px; row-gap:1px; align-items:center; max-width:100%; box-sizing:border-box; margin:0;
       padding:6px 14px 7px 10px; border-radius:14px; font-size:13px; line-height:16px; font-weight:500; color:var(--primary-text-color);
-      background:linear-gradient(rgba(128,128,128,.07),rgba(128,128,128,.07)),color-mix(in srgb,var(--card-background-color,#fff) 38%,transparent);
+      /* A touch whiter than the four bulletin tiles, so the brief stands apart from them. */
+      background:linear-gradient(rgba(255,255,255,.16),rgba(255,255,255,.16)),color-mix(in srgb,var(--card-background-color,#fff) 50%,transparent);
       border:1px solid color-mix(in srgb,var(--primary-text-color,#253047) 13%,transparent); backdrop-filter:blur(3px) saturate(1.15);
       transition:opacity .35s ease, transform .35s ease; }
     .chip.out { opacity:0; transform:translateY(-5px); }
@@ -74,7 +75,7 @@ export function renderCompact(p: CompactParts): TemplateResult {
     ${p.format === 'intermediate' ? html`<span class="nw-c-source">${p.now.temperatureSource}</span>` : nothing}</div>`;
   const ticker = points.length ? html`<niak-brief-ticker class=${`nw-c-ticker nw-c-ticker--${p.format}`} .points=${points}></niak-brief-ticker>` : nothing;
   const body = p.format === 'tile' ? html`
-      <div class="nw-c-meta">${alert ? html`<span class=${`nw-c-vig nw-c-vig--level${alert.level}`} title=${alert.source}><i><ha-icon icon=${alert.icon}></ha-icon></i>${alertText(alert)}</span>` : nothing}
+      <div class="nw-c-meta">${alert ? alertPill(alert) : nothing}
         ${p.location ? html`<span class="nw-c-place">${p.location}</span>` : nothing}</div>
       ${ticker}${now}` : html`
       <header class="nw-c-head"><h2>Synthèse</h2><span>${[p.location, p.dateLabel].filter(Boolean).join(' · ')}</span></header>
@@ -137,15 +138,7 @@ export const compactStyles = css`
   /* Nothing to scroll: the place on top, the vigilance under it, both in the top left corner. */
   .nw-compact--quiet .nw-c-meta { flex-direction:column; align-items:flex-start; align-self:start; gap:6px; }
   .nw-compact--quiet .nw-c-place { order:-1; }
-  /* Vigilance: a small bubble in the official colour, plainer than the full card's pill. */
-  .nw-c-vig { --al:232,184,20; flex:0 1 auto; min-width:0; max-width:100%; display:inline-flex; align-items:center; gap:6px; padding:3px 12px 3px 4px; border-radius:999px; font-size:12px; font-weight:650;
-    background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 80%,rgb(var(--al)) 20%),color-mix(in srgb,var(--card-background-color,#fff) 92%,rgb(var(--al)) 8%));
-    border:1px solid rgba(var(--al),.38); backdrop-filter:blur(8px); }
-  .nw-c-vig--level2 { --al:238,124,30; } .nw-c-vig--level3 { --al:214,52,58; }
-  .nw-c-vig i { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:none; background:rgba(var(--al),.16); border:1.5px solid rgba(var(--al),.6);
-    color:color-mix(in srgb,rgb(var(--al)) 78%,var(--primary-text-color) 22%); box-sizing:border-box; }
-  .nw-c-vig ha-icon { --mdc-icon-size:12px; }
-  .nw-c-vig i { flex:none; } .nw-c-vig .nw-vigil-text small { font-size:8.5px; line-height:11px; }
+  .nw-c-meta .nw-b-vigil { margin:0; flex:0 1 auto; min-width:0; }
   .nw-c-kicker { white-space:nowrap; }
   /* HA's ha-icon is inline: without this it takes a line height and sits high in its circle. */
   .nw-compact ha-icon { display:flex; line-height:0; }
@@ -153,7 +146,7 @@ export const compactStyles = css`
   @container (max-width:480px) {
     .nw-compact--tile { --k:.42; --nw-orb-x:calc(100% - 300px); --v1:0%; --v2:12%; --v3:34%; --v4:60%; grid-template-areas:"meta now" "txt txt"; grid-template-rows:auto 62px;
       column-gap:10px; padding:12px 14px; }
-    .nw-compact:not(.nw-compact--quiet) .nw-c-meta { align-self:center; } .nw-compact:not(.nw-compact--quiet) .nw-c-meta:has(.nw-c-vig) .nw-c-place { display:none; }
+    .nw-compact:not(.nw-compact--quiet) .nw-c-meta { align-self:center; } .nw-compact:not(.nw-compact--quiet) .nw-c-meta:has(.nw-b-vigil) .nw-c-place { display:none; }
     .nw-compact--tile .nw-c-ticker { align-self:center; }
     .nw-compact--tile .nw-c-temp { font-size:26px; } .nw-compact--tile .nw-c-cond { font-size:12px; }
     .nw-compact--tile.nw-compact--quiet { grid-template-rows:auto; }
