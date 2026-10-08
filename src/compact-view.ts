@@ -46,14 +46,14 @@ export class NiakBriefTicker extends LitElement {
       border:1px solid color-mix(in srgb,var(--primary-text-color,#253047) 13%,transparent); backdrop-filter:blur(3px) saturate(1.15);
       transition:opacity .35s ease, transform .35s ease; }
     .chip.out { opacity:0; transform:translateY(-5px); }
-    ha-icon { --mdc-icon-size:14px; flex:none; align-self:center; margin-right:-2px; color:var(--secondary-text-color); }
+    /* On the first line, next to the label, even when the sentence wraps. */
+    ha-icon { --mdc-icon-size:14px; display:flex; line-height:0; flex:none; align-self:flex-start; margin:1.5px -2px 0 0; color:var(--secondary-text-color); }
     .kick { flex:none; font-size:10px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; white-space:nowrap; color:var(--secondary-text-color); }
     .act ha-icon, .act .kick { color:rgb(var(--al)); }
     .msg { min-width:0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
     .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; margin:0; padding:0; }
     @container (max-width:360px) {
       .chip { font-size:12px; }
-      ha-icon { align-self:flex-start; margin-top:1.5px; }
     }
     @media (prefers-reduced-motion:reduce) { .chip { transition:none; } }
   `;
@@ -141,10 +141,13 @@ export const compactStyles = css`
     background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 80%,rgb(var(--al)) 20%),color-mix(in srgb,var(--card-background-color,#fff) 92%,rgb(var(--al)) 8%));
     border:1px solid rgba(var(--al),.38); backdrop-filter:blur(8px); }
   .nw-c-vig--level2 { --al:238,124,30; } .nw-c-vig--level3 { --al:214,52,58; }
-  .nw-c-vig i { width:18px; height:18px; border-radius:50%; display:grid; place-items:center; background:rgba(var(--al),.16); border:1.5px solid rgba(var(--al),.6);
+  .nw-c-vig i { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:none; background:rgba(var(--al),.16); border:1.5px solid rgba(var(--al),.6);
     color:color-mix(in srgb,rgb(var(--al)) 78%,var(--primary-text-color) 22%); box-sizing:border-box; }
   .nw-c-vig ha-icon { --mdc-icon-size:11px; }
-  @container (max-width:360px) {
+  /* HA's ha-icon is inline: without this it takes a line height and sits high in its circle. */
+  .nw-compact ha-icon { display:flex; line-height:0; }
+  /* Phones and half width: the brief moves under the temperature, on the full width. */
+  @container (max-width:480px) {
     .nw-compact--tile { --k:.42; --nw-orb-x:calc(100% - 300px); --v1:0%; --v2:12%; --v3:34%; --v4:60%; grid-template-areas:"meta now" "txt txt"; grid-template-rows:auto 46px;
       column-gap:10px; padding:12px 14px; }
     .nw-c-meta { align-self:center; } .nw-c-meta:has(.nw-c-vig) .nw-c-place { display:none; }
