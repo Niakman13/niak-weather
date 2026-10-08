@@ -87,7 +87,7 @@ export function renderCompact(p: CompactParts): TemplateResult {
 }
 
 export const compactStyles = css`
-  .nw-compact { --nw-art-height:100%; position:relative; isolation:isolate; overflow:hidden; cursor:pointer; color:var(--primary-text-color); box-sizing:border-box; }
+  .nw-compact { position:relative; isolation:isolate; overflow:hidden; cursor:pointer; color:var(--primary-text-color); box-sizing:border-box; }
   .nw-compact:focus-visible { outline:2px solid var(--primary-color); outline-offset:-2px; }
   /* The sky keeps its drawing size and shrinks as one block: clouds, sun and rain stay in proportion. */
   .nw-c-skybox { position:absolute; top:0; right:0; z-index:-2; width:calc(100% / var(--k)); height:calc(100% / var(--k)); transform:scale(var(--k)); transform-origin:top right; pointer-events:none; }
