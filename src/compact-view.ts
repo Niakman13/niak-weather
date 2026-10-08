@@ -75,8 +75,7 @@ export function renderCompact(p: CompactParts): TemplateResult {
     ${p.format === 'intermediate' ? html`<span class="nw-c-source">${p.now.temperatureSource}</span>` : nothing}</div>`;
   const ticker = points.length ? html`<niak-brief-ticker class=${`nw-c-ticker nw-c-ticker--${p.format}`} .points=${points}></niak-brief-ticker>` : nothing;
   const body = p.format === 'tile' ? html`
-      <div class="nw-c-meta">${alert ? alertPill(alert) : nothing}
-        ${p.location ? html`<span class="nw-c-place">${p.location}</span>` : nothing}</div>
+      <div class="nw-c-meta">${p.location ? html`<span class="nw-c-place">${p.location}</span>` : nothing}${alert ? alertPill(alert) : nothing}</div>
       ${ticker}${now}` : html`
       <header class="nw-c-head"><h2>Synthèse</h2><span>${[p.location, p.dateLabel].filter(Boolean).join(' · ')}</span></header>
       <div class="nw-c-main">${alert ? alertPill(alert) : nothing}
@@ -128,7 +127,8 @@ export const compactStyles = css`
   /* Tile: one band of sky; at half width the brief moves under the temperature, two lines always reserved. */
   .nw-compact--tile { --k:.5; --nw-orb-x:calc(100% - 370px); --v1:18%; --v2:30%; --v3:46%; --v4:64%; display:grid; grid-template-columns:minmax(0,1fr) auto;
     grid-template-areas:"meta now" "txt now"; align-items:center; column-gap:14px; row-gap:8px; padding:14px 16px; min-height:92px; }
-  .nw-c-meta { grid-area:meta; align-self:end; display:flex; align-items:center; gap:8px; min-width:0; }
+  /* The place in the top left corner, the alert under it, in every case and at every width. */
+  .nw-c-meta { grid-area:meta; align-self:start; display:flex; flex-direction:column; align-items:flex-start; gap:6px; min-width:0; max-width:100%; }
   .nw-c-place { font-size:11px; color:var(--secondary-text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .nw-compact--tile .nw-c-ticker { grid-area:txt; align-self:start; justify-self:start; max-width:100%; }
   .nw-compact--tile .nw-c-now { grid-area:now; }
@@ -136,9 +136,7 @@ export const compactStyles = css`
   .nw-compact--tile .nw-c-cond { font-size:13px; } .nw-compact--tile .nw-c-cond ha-icon { --mdc-icon-size:17px; }
   .nw-compact--tile.nw-compact--quiet { grid-template-areas:"meta now"; }
   /* Nothing to scroll: the place on top, the vigilance under it, both in the top left corner. */
-  .nw-compact--quiet .nw-c-meta { flex-direction:column; align-items:flex-start; align-self:start; gap:6px; }
-  .nw-compact--quiet .nw-c-place { order:-1; }
-  .nw-c-meta .nw-b-vigil { margin:0; flex:0 1 auto; min-width:0; }
+  .nw-c-meta .nw-b-vigil { margin:0; min-width:0; }
   .nw-c-kicker { white-space:nowrap; }
   /* HA's ha-icon is inline: without this it takes a line height and sits high in its circle. */
   .nw-compact ha-icon { display:flex; line-height:0; }
@@ -146,7 +144,6 @@ export const compactStyles = css`
   @container (max-width:480px) {
     .nw-compact--tile { --k:.42; --nw-orb-x:calc(100% - 300px); --v1:0%; --v2:12%; --v3:34%; --v4:60%; grid-template-areas:"meta now" "txt txt"; grid-template-rows:auto 62px;
       column-gap:10px; padding:12px 14px; }
-    .nw-compact:not(.nw-compact--quiet) .nw-c-meta { align-self:center; } .nw-compact:not(.nw-compact--quiet) .nw-c-meta:has(.nw-b-vigil) .nw-c-place { display:none; }
     .nw-compact--tile .nw-c-ticker { align-self:center; }
     .nw-compact--tile .nw-c-temp { font-size:26px; } .nw-compact--tile .nw-c-cond { font-size:12px; }
     .nw-compact--tile.nw-compact--quiet { grid-template-rows:auto; }
