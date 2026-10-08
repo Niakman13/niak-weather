@@ -81,6 +81,8 @@ export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   sun_entity?: string;
   /** Season sensor (Season integration); without it the card uses the date and the hemisphere. */
   season_entity?: string;
+  /** Banner arrangement under evaluation (temporary). */
+  banner_layout?: 'classic' | 'editorial' | 'timeline' | 'focus';
   sun_elevation_entity?: string;
   forecast_source?: string;
   weather_path?: string;

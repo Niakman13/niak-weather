@@ -9,6 +9,8 @@ import { comfortColor } from './comfort-color';
 import { buildCurrentWeather } from './current-weather';
 import { currentMetrics, meaningfulComfort, weatherSourceLabel } from './current-measurements';
 import { renderForecastChart } from './forecast-chart';
+import { buildBulletin } from './bulletin';
+import { renderBanner, type BannerLayout } from './banner-layouts';
 import { currentSeason, daylightText } from './season';
 import './weather-sky';
 import type { WeatherBrief } from './weather-brief';
@@ -76,10 +78,23 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
     ${brief.caveats.length?html`<details class="nw-brief-limits"><summary>Données à vérifier · ${brief.caveats.length}</summary><ul>${brief.caveats.map(c=>html`<li>${c}</li>`)}</ul></details>`:nothing}</div></div>`:nothing;
   // Storm and downpour clouds stay dark whatever the theme: their text stays white. Softened night skies follow the theme like daytime.
   const darkSky=['lightning','lightning-rainy','pouring'].includes(weatherNow.condition);
+  const skyLayer=html`<div class="nw-sky-backdrop" aria-hidden="true"><niak-weather-sky .condition=${weatherNow.condition} .phase=${weatherNow.phase}
+        .animated=${config.weather_animations!==false} .quality=${config.weather_animation_quality ?? 'standard'} .wind=${weatherNow.wind ?? 0} .season=${season.season}></niak-weather-sky></div>`;
+  const currentLayer=html`<aside class=${`nw-current-weather${darkSky?' nw-current-weather--dark-sky':''}`} aria-label="Météo actuelle">
+        <div class="nw-current-content"><span class="nw-current-kicker">En ce moment</span>
+          <button class="nw-current-condition" data-entity=${weatherNow.conditionEntity ?? config.weather_entity} title=${weatherNow.source}><ha-icon icon=${weatherNow.icon}></ha-icon>${weatherNow.label}</button>
+          ${weatherNow.temperature===undefined ? html`<span class="nw-current-missing">Température indisponible</span>` : html`
+            <div class="nw-current-reading"><button class="nw-current-temperature" data-entity=${weatherNow.temperatureEntity} aria-label=${`${weatherNow.temperatureSource} : ${degrees(weatherNow.temperature)} degrés Celsius`}>${degrees(weatherNow.temperature)}<small>°C</small></button>
+            ${trend!==undefined&&Math.abs(trend)>=.1?html`<span class=${`nw-current-trend nw-current-trend--${trend>0?'up':'down'}`} title=${trend>0?'La température monte':'La température baisse'} aria-label=${`Température en ${trend>0?'hausse':'baisse'} de ${one(Math.abs(trend))} degré par heure`}><ha-icon icon=${trend>0?'mdi:arrow-top-right':'mdi:arrow-bottom-right'}></ha-icon><small>${trend>0?'+':'−'}${one(Math.abs(trend))} °C/h</small></span>`:nothing}</div>`}
+          <span class="nw-current-temperature-source nw-metric-source">${weatherNow.temperatureSource}</span>
+        </div>
+      </aside>`;
+  const layout=(config.banner_layout ?? 'classic') as BannerLayout;
+  const bulletin=layout==='classic'?undefined:buildBulletin(hourly,now,hass.config?.time_zone,String(hass.states[config.weather_entity]?.attributes.wind_speed_unit ?? 'km/h'));
+  const dateLabel=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:hass.config?.time_zone}).format(now);
   return html`
-    ${config.show_synthesis===false?nothing:html`<section id="heros" class=${`nw-section nw-synthesis${headline?'':' nw-synthesis--weather-only'}`} aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
-      <div class="nw-sky-backdrop" aria-hidden="true"><niak-weather-sky .condition=${weatherNow.condition} .phase=${weatherNow.phase}
-        .animated=${config.weather_animations!==false} .quality=${config.weather_animation_quality ?? 'standard'} .wind=${weatherNow.wind ?? 0} .season=${season.season}></niak-weather-sky></div>
+    ${config.show_synthesis===false?nothing:layout!=='classic'?renderBanner({layout,brief,headline,icon:preview?.icon ?? 'mdi:information-outline',attention:!!preview?.selected.length,secondary,bulletin,header:brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`,sky:skyLayer,current:currentLayer,dateLabel,rgb:brief?.rgb ?? '61,155,233'}):html`<section id="heros" class=${`nw-section nw-synthesis${headline?'':' nw-synthesis--weather-only'}`} aria-labelledby="nw-synthesis-title" style=${`--vc:${brief?.rgb ?? '61,155,233'}`}>
+      ${skyLayer}
       <header class="nw-section-heading">${brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`}</header>
       ${brief&&headline?html`<div class="nw-summary-emblem me-bulle" aria-hidden="true"><div class="me-halo"></div>
         <div class="me-rond"><ha-icon icon=${preview?.icon ?? 'mdi:information-outline'}></ha-icon></div></div>
@@ -88,15 +103,7 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
       <div class="nw-summary-lines">
         ${secondary.map(s => html`<p><span>${s.group === 'future' ? 'À venir' : s.group === 'environment' ? 'Environnement' : s.group === 'official' ? 'Vigilance' : 'Maintenant'}</span>${s.text}</p>`)}
       </div>`:nothing}
-      <aside class=${`nw-current-weather${darkSky?' nw-current-weather--dark-sky':''}`} aria-label="Météo actuelle">
-        <div class="nw-current-content"><span class="nw-current-kicker">En ce moment</span>
-          <button class="nw-current-condition" data-entity=${weatherNow.conditionEntity ?? config.weather_entity} title=${weatherNow.source}><ha-icon icon=${weatherNow.icon}></ha-icon>${weatherNow.label}</button>
-          ${weatherNow.temperature===undefined ? html`<span class="nw-current-missing">Température indisponible</span>` : html`
-            <div class="nw-current-reading"><button class="nw-current-temperature" data-entity=${weatherNow.temperatureEntity} aria-label=${`${weatherNow.temperatureSource} : ${degrees(weatherNow.temperature)} degrés Celsius`}>${degrees(weatherNow.temperature)}<small>°C</small></button>
-            ${trend!==undefined&&Math.abs(trend)>=.1?html`<span class=${`nw-current-trend nw-current-trend--${trend>0?'up':'down'}`} title=${trend>0?'La température monte':'La température baisse'} aria-label=${`Température en ${trend>0?'hausse':'baisse'} de ${one(Math.abs(trend))} degré par heure`}><ha-icon icon=${trend>0?'mdi:arrow-top-right':'mdi:arrow-bottom-right'}></ha-icon><small>${trend>0?'+':'−'}${one(Math.abs(trend))} °C/h</small></span>`:nothing}</div>`}
-          <span class="nw-current-temperature-source nw-metric-source">${weatherNow.temperatureSource}</span>
-        </div>
-      </aside>
+      ${currentLayer}
     </section>`}
     ${config.show_today===false?nothing:html`<section id="today" class="nw-section" aria-labelledby="nw-today-title" style="--vc:61,155,233">
       <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>${showComfort ? 'Mesures et ressenti' : 'Conditions actuelles'}</span></header>
