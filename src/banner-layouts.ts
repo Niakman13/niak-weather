@@ -86,7 +86,7 @@ export const bannerStyles = css`
   .nw-b-rain { color:rgb(27,171,175); } .nw-b-wind { color:rgb(40,130,240); }
   /* Focus: a slim alert bar, then the bulletin as the main text. */
   .nw-b-alert { grid-area:alert; position:relative; z-index:2; display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin:-6px 0 16px; padding:10px 14px; border-radius:12px;
-    background:color-mix(in srgb,var(--card-background-color,#fff) 80%,rgb(var(--vc)) 20%); border:1px solid rgba(var(--vc),.45); border-left:4px solid rgb(var(--vc)); }
+    background:color-mix(in srgb,var(--card-background-color,#fff) 80%,rgb(var(--vc)) 20%); border:1px solid rgba(var(--vc),.5); }
   .nw-b-alert>ha-icon { --mdc-icon-size:20px; color:rgb(var(--vc)); }
   .nw-b-alert strong { font-size:14px; font-weight:700; }
   .nw-b-alert .nw-attention { padding:3px 9px; }
