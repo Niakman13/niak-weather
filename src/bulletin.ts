@@ -6,15 +6,17 @@ export interface BulletinPeriod {
   key: string; label: string; short: string; condition: string; icon: string; text: string; phrase: string;
   /** Sky at the start and at the end of the period, for the summary; `during` is "en cours d’après-midi". */
   early: string; late: string; night: boolean; during: string;
+  /** "en début d’après-midi": the first half of a period whose sky changes. */
+  start: string;
   tmin?: number; tmax?: number; rain: number; wind?: number; gust?: number; bearing?: number;
 }
 export interface Bulletin { summary: string; periods: BulletinPeriod[] }
 
 const SLOTS = [
-  { slot: 0, from: 0, names: ['cette nuit', 'cette nuit', 'la nuit suivante'], short: ['Nuit', 'Nuit', 'Nuit sv.'], during: 'en cours de nuit' },
-  { slot: 1, from: 6, names: ['ce matin', 'demain matin', 'après-demain matin'], short: ['Matin', 'Dem. matin', 'Matin'], during: 'en cours de matinée' },
-  { slot: 2, from: 12, names: ['cet après-midi', 'demain après-midi', 'après-demain après-midi'], short: ['Après-midi', 'Dem. après-midi', 'Après-midi'], during: 'en cours d’après-midi' },
-  { slot: 3, from: 18, names: ['ce soir', 'demain soir', 'après-demain soir'], short: ['Soirée', 'Dem. soir', 'Soirée'], during: 'en cours de soirée' },
+  { slot: 0, from: 0, names: ['cette nuit', 'cette nuit', 'la nuit suivante'], short: ['Nuit', 'Nuit', 'Nuit sv.'], start: 'en début de nuit', during: 'en fin de nuit' },
+  { slot: 1, from: 6, names: ['ce matin', 'demain matin', 'après-demain matin'], short: ['Matin', 'Dem. matin', 'Matin'], start: 'en début de matinée', during: 'en fin de matinée' },
+  { slot: 2, from: 12, names: ['cet après-midi', 'demain après-midi', 'après-demain après-midi'], short: ['Après-midi', 'Dem. après-midi', 'Après-midi'], start: 'en début d’après-midi', during: 'en fin d’après-midi' },
+  { slot: 3, from: 18, names: ['ce soir', 'demain soir', 'après-demain soir'], short: ['Soirée', 'Dem. soir', 'Soirée'], start: 'en début de soirée', during: 'en fin de soirée' },
 ];
 /** Most severe first: a storm or rain in a period outweighs the hours around it. */
 const SEVERITY = ['lightning-rainy', 'lightning', 'hail', 'snowy', 'snowy-rainy', 'pouring', 'rainy', 'fog', 'windy', 'windy-variant', 'cloudy', 'partlycloudy', 'sunny', 'clear-night'];
@@ -87,7 +89,7 @@ export function buildBulletin(hourly: WeatherForecast[], now: Date, timeZone?: s
     const d = Math.min(g.day, 2), label = g.slot.names[d];
     return { key: `${g.day}-${g.slot.slot}`, label: cap(label), short: g.slot.short[d], condition, icon: (night && condition === 'partlycloudy' ? 'mdi:weather-night-partly-cloudy' : night && condition === 'sunny' ? 'mdi:weather-night' : ICON[condition]) ?? 'mdi:weather-cloudy',
       text: bits.join('. ') + '.', phrase: main, early: evolves ? early : condition, late: evolves ? late : condition, night,
-      during: (g.day >= 1 ? 'demain ' : '') + g.slot.during, tmin, tmax, rain, wind, gust, bearing };
+      during: (g.day >= 1 ? 'demain ' : '') + g.slot.during, start: (g.day >= 1 ? 'demain ' : '') + g.slot.start, tmin, tmax, rain, wind, gust, bearing };
   });
   return { summary: summarise(periods), periods };
 }
@@ -98,22 +100,25 @@ function summarise(periods: BulletinPeriod[]): string {
   const runs: Array<{ condition: string; when: string[]; day: boolean; night: boolean }> = [];
   const push = (condition: string, when: string, night: boolean) => {
     const last = runs.at(-1);
-    if (last && last.condition === condition) { if (!when.startsWith('en cours') && !when.includes(' en cours')) last.when.push(when); last.night ||= night; last.day ||= !night; }
+    if (last && last.condition === condition) { last.when.push(when); last.night ||= night; last.day ||= !night; }
     else runs.push({ condition, when: [when], day: !night, night });
   };
   for (const p of periods) {
-    push(p.early, p.label.toLowerCase(), p.night);
+    // A period whose sky changes reads "en début d’après-midi … en fin d’après-midi".
+    push(p.early, p.late !== p.early ? p.start : p.label.toLowerCase(), p.night);
     if (p.late !== p.early) push(p.late, p.during, p.night);
   }
   const join = (xs: string[]) => xs.length < 2 ? xs[0] : `${xs.slice(0, -1).join(', ')} et ${xs.at(-1)}`;
+  // Three parts of the day or more under the same sky: "ce soir et jusqu’à demain matin".
+  const span = (xs: string[]) => xs.length >= 3 ? `${xs[0]} et jusqu’à ${xs.at(-1)}` : join(xs);
   const words = (r: typeof runs[number]) => r.condition === 'sunny' && r.day && r.night ? 'beau temps' : phrase(r.condition, r.night && !r.day);
-  const parts = runs.map(r => `${words(r)} ${join(r.when)}`);
+  const parts = runs.map(r => `${words(r)} ${span(r.when)}`);
   const sky = cap(parts.length < 2 ? parts[0] : `${parts.slice(0, -1).join(', ')}, puis ${parts.at(-1)}`) + '.';
   const temps = periods.flatMap(p => [p.tmin, p.tmax]).filter((t): t is number => t !== undefined);
   const out = [sky];
   if (temps.length) {
     const lo = Math.min(...temps), hi = Math.max(...temps), warm = periods.find(p => p.tmax === hi), cold = periods.find(p => p.tmin === lo);
-    out.push(lo === hi ? `Autour de ${nf(lo)} °C.` : `Températures de ${nf(lo)} °C (${cold!.label.toLowerCase()}) à ${nf(hi)} °C (${warm!.label.toLowerCase()}).`);
+    out.push(lo === hi ? `Autour de ${nf(lo)} °C.` : `De ${nf(lo)} °C ${cold!.label.toLowerCase()} à ${nf(hi)} °C ${warm!.label.toLowerCase()}.`);
   }
   const wet = periods.filter(p => p.rain >= 1);
   out.push(wet.length ? `Pluie ${join(wet.map(p => p.label.toLowerCase()))} : ${nf(wet.reduce((s, p) => s + p.rain, 0), 1)} mm au total.` : 'Pas de pluie attendue.');

@@ -221,12 +221,12 @@ function subtitle(a: Record<string, any>, hourly: WeatherForecast[]): string {
 }
 function apparentPhrase(a: Record<string, any>): string {
   if (finite(a.t_ext) === undefined) return '';
-  if (a.base === 'thermometre' && !a.hum_source) return 'humidité indisponible — elle n’est pas comptée';
+  if (a.base === 'thermometre' && !a.hum_source) return 'Humidité inconnue : non prise en compte';
   const e = a.ecart_thermometre, abs = fr(Math.abs(e));
-  if (Math.abs(e) < .6) return 'le ressenti colle au thermomètre';
-  if (e > 0) return `${abs} °C de plus qu’au thermomètre — ` + (a.effet_vent > .3 ? 'même le vent réchauffe, il n’apporte plus rien'
-    : a.effet_soleil >= 1.5 ? `le soleil y est pour ${fr(a.effet_soleil)} °C` : 'c’est l’humidité qui pèse');
+  if (Math.abs(e) < .6) return 'Ressenti égal au thermomètre';
+  if (e > 0) return `${abs} °C de plus qu’au thermomètre, à cause ` + (a.effet_vent > .3 ? 'du vent chaud'
+    : a.effet_soleil >= 1.5 ? 'du soleil' : 'de l’humidité');
   const ev = Math.abs(a.effet_vent), ep = Math.abs(a.effet_pluie), en = Math.abs(a.effet_nuit);
-  return `${abs} °C de moins qu’au thermomètre — ` + (ep >= ev && ep > .4 ? `l’averse en emporte ${fr(ep)} °C`
-    : en > ev && en > .4 ? `le ciel dégagé en emporte ${fr(en)} °C` : `le vent en emporte ${fr(ev)} °C`);
+  return `${abs} °C de moins qu’au thermomètre, à cause ` + (ep >= ev && ep > .4 ? 'de la pluie'
+    : en > ev && en > .4 ? 'du ciel dégagé' : 'du vent');
 }

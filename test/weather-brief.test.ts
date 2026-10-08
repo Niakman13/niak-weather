@@ -17,7 +17,7 @@ describe('Brief intelligent', () => {
   });
   it('explains humidex heat and flags missing humidity', () => {
     expect(brief({ ressenti: 23, humidex: 23 }).summary).toContain('L’humidité accentue');
-    expect(brief({ humidex: -999, base: 'thermometre' }).caveats.join()).toContain('Humidité indisponible');
+    expect(brief({ humidex: -999, base: 'thermometre' }).caveats.join()).toContain('Humidité inconnue');
   });
   it('does not count missing sensors as calm or comfortable', () => {
     const b = brief({ ressenti: -999, t_ext: -999, humidex: -999, vent: -999, rafales: -999 });
@@ -37,7 +37,7 @@ describe('Brief intelligent', () => {
   });
   it('does not invent zero rainfall when quantities are missing', () => {
     const b = brief({}, [{ hours: 1 }, { hours: 2, precipitation: 5 }]);
-    expect(b.caveats.join()).toContain('cumul peut être incomplet');
+    expect(b.caveats.join()).toContain('le total peut être plus élevé');
   });
   it('uses summed rain on the 6-hour window', () => {
     const b = brief({}, Array.from({ length: 6 }, (_, i) => ({ hours: i + 1, precipitation: 4 })));
@@ -48,7 +48,7 @@ describe('Brief intelligent', () => {
     expect(b.signals.map(s => s.key)).toContain('storm');
     // One frost line: the night's minimum replaces the first freezing hour.
     expect(b.signals.map(s => s.key)).toContain('frost-night'); expect(b.signals.map(s => s.key)).not.toContain('freeze-future');
-    expect(b.signals.find(s => s.key === 'storm')!.explanation).toContain('pas une détection');
+    expect(b.signals.find(s => s.key === 'storm')!.explanation).toContain('fournisseur météo');
   });
   it('ignores invalid or out-of-window forecast offsets', () => {
     expect(brief({}, [{ hours: NaN, precipitation: 50 }, { hours: 7, condition: 'hail' }]).signals).toHaveLength(0);
@@ -59,14 +59,16 @@ describe('Brief intelligent', () => {
   });
   it('does not use Atmo 0, concentrations or stale levels as confirmed risks', () => {
     const b = brief({}, [], { ...config, atmo_air_entity: 'sensor.air', atmo_pm25_entity: 'sensor.pm', atmo_grass_entity: 'sensor.grass' }, { 'sensor.air': entity('0'), 'sensor.pm': entity('5', { 'Date de mise à jour': '2026-09-01' }), 'sensor.grass': entity('5', { unit_of_measurement: 'µg/m³' }) });
-    expect(b.signals).toHaveLength(0); expect(b.caveats.join()).toContain('publication ancienne');
+    expect(b.signals).toHaveLength(0); expect(b.caveats.join()).toContain('données trop anciennes');
   });
   it('Atmo code 7 is an event, not the highest severity', () => {
     const b = brief({}, [], { ...config, atmo_air_entity: 'sensor.air' }, { 'sensor.air': entity('7') });
-    expect(b.label).toBe('À surveiller'); expect(b.summary).toContain('Évènement');
+    expect(b.label).toBe('À surveiller'); expect(b.summary).toContain('Événement');
   });
   it('distinguishes tomorrow from today', () => {
-    expect(brief({}, [], { ...config, atmo_air_tomorrow_entity: 'sensor.air' }, { 'sensor.air': entity('5') }).summary).toContain('pour demain');
+    const text = (field: string) => brief({}, [], { ...config, [field]: 'sensor.air' }, { 'sensor.air': entity('5') }).signals.find(s => s.group === 'environment')?.text;
+    expect(text('atmo_air_tomorrow_entity')).toBe('Air extérieur : très mauvais demain');
+    expect(text('atmo_air_entity')).toBe('Air extérieur : très mauvais aujourd’hui');
   });
   it('respects pollen disabled and source selection without duplicate legacy pollen', () => {
     const c = { ...config, pollen_source: 'none' as const, atmo_grass_entity: 'sensor.grass', pollens: [{ id: 'sensor.old', nom: 'Armoise' }] };

@@ -71,7 +71,7 @@ describe('Atmo display semantics', () => {
     expect(atmoReading(hass('1'),'sensor.test',true,false,now)?.label).toBe('Très faible');
     expect(atmoReading(hass('2'),'sensor.test',true,false,now)?.label).toBe('Faible');
     expect(atmoReading(hass('6'),'sensor.test',true,false,now)?.label).toBe('Extrêmement élevé');
-    expect(atmoReading(hass('7'),'sensor.test',false,false,now)?.label).toBe('Évènement');
+    expect(atmoReading(hass('7'),'sensor.test',false,false,now)?.label).toBe('Événement');
   });
   it('does not treat pollutant concentration as an Atmo index or invent missing data', () => {
     expect(atmoReading(hass('4',{unit_of_measurement:'µg/m³'}),'sensor.test',false,false,now)?.value).toBeUndefined();

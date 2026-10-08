@@ -341,7 +341,7 @@ try {
     card.hass={states,language:'fr',callWS:async message=>message.type==='call_service'?{response:{'weather.test':{forecast:hourly}}}:{}};
     document.querySelector('main').append(card);await new Promise(r=>setTimeout(r,60));
     const root=card.shadowRoot,title=root.querySelector('.nw-b-headline').textContent;
-    return {outlookInsteadOfSky:title.includes('Fraîcheur annoncée')&&!title.includes('Pluvieux'),localRainStillAuthoritative:root.querySelector('.nw-current-condition').textContent.includes('sans pluie mesurée'),outlookNotRepeated:(root.querySelector('.nw-b-chips')?.textContent ?? '').includes('Fraîcheur annoncée')===false,informationalNotAlert:root.querySelector('#heros').style.getPropertyValue('--vc').trim()==='61,155,233',explainable:root.querySelector('.nw-brief-details').textContent.includes('Fraîcheur annoncée')};
+    return {outlookInsteadOfSky:title.includes('Baisse jusqu’à')&&!title.includes('Pluvieux'),localRainStillAuthoritative:root.querySelector('.nw-current-condition').textContent.includes('sans pluie mesurée'),outlookNotRepeated:!(root.querySelector('niak-brief-ticker')?.points ?? []).some(p=>p.text.includes('Baisse jusqu’à')),informationalNotAlert:root.querySelector('#heros').style.getPropertyValue('--vc').trim()==='61,155,233',explainable:root.querySelector('.nw-brief-details').textContent.includes('Baisse jusqu’à')};
   });
   for(const [key,value] of Object.entries(noAtmoBrief))assert.equal(value,true,`No Atmo brief: ${key}`);
   for(const width of [375,1440]){
@@ -360,9 +360,9 @@ try {
     card.hass={...base.hass,states,callWS:async msg=>msg.type==='call_service'?{response:{'weather.test':{forecast:hourly}}}:history};
     document.querySelector('main').append(card);await new Promise(r=>setTimeout(r,60));
     const text=()=>[...card.shadowRoot.querySelectorAll('niak-brief-ticker')].map(t=>t.points.map(p=>`${p.label} ${p.text}`).join(' ')).join(' ');
-    const first=text().includes('Pression en hausse (1,1 hPa sur 3 h)');
+    const first=text().includes('La pression monte : +1,1 hPa en 3 h');
     card.requestUpdate();await card.updateComplete;
-    const result={pressureAlongsideAir:first&&text().includes('Pression en hausse'),noEmptyOutlook:!text().includes('Pas de signal')&&!text().includes('À venir')};
+    const result={pressureAlongsideAir:first&&text().includes('La pression monte'),noEmptyOutlook:!text().includes('Pas de signal')&&!text().includes('À venir')};
     card.remove();return result;
   });
   for(const [key,value] of Object.entries(pressureBrief))assert.equal(value,true,`Meaningful pressure brief: ${key}`);
@@ -868,9 +868,9 @@ try {
     const empty=!root.querySelector('.nw-b-headline,.nw-b-vigil')&&!!root.querySelector('.nw-current-temperature')&&!!root.querySelector('#comfort');
     // 20 °C at 95 % humidity: the humidex computed by the card is about 27 °C, well above the thermometer.
     card.hass={...card.hass,states:{...states,'sensor.humidity':e('sensor.humidity',95,'%')}};await card.updateComplete;
-    const gap=root.querySelector('.nw-b-headline')?.textContent.includes('ressenti est plus élevé')&&!(root.querySelector('niak-brief-ticker')?.points ?? []).some(p=>p.text.includes('ressentis'))&&!root.querySelector('.nw-b-vigil');
+    const gap=root.querySelector('.nw-b-headline')?.textContent.includes('de plus qu’au thermomètre')&&!(root.querySelector('niak-brief-ticker')?.points ?? []).some(p=>p.text.includes('ressentis'))&&!root.querySelector('.nw-b-vigil');
     dailyRain=72;card.hass={...card.hass,states};card.forecastAt=0;await card.loadForecasts();await card.updateComplete;
-    const tomorrow=root.querySelector('.nw-b-headline')?.textContent.includes('Pluie importante prévue demain : 72 mm')&&!root.querySelector('.nw-b-vigil');
+    const tomorrow=root.querySelector('.nw-b-headline')?.textContent.includes('Forte pluie demain : 72 mm')&&!root.querySelector('.nw-b-vigil');
     window.relevantBriefCard=card;return {empty,gap,tomorrow};
   });
   for(const [key,value] of Object.entries(relevantBrief))assert.equal(value,true,`Relevant brief: ${key}`);
