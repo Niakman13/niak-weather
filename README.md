@@ -24,8 +24,8 @@ Illustration de présentation avec des données d’exemple ; le rendu réel du 
 
 [![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
-![Niak Weather — mesures locales en trois colonnes et prévisions horaires et hebdomadaires](docs/images/1.png)
-![Niak Weather — synthèse et cadres Air extérieur et Pollens alimentés par Atmo France](docs/images/2.png)
+![Niak Weather — synthèse avec bulletin du jour, ressenti, pluie, vent, pression, air extérieur et pollens](docs/images/1.png)
+![Niak Weather — prévisions des 18 prochaines heures et des 7 prochains jours, air et pollens de demain](docs/images/2.png)
 Illustration de présentation avec des données d’exemple ; le rendu réel du bandeau dépend de votre météo, de vos capteurs et du thème Home Assistant.
 [Installation et mise à jour](docs/installation.md) · [Sources et prérequis](docs/sources.md) · [Atmo France : air et pollens](docs/atmo-france.md) · [Tous les réglages](docs/data-model.md) · [Comprendre le brief](docs/brief-intelligent.md)
 
