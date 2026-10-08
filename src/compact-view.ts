@@ -76,7 +76,7 @@ export function renderCompact(p: CompactParts): TemplateResult {
   const ticker = points.length ? html`<niak-brief-ticker class="nw-c-ticker" .points=${points}></niak-brief-ticker>` : nothing;
   const level = vigilance?.level ?? 1;
   const body = p.format === 'tile' ? html`
-      <div class="nw-c-meta">${vigilance ? html`<span class=${`nw-c-vig nw-c-vig--level${level}`} title=${vigilance.label}><i><ha-icon icon="mdi:alert-outline"></ha-icon></i>${vigilance.short}</span>` : nothing}
+      <div class="nw-c-meta">${vigilance ? html`<span class=${`nw-c-vig nw-c-vig--level${level}`} title=${vigilance.label}><i><ha-icon icon="mdi:alert-outline"></ha-icon></i><span class="nw-c-vig-text">${vigilance.label}</span></span>` : nothing}
         ${p.location ? html`<span class="nw-c-place">${p.location}</span>` : nothing}</div>
       ${ticker}${now}` : html`
       <header class="nw-c-head"><h2>Synthèse</h2><span>${[p.location, p.dateLabel].filter(Boolean).join(' · ')}</span></header>
@@ -140,13 +140,14 @@ export const compactStyles = css`
   .nw-compact--quiet .nw-c-meta { flex-direction:column; align-items:flex-start; align-self:start; gap:6px; }
   .nw-compact--quiet .nw-c-place { order:-1; }
   /* Vigilance: a small bubble in the official colour, plainer than the full card's pill. */
-  .nw-c-vig { --al:232,184,20; flex:none; display:inline-flex; align-items:center; gap:5px; padding:1px 9px 1px 2px; border-radius:999px; font-size:11px; font-weight:650;
+  .nw-c-vig { --al:232,184,20; flex:0 1 auto; min-width:0; max-width:100%; display:inline-flex; align-items:center; gap:5px; padding:1px 9px 1px 2px; border-radius:999px; font-size:11px; font-weight:650;
     background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 80%,rgb(var(--al)) 20%),color-mix(in srgb,var(--card-background-color,#fff) 92%,rgb(var(--al)) 8%));
     border:1px solid rgba(var(--al),.38); backdrop-filter:blur(8px); }
   .nw-c-vig--level2 { --al:238,124,30; } .nw-c-vig--level3 { --al:214,52,58; }
   .nw-c-vig i { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:none; background:rgba(var(--al),.16); border:1.5px solid rgba(var(--al),.6);
     color:color-mix(in srgb,rgb(var(--al)) 78%,var(--primary-text-color) 22%); box-sizing:border-box; }
   .nw-c-vig ha-icon { --mdc-icon-size:11px; }
+  .nw-c-vig i { flex:none; } .nw-c-vig-text { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   /* HA's ha-icon is inline: without this it takes a line height and sits high in its circle. */
   .nw-compact ha-icon { display:flex; line-height:0; }
   /* Phones and half width: the brief moves under the temperature, on the full width. */

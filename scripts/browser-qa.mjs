@@ -298,7 +298,7 @@ try {
     card.hass={...window.atmoCard.hass,states,callWS:async message=>message.type==='call_service'?{response:{'weather.test':{forecast:hourly}}}:[]};root.append(card);window.briefCard=card;window.briefInfo=[];
     card.addEventListener('hass-more-info',e=>window.briefInfo.push(e.detail.entityId));await sleep(50);
     const text=card.shadowRoot.querySelector('#heros').textContent;
-    const combined=['75 km/h','Fortes pluies','Vigilance Météo-France orange'].every(s=>text.includes(s));
+    const combined=['75 km/h','Fortes pluies','Vigilance orange'].every(s=>text.includes(s));
     const concise=card.shadowRoot.querySelectorAll('.nw-b-chip').length<=3;
     const banner=card.shadowRoot.querySelector('#heros'),nextSection=card.shadowRoot.querySelector('#today');
     const before=[banner.getBoundingClientRect().height,nextSection.getBoundingClientRect().top];

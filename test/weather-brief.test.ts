@@ -80,6 +80,15 @@ describe('Brief intelligent', () => {
     expect(b.signals.some(s => s.key === 'official')).toBe(true); expect(b.summary).toContain('rafales');
     if (color === 'rouge') expect(b.label).toBe('Vigilance rouge officielle');
   });
+  it('writes the vigilance the same way for every format: level, then phenomena', () => {
+    // Gardanne, 08/10/2026: yellow strong wind, then orange storms with yellow wind.
+    const text = (state: string, attributes: Record<string, unknown>) => brief({}, [], { ...config, vigilance_entity: 'sensor.vig' }, { 'sensor.vig': entity(state, { attribution: 'Météo-France', ...attributes }) }).signals.find(s => s.key === 'official')?.text;
+    expect(text('Jaune', { 'Vent violent': 'Jaune' })).toBe('Vigilance jaune · vent violent');
+    expect(text('Orange', { 'Vent violent': 'Jaune', Orages: 'Orange' })).toBe('Vigilance orange · orages, vent violent (jaune)');
+    expect(text('Jaune', {})).toBe('Vigilance jaune');
+    const b = brief({}, [], { ...config, vigilance_entity: 'sensor.vig' }, { 'sensor.vig': entity('Jaune', { attribution: 'Météo-France', 'Vent violent': 'Jaune' }) });
+    expect(b.title).toBe('Vigilance jaune · vent violent');
+  });
   it('does not lower pollution severity because official vigilance is green', () => {
     const b = brief({}, [], { ...config, vigilance_entity: 'sensor.vig', atmo_air_entity: 'sensor.air' }, { 'sensor.vig': entity('Vert', { attribution: 'Météo-France' }), 'sensor.air': entity('6') });
     expect(b.label).toBe('Attention renforcée');
@@ -99,7 +108,7 @@ describe('Brief intelligent', () => {
   });
   it('does not headline yellow vigilance when pollution sets the orange attention level', () => {
     const b = brief({}, [], { ...config, vigilance_entity: 'sensor.vig', atmo_air_entity: 'sensor.air' }, { 'sensor.vig': entity('Jaune', { attribution: 'Météo-France' }), 'sensor.air': entity('5') });
-    expect(b.title).toContain('Air extérieur'); expect(b.summary).toContain('Vigilance Météo-France jaune');
+    expect(b.title).toContain('Air extérieur'); expect(b.summary).toContain('Vigilance jaune');
   });
   it('normalizes underscore forecast conditions', () => {
     expect(brief({}, [{ hours: 1, condition: 'lightning_rainy' }]).signals.some(s => s.key === 'storm')).toBe(true);

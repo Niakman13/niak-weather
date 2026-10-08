@@ -13,6 +13,7 @@ export interface WeatherBrief {
 const format = (n: number) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(n);
 const timing = (h: number) => h < 1 ? 'dans l’heure' : `dans environ ${Math.round(h)} h`;
 const colors = ['61,155,233', '190,140,35', '230,125,45', '215,70,75'];
+const COLOR_NAMES = ['verte', 'jaune', 'orange', 'rouge'];
 const levels = ['Synthèse', 'À surveiller', 'Attention renforcée', 'Vigilance rouge officielle'];
 const knownColor = (v: unknown): number | undefined => ({ vert: 0, green: 0, jaune: 1, yellow: 1, orange: 2, rouge: 3, red: 3 })[normal(v).trim() as 'vert'];
 
@@ -126,8 +127,10 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
     const stamp = Date.parse(official?.last_updated ?? ''), old = Number.isFinite(stamp) && now.getTime() - stamp > 48 * 3600_000;
     if (level === undefined || old) caveats.push('Vigilance officielle indisponible, non reconnue ou ancienne : consulter Météo-France.');
     else if (level > 0) {
-      const phenomena = Object.entries(official!.attributes).filter(([key, value]) => !['attribution', 'friendly_name', 'icon'].includes(key) && knownColor(value) !== undefined && knownColor(value)! > 0).map(([key, value]) => `${key} (${normal(value)})`);
-      add({ key: 'official', group: 'official', severity: level as 1 | 2 | 3, text: `Vigilance Météo-France ${['verte', 'jaune', 'orange', 'rouge'][level]}${phenomena.length ? ' : ' + phenomena.join(', ') : ''}`,
+      // One text for every format: "Vigilance jaune · vent violent"; a phenomenon below the overall level says its own colour.
+      const phenomena = Object.entries(official!.attributes).filter(([key, value]) => !['attribution', 'friendly_name', 'icon'].includes(key) && knownColor(value) !== undefined && knownColor(value)! > 0)
+        .sort((x, y) => knownColor(y[1])! - knownColor(x[1])!).map(([key, value]) => `${key.toLowerCase()}${knownColor(value) === level ? '' : ` (${COLOR_NAMES[knownColor(value)!]})`}`);
+      add({ key: 'official', group: 'official', severity: level as 1 | 2 | 3, text: `Vigilance ${COLOR_NAMES[level]}${phenomena.length ? ' · ' + phenomena.join(', ') : ''}`,
         explanation: 'Vigilance officielle du département configuré. Elle fixe un niveau minimal d’attention sans masquer le vent, la pluie ou la pollution. Ouvrir le capteur et consulter les consignes officielles.', entity: config.vigilance_entity, icon: 'mdi:alert-outline' });
     }
   }
@@ -146,7 +149,7 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   const officialSignal = signals.find(s => s.key === 'official');
   const themes: Record<string, string> = { wind: 'Vent', 'wind-rain': 'Pluie et vent', 'rain-now': 'Pluie', 'rain-future': 'Pluie', storm: 'Orage', temperature: feels !== undefined && feels >= 34 ? 'Chaleur' : 'Froid', 'freeze-future': 'Froid', 'frost-night': 'Gel', fog: 'Brouillard', uv: 'UV' };
   const topics = [...new Set(signals.filter(s => s.severity > 0 && s.group !== 'official').map(s => themes[s.key] ?? (s.key.startsWith('air-') || s.key.startsWith('atmo-event') ? 'Air extérieur' : s.group === 'environment' ? 'Pollens' : 'Météo')))];
-  const title = officialSignal && officialSignal.severity === severity ? `Vigilance Météo-France ${['verte', 'jaune', 'orange', 'rouge'][officialSignal.severity]}`
+  const title = officialSignal && officialSignal.severity === severity ? officialSignal.text
     : topics.length ? topics.slice(0, 3).join(' · ') : 'Votre météo en bref';
   return { title, label: !available ? 'Données insuffisantes' : severity === 0 && caveats.length ? 'Synthèse partielle' : levels[severity], rgb: available ? colors[severity] : '150,150,150',
     icon: signals.find(s => s.severity > 0)?.icon ?? 'mdi:weather-partly-cloudy', summary: lines.join('\n'), signals, caveats: [...new Set(caveats)], available };
