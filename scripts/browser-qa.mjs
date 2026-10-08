@@ -639,7 +639,7 @@ try {
       document.documentElement.style.setProperty('--card-background-color',dark?'#242424':'#fff4f4');
     },dark);
     const geometry=await page.evaluate(()=>{
-      const root=window.skyCard.shadowRoot, host=window.skyCard.getBoundingClientRect(), current=root.querySelector('.nw-current-content').getBoundingClientRect(), lead=root.querySelector('.nw-b-main')?.getBoundingClientRect();
+      const root=window.skyCard.shadowRoot, host=window.skyCard.getBoundingClientRect(), current=root.querySelector('.nw-current-content').getBoundingClientRect(), lead=root.querySelector('.nw-b-main')&&getComputedStyle(root.querySelector('.nw-b-main')).display==='contents'?root.querySelector('.nw-b-kicker,.nw-b-headline')?.getBoundingClientRect():root.querySelector('.nw-b-main')?.getBoundingClientRect();
       return {overflow:current.left<host.left||current.right>host.right,distinct:!lead||current.left>=lead.right||current.top>=lead.bottom||current.bottom<=lead.top,rightAligned:getComputedStyle(root.querySelector('.nw-current-content')).textAlign==='right'};
     });
     assert.equal(geometry.overflow,false);assert.equal(geometry.distinct,true);assert.equal(geometry.rightAligned,true);
@@ -652,8 +652,9 @@ try {
       const matches=()=>{const h=header.getBoundingClientRect(),s=sky.getBoundingClientRect();return Math.abs(h.right-s.right)<1&&Math.abs(h.top-s.top)<1&&Math.abs(h.bottom-s.bottom)<1&&Math.abs(h.left-s.left)<1;};
       const closed=matches();details.querySelector('.nw-synthesis-info-button').click();const expanded=matches();
       const stable=!mobile||JSON.stringify(before)===JSON.stringify(artwork());
-      const main=root.querySelector('.nw-b-main').getBoundingClientRect(),head=root.querySelector('.nw-b-head').getBoundingClientRect();
-      return {closed,expanded,clean:!root.querySelector('.nw-current-feels,.nw-current-source'),stable,leftAligned:Math.abs(main.left-head.left)<1&&main.top>=head.bottom};
+      // On phones .nw-b-main is display:contents: measure its first visible line instead.
+      const mainEl=root.querySelector('.nw-b-main'),flat=getComputedStyle(mainEl).display==='contents',firstLine=flat?[...mainEl.children].find(e=>e.getClientRects().length):mainEl,main=firstLine?.getBoundingClientRect(),head=root.querySelector('.nw-b-head').getBoundingClientRect();
+      return {closed,expanded,clean:!root.querySelector('.nw-current-feels,.nw-current-source'),stable,leftAligned:!main||Math.abs(main.left-head.left)<1&&main.top>=head.bottom};
     });
     assert.deepEqual(background,{closed:true,expanded:true,clean:true,stable:true,leftAligned:true},'Full banner sky, stationary mobile artwork and bulletin aligned under the heading');
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/current-expanded-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
