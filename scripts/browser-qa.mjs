@@ -692,7 +692,7 @@ try {
   // Autumn leaves fly in storms too; only snow and hail hide them.
   const autumnLeaves=await page.evaluate(async()=>{
     const sky=document.createElement('niak-weather-sky');sky.season='autumn';sky.phase='day';document.body.append(sky);
-    const count=async condition=>{sky.condition=condition;await sky.updateComplete;return sky.shadowRoot.querySelectorAll('.maple').length;};
+    const count=async condition=>{sky.condition=condition;await sky.updateComplete;return sky.shadowRoot.querySelectorAll('.plane').length;};
     const result={storm:await count('lightning-rainy')>0,rain:await count('rainy')>0,snow:await count('snowy')===0,gusty:!!sky.shadowRoot.querySelector('.drift--gusty')||(await count('lightning'),!!sky.shadowRoot.querySelector('.drift--gusty'))};
     sky.remove();return result;
   });

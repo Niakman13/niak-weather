@@ -25,6 +25,7 @@
   <label>Moment<select id="phase"><option value="day">Journée</option><option value="twilight">Crépuscule</option><option value="night">Nuit</option></select></label>
   <label>Thème<select id="theme"><option value="light">Clair</option><option value="dark">Sombre</option></select></label>
   <label>Largeur<select id="width"><option value="tablet">Tablette</option><option value="phone">Téléphone (375 px)</option></select></label>
+  <label>Bulles « Maintenant / À venir »<select id="chips"><option value="A">A · actuelles</option><option value="B">B · étiquette en pastille</option><option value="C">C · bulle en deux parties</option><option value="D">D · étiquette au-dessus</option><option value="E">E · point plein / point creux</option><option value="F">F · cadre avec repère à gauche</option></select></label>
   <label class="toggle"><input type="checkbox" id="motion" checked> Animations</label>
 </div>
 
@@ -71,6 +72,21 @@
       card.hass=hass;
     }
   }
+  // Proposals for the brief bubbles, injected into the real card: full card (.nw-b-chip) and rotating bubble (.chip).
+  const flavours={full:{X:'.nw-b-chip',I:'.nw-b-chip ha-icon',K:'.nw-b-chip b',M:'.nw-b-chip span',F:'.nw-b-chip--future',pv:5},tick:{X:'.chip',I:'.chip ha-icon',K:'.kick',M:'.msg',F:'.chip--future',pv:4}};
+  const variants={A:()=>'',
+    B:({K})=>`${K}{background:color-mix(in srgb,var(--primary-text-color) 13%,transparent);color:var(--primary-text-color);padding:1px 7px;border-radius:999px}`,
+    C:({X,I,K,pv})=>`${X}{padding-left:0;overflow:hidden}${I}{position:relative;z-index:1;margin-left:9px}${K}{align-self:stretch;margin:-${pv}px 2px -${pv}px -29px;padding:${pv}px 10px ${pv}px 29px;display:flex;align-items:center;color:var(--primary-text-color);background:color-mix(in srgb,var(--primary-text-color) 10%,transparent);border-right:1px solid color-mix(in srgb,var(--primary-text-color) 14%,transparent)}`,
+    D:({X,I,K,M})=>`${X}{display:inline-grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;row-gap:1px;align-items:center;padding:6px 14px 7px 10px;border-radius:14px}${I}{grid-row:1/3;align-self:center;margin:0;--mdc-icon-size:18px}${K}{grid-column:2;line-height:13px;font-size:9px}${M}{grid-column:2;line-height:16px}`,
+    E:({I,K,F})=>`${I}{display:none}${K}{color:var(--primary-text-color)}${K}::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px;background:currentColor}${F} ${K.replace('.nw-b-chip ','')}::before{background:transparent;box-shadow:inset 0 0 0 1.5px currentColor}`,
+    F:({X,K,F})=>`${X}{border-radius:8px;border-left:3px solid color-mix(in srgb,var(--primary-text-color) 55%,transparent)}${F}{border-left-color:color-mix(in srgb,var(--primary-text-color) 22%,transparent)}${K}{color:var(--primary-text-color)}`};
+  const sheets=new WeakMap();
+  function applyChips(){
+    const v=variants[$('chips').value];
+    const put=(root,css)=>{if(!root)return;let sh=sheets.get(root);if(!sh){sh=new CSSStyleSheet();sheets.set(root,sh);root.adoptedStyleSheets=[...root.adoptedStyleSheets,sh];}sh.replaceSync(css);};
+    for(const card of cards){const r=card.shadowRoot;if(!r)continue;put(r,v(flavours.full));r.querySelectorAll('niak-brief-ticker').forEach(t=>put(t.shadowRoot,v(flavours.tick)));}
+  }
+  setInterval(applyChips,500);$('chips').addEventListener('change',applyChips);
   for(const id of ['condition','phase','theme','width','motion'])$(id).addEventListener('change',refresh);
   refresh();
 </script>

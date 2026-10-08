@@ -31,7 +31,7 @@ export class NiakBriefTicker extends LitElement {
   protected render() {
     const point = this.points[this.index % Math.max(1, this.points.length)];
     if (!point) return nothing;
-    return html`<p class=${`chip${this.leaving ? ' out' : ''}`} aria-hidden="true">
+    return html`<p class=${`chip chip--${point.group}${this.leaving ? ' out' : ''}`} aria-hidden="true">
         <ha-icon icon=${point.icon}></ha-icon><span class="kick">${point.label}</span><span class="msg">${point.text}</span></p>
       <ul class="sr">${this.points.map(p => html`<li>${p.label} : ${p.text}</li>`)}</ul>`;
   }

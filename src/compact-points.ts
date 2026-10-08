@@ -2,7 +2,7 @@ import { briefPresentation, briefSecondarySignals } from './brief-preview';
 import type { BriefSignal, WeatherBrief } from './weather-brief';
 
 /** One point of the brief as the small formats show it: a group label, an icon and one sentence. */
-export interface TickerPoint { label: string; icon: string; text: string; level: number }
+export interface TickerPoint { group: BriefSignal['group']; label: string; icon: string; text: string; level: number }
 export interface VigilanceBadge { level: 1 | 2 | 3; label: string; entity?: string }
 
 const label = (s: BriefSignal) => s.group === 'now' ? 'Maintenant' : s.group === 'future' ? 'À venir'
@@ -16,7 +16,7 @@ export function tickerPoints(brief?: WeatherBrief): TickerPoint[] {
     brief.signals.find(s => s.key === preview.outlookKey), ...briefSecondarySignals(brief)];
   const points: TickerPoint[] = [], seen = new Set<BriefSignal>();
   for (const s of candidates) if (s && s.group !== 'official' && !seen.has(s)) {
-    seen.add(s); points.push({ label: label(s), icon: s.icon, text: s.text, level: s.severity });
+    seen.add(s); points.push({ group: s.group, label: label(s), icon: s.icon, text: s.text, level: s.severity });
   }
   return points.slice(0, 4);
 }

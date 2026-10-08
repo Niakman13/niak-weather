@@ -19,12 +19,12 @@ export function renderBanner(p: BannerParts): TemplateResult {
   const level = Math.min(3, Math.max(1, p.level ?? 1));
   return html`<section id="heros" class="nw-section nw-synthesis nw-banner" aria-labelledby="nw-synthesis-title" style=${`--vc:${p.rgb}`}>
     ${p.sky}<header class="nw-section-heading nw-b-head">${p.header}<span class="nw-b-date">${p.dateLabel}</span></header>
-    ${p.attention ? html`<div class=${`nw-b-vigil nw-b-vigil--level${level}`} role="status">
-      <span class="nw-b-vigil-mark" aria-hidden="true"><i class="nw-b-vigil-halo"></i><ha-icon icon=${p.icon}></ha-icon></span>
-      <strong>${p.headline}</strong></div>` : nothing}
     <div class="nw-b-main">
       ${p.bulletin ? html`<span class="nw-b-kicker">Bulletin du jour</span><h3 class="nw-b-headline">${firstSentence(p.bulletin.summary)}</h3>`
         : !p.attention && p.headline ? html`<h3 class="nw-b-headline">${p.headline}</h3>` : nothing}
+      ${p.attention ? html`<div class=${`nw-b-vigil nw-b-vigil--level${level}`} role="status">
+        <span class="nw-b-vigil-mark" aria-hidden="true"><i class="nw-b-vigil-halo"></i><ha-icon icon=${p.icon}></ha-icon></span>
+        <strong>${p.headline}</strong></div>` : nothing}
       ${chips(p.secondary)}
     </div>${p.current}
     ${p.bulletin ? bulletinTiles(p.bulletin) : nothing}
@@ -65,10 +65,11 @@ export const bannerStyles = css`
   .nw-b-tiles .nw-b-sky { font-size:12px; color:var(--primary-text-color); opacity:.85; }
   .nw-b-tiles .nw-b-rain, .nw-b-tiles .nw-b-wind { font-size:11px; font-weight:600; }
   .nw-b-rain { color:rgb(27,171,175); } .nw-b-wind { color:rgb(40,130,240); }
-  .nw-synthesis.nw-banner { grid-template-areas:"head aside" "vigil aside" "main aside" "tiles tiles"; grid-template-rows:auto auto 1fr auto; }
+  /* The vigilance pill sits in the main column, under the bulletin and above the Now / Coming bubbles. */
+  .nw-synthesis.nw-banner { grid-template-areas:"head aside" "main aside" "tiles tiles"; grid-template-rows:auto 1fr auto; }
   .nw-b-headline { margin:0; font-size:15px; font-weight:600; letter-spacing:-.1px; line-height:1.4; max-width:56ch; }
   /* Vigilance: a glass pill in the official colour, its icon glowing with the same halo as the alert emblem. */
-  .nw-b-vigil { --al:232,184,20; grid-area:vigil; justify-self:start; position:relative; z-index:2; display:flex; align-items:center; gap:12px; margin:0 0 16px; padding:7px 18px 7px 7px; border-radius:999px;
+  .nw-b-vigil { --al:232,184,20; position:relative; z-index:2; display:flex; align-items:center; gap:12px; margin:2px 0 0; padding:7px 18px 7px 7px; border-radius:999px;
     background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color,#fff) 80%,rgb(var(--al)) 20%),color-mix(in srgb,var(--card-background-color,#fff) 92%,rgb(var(--al)) 8%));
     border:1px solid rgba(var(--al),.38); box-shadow:0 4px 18px -10px rgba(var(--al),.5); backdrop-filter:blur(8px); }
   .nw-b-vigil--level2 { --al:238,124,30; } .nw-b-vigil--level3 { --al:214,52,58; }
@@ -82,17 +83,12 @@ export const bannerStyles = css`
   @media (prefers-reduced-motion:reduce) { .nw-b-vigil-mark, .nw-b-vigil-halo { animation:none; } }
   .nw-b-kicker { font-size:10px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--secondary-text-color); }
   @container (max-width:650px) {
-    /* Phone: the current weather sits on the sky, the text below it on the calm part of the banner. */
-    /* Order: heading, current weather, bulletin, then the vigilance pill and the Now / Coming bubbles. */
-    .nw-synthesis.nw-banner { grid-template-columns:minmax(0,1fr); grid-template-rows:auto; grid-template-areas:"head" "aside" "kick" "headline" "vigil" "chips" "tiles"; }
-    .nw-banner .nw-b-main { display:contents; }
-    .nw-banner .nw-b-kicker { grid-area:kick; position:relative; z-index:1; }
-    .nw-banner .nw-b-headline { grid-area:headline; position:relative; z-index:1; margin-top:6px; }
-    .nw-banner .nw-b-chips { grid-area:chips; position:relative; z-index:1; margin-top:10px; }
+    /* Order: heading, current weather, then the bulletin column (bulletin, vigilance, Now / Coming bubbles). */
+    .nw-synthesis.nw-banner { grid-template-columns:minmax(0,1fr); grid-template-rows:auto; grid-template-areas:"head" "aside" "main" "tiles"; }
     .nw-b-headline { font-size:14px; }
     .nw-banner .nw-current-weather { min-height:130px; margin:0 0 10px; }
     /* A smaller pill on phones: same colour and halo, half the room. */
-    .nw-b-vigil { justify-self:start; margin:12px 0 0; padding:4px 14px 4px 4px; gap:9px; }
+    .nw-b-vigil { padding:4px 14px 4px 4px; gap:9px; }
     .nw-b-vigil strong { font-size:13px; }
     .nw-b-vigil-mark { flex-basis:24px; height:24px; } .nw-b-vigil-mark ha-icon { --mdc-icon-size:13px; }
     .nw-b-vigil-halo { inset:-12px; }
