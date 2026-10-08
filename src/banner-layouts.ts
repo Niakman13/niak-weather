@@ -1,14 +1,14 @@
 import { css, html, nothing, type TemplateResult } from 'lit';
 import type { Bulletin } from './bulletin';
-import { vigilanceParts } from './compact-points';
+import type { AlertPoint } from './compact-points';
 import type { WeatherBrief } from './weather-brief';
 
 export interface BannerParts {
-  brief?: WeatherBrief; headline?: string; icon: string; attention: boolean;
+  brief?: WeatherBrief; headline?: string;
+  /** Vigilance, or the brief's most important point needing attention. */
+  alert?: AlertPoint;
   /** The rotating brief bubble (Now / Coming), under the vigilance. */
   ticker: TemplateResult | typeof nothing;
-  /** Severity of the leading point: 1 yellow, 2 orange, 3 red, as Météo-France vigilance colours. */
-  level?: number;
   bulletin?: Bulletin; header: TemplateResult | typeof nothing; sky: TemplateResult; current: TemplateResult; dateLabel: string; rgb: string;
 }
 
@@ -17,25 +17,27 @@ const firstSentence = (text: string) => text.split(/(?<=\.)\s/)[0];
 
 /** The banner: heading, vigilance pill, the bulletin's first sentence, Now / Coming chips and four see-through period tiles over the animated sky. */
 export function renderBanner(p: BannerParts): TemplateResult {
-  const level = Math.min(3, Math.max(1, p.level ?? 1));
   return html`<section id="heros" class="nw-section nw-synthesis nw-banner" aria-labelledby="nw-synthesis-title" style=${`--vc:${p.rgb}`}>
     ${p.sky}<header class="nw-section-heading nw-b-head">${p.header}<span class="nw-b-date">${p.dateLabel}</span></header>
     <div class="nw-b-main">
       ${p.bulletin ? html`<span class="nw-b-kicker">Bulletin du jour</span><h3 class="nw-b-headline">${firstSentence(p.bulletin.summary)}</h3>`
-        : !p.attention && p.headline ? html`<h3 class="nw-b-headline">${p.headline}</h3>` : nothing}
-      ${p.attention ? html`<div class=${`nw-b-vigil nw-b-vigil--level${level}`} role="status">
-        <span class="nw-b-vigil-mark" aria-hidden="true"><i class="nw-b-vigil-halo"></i><ha-icon icon=${p.icon}></ha-icon></span>
-        ${vigilanceText(p.headline ?? '')}</div>` : nothing}
+        : !p.alert && p.headline ? html`<h3 class="nw-b-headline">${p.headline}</h3>` : nothing}
+      ${p.alert ? alertPill(p.alert) : nothing}
       ${p.ticker}
     </div>${p.current}
     ${p.bulletin ? bulletinTiles(p.bulletin) : nothing}
   </section>`;
 }
 
-/** Level in small capitals above the phenomena, like the brief bubbles' label. Shared with the small formats. */
-export function vigilanceText(text: string): TemplateResult {
-  const parts = vigilanceParts(text);
-  return html`<span class="nw-vigil-text">${parts.level ? html`<small>${parts.level}</small>` : nothing}<strong>${parts.detail}</strong></span>`;
+/** Label in small capitals above the text ("Vigilance jaune" / "Orages", "Maintenant" / "Pluie forte"), like the brief bubbles. */
+export function alertText(a: AlertPoint): TemplateResult {
+  return html`<span class="nw-vigil-text">${a.label ? html`<small>${a.label}</small>` : nothing}<strong>${a.text}</strong></span>`;
+}
+
+/** The alert pill of the banner and the intermediate format, in the level's colour with its halo. */
+export function alertPill(a: AlertPoint): TemplateResult {
+  return html`<div class=${`nw-b-vigil nw-b-vigil--level${a.level}`} role="status">
+    <span class="nw-b-vigil-mark" aria-hidden="true"><i class="nw-b-vigil-halo"></i><ha-icon icon=${a.icon}></ha-icon></span>${alertText(a)}</div>`;
 }
 
 /** The four parts of the day, see-through over the sky. Shared with the intermediate format. */

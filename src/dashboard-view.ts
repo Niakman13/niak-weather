@@ -11,7 +11,7 @@ import { currentMetrics, meaningfulComfort, weatherSourceLabel } from './current
 import { renderForecastChart } from './forecast-chart';
 import { buildBulletin } from './bulletin';
 import { renderBanner } from './banner-layouts';
-import { tickerPoints } from './compact-points';
+import { alertPoint, tickerPoints } from './compact-points';
 import './compact-view';
 import { currentSeason, daylightText } from './season';
 import './weather-sky';
@@ -93,11 +93,11 @@ export function renderDashboard(rendered: Record<string, string>, brief: Weather
   const bulletin=config.show_bulletin===false?undefined:buildBulletin(hourly,now,hass.config?.time_zone,String(hass.states[config.weather_entity]?.attributes.wind_speed_unit ?? 'km/h'));
   const dateLabel=new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:hass.config?.time_zone}).format(now);
   // One rotating bubble instead of a list; it never repeats the sentence already shown above it.
-  const shownHeadline=preview?.selected.length||!bulletin?headline:undefined;
-  const points=tickerPoints(brief).filter(p=>p.text!==shownHeadline);
+  const alert=alertPoint(brief),shown=alert?alert.source:!bulletin?headline:undefined;
+  const points=tickerPoints(brief).filter(p=>p.text!==shown);
   const ticker=points.length?html`<niak-brief-ticker class="nw-b-ticker" .points=${points}></niak-brief-ticker>`:nothing;
   return html`
-    ${config.show_synthesis===false?nothing:renderBanner({brief,headline,icon:preview?.icon ?? 'mdi:information-outline',attention:!!preview?.selected.length,level:preview?.selected[0]?.severity,ticker,bulletin,header:brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`,sky:skyLayer,current:currentLayer,dateLabel,rgb:brief?.rgb ?? '61,155,233'})}
+    ${config.show_synthesis===false?nothing:renderBanner({brief,headline,alert,ticker,bulletin,header:brief?synthesisInfo:html`<h2 id="nw-synthesis-title">Météo actuelle</h2><span>${location}</span>${seasonPill}`,sky:skyLayer,current:currentLayer,dateLabel,rgb:brief?.rgb ?? '61,155,233'})}
     ${config.show_today===false?nothing:html`<section id="today" class="nw-section" aria-labelledby="nw-today-title" style="--vc:61,155,233">
       <header class="nw-section-heading"><h2 id="nw-today-title">Aujourd’hui</h2><span>${showComfort ? 'Mesures et ressenti' : 'Conditions actuelles'}</span></header>
       ${showComfort?html`<div id="comfort" style=${`--vc:${feels === undefined ? '150,150,150' : comfortColor(feels)}`}>

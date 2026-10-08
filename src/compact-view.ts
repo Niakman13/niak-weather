@@ -1,9 +1,9 @@
 import { css, html, LitElement, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { bulletinTiles, vigilanceText } from './banner-layouts';
+import { alertPill, alertText, bulletinTiles } from './banner-layouts';
 import type { Bulletin } from './bulletin';
 import type { CurrentWeather } from './current-weather';
-import { tickerPoints, vigilanceBadge, type TickerPoint } from './compact-points';
+import { alertPoint, tickerPoints, type TickerPoint } from './compact-points';
 import type { WeatherBrief } from './weather-brief';
 
 /** Shows the points of the brief one at a time, every 5 s. Hovering or focusing the card pauses it. */
@@ -65,7 +65,7 @@ export interface CompactParts {
 
 /** Intermediate (the banner alone) and tile formats. The whole card opens the weather page. */
 export function renderCompact(p: CompactParts): TemplateResult {
-  const vigilance = vigilanceBadge(p.brief), points = tickerPoints(p.brief);
+  const alert = alertPoint(p.brief), points = tickerPoints(p.brief).filter(x => x.text !== alert?.source);
   const dark = ['lightning', 'lightning-rainy', 'pouring'].includes(p.now.condition);
   const degrees = p.now.temperature === undefined ? undefined : new Intl.NumberFormat(p.language || 'fr', { maximumFractionDigits: 1 }).format(p.now.temperature);
   const now = html`<div class="nw-c-now">${p.format === 'intermediate' ? html`<span class="nw-c-kicker">En ce moment</span>` : nothing}
@@ -73,14 +73,12 @@ export function renderCompact(p: CompactParts): TemplateResult {
     ${degrees === undefined ? html`<span class="nw-c-missing">Température indisponible</span>` : html`<span class="nw-c-temp">${degrees}<small>°C</small></span>`}
     ${p.format === 'intermediate' ? html`<span class="nw-c-source">${p.now.temperatureSource}</span>` : nothing}</div>`;
   const ticker = points.length ? html`<niak-brief-ticker class=${`nw-c-ticker nw-c-ticker--${p.format}`} .points=${points}></niak-brief-ticker>` : nothing;
-  const level = vigilance?.level ?? 1;
   const body = p.format === 'tile' ? html`
-      <div class="nw-c-meta">${vigilance ? html`<span class=${`nw-c-vig nw-c-vig--level${level}`} title=${vigilance.label}><i><ha-icon icon="mdi:alert-outline"></ha-icon></i>${vigilanceText(vigilance.label)}</span>` : nothing}
+      <div class="nw-c-meta">${alert ? html`<span class=${`nw-c-vig nw-c-vig--level${alert.level}`} title=${alert.source}><i><ha-icon icon=${alert.icon}></ha-icon></i>${alertText(alert)}</span>` : nothing}
         ${p.location ? html`<span class="nw-c-place">${p.location}</span>` : nothing}</div>
       ${ticker}${now}` : html`
       <header class="nw-c-head"><h2>Synthèse</h2><span>${[p.location, p.dateLabel].filter(Boolean).join(' · ')}</span></header>
-      <div class="nw-c-main">${vigilance ? html`<div class=${`nw-b-vigil nw-b-vigil--level${level}`} role="status">
-          <span class="nw-b-vigil-mark" aria-hidden="true"><i class="nw-b-vigil-halo"></i><ha-icon icon="mdi:alert-outline"></ha-icon></span>${vigilanceText(vigilance.label)}</div>` : nothing}
+      <div class="nw-c-main">${alert ? alertPill(alert) : nothing}
         ${ticker}</div>
       ${now}${p.bulletin ? bulletinTiles(p.bulletin) : nothing}`;
   return html`<div class=${`nw-compact nw-compact--${p.format}${dark ? ' nw-compact--dark-sky' : ''}${points.length ? '' : ' nw-compact--quiet'}`}

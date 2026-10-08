@@ -2,6 +2,8 @@
 
 - Bulles du brief : l'étiquette « Maintenant » ou « À venir » passe au-dessus du texte.
 - Vigilance : le niveau au-dessus, le phénomène en dessous.
+- Sans vigilance, une alerte importante (forte pluie mesurée, par exemple) s'affiche de la même façon dans les trois formats.
+- La vigilance reste toujours visible, même quand un autre point est plus important.
 - La vigilance se place sous le bulletin du jour, juste avant les bulles.
 - Carte complète : les points du brief défilent dans une seule bulle, comme dans la tuile et l'intermédiaire. Le bandeau prend moins de place.
 - Les mêmes bulles dans les trois formats.
