@@ -145,8 +145,7 @@ export const compactStyles = css`
     color:color-mix(in srgb,rgb(var(--al)) 78%,var(--primary-text-color) 22%); box-sizing:border-box; }
   .nw-c-vig ha-icon { --mdc-icon-size:11px; }
   .nw-c-vig i { flex:none; } .nw-c-vig-text { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  /* #container: the legacy styles set white-space:normal on every descendant; one-line texts must win. */
-  #container .nw-c-vig-text, #container .nw-c-place, #container .nw-c-head span, #container .nw-c-kicker { white-space:nowrap; }
+  .nw-c-kicker { white-space:nowrap; }
   /* HA's ha-icon is inline: without this it takes a line height and sits high in its circle. */
   .nw-compact ha-icon { display:flex; line-height:0; }
   /* Phones and half width: the brief moves under the temperature, on the full width. */
