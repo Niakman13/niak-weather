@@ -42,6 +42,7 @@ Niak Weather **ne génère pas son propre bulletin météo**, ne corrige pas les
 | `pollen_source` | `atmo` (Atmo France), `legacy` (Polleninformation), ou `none` (masquer les pollens) |
 | `show_atmo_details`, `show_atmo_tomorrow` | Détails et prévisions facultatifs (activés par défaut en complet) |
 | `show_synthesis`, `show_today`, `show_predictions` | Afficher les trois sections indépendamment (activées par défaut) |
+| `show_bulletin` | Afficher le bulletin du jour et ses quatre périodes dans le bandeau (activé par défaut) |
 
 L’humidex, le point de rosée et le point de gelée sont **calculés par la carte** à partir de la température et de l’humidité (station, sinon bulletin). Les anciens réglages Thermal Comfort (`humidex_entity`, `humidex_perception_entity`, `thermal_dew_point_entity`, `heat_index_entity`, `absolute_humidity_entity`, `thermal_perception_entity`, `thermal_device_id`) sont ignorés et retirés à l’enregistrement.
 

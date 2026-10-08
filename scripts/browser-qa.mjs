@@ -299,7 +299,7 @@ try {
     card.addEventListener('hass-more-info',e=>window.briefInfo.push(e.detail.entityId));await sleep(50);
     const text=card.shadowRoot.querySelector('#heros').textContent;
     const combined=['75 km/h','Fortes pluies','Vigilance Météo-France orange'].every(s=>text.includes(s));
-    const concise=card.shadowRoot.querySelectorAll('.nw-summary-lines p').length<=3;
+    const concise=card.shadowRoot.querySelectorAll('.nw-b-chip').length<=3;
     const banner=card.shadowRoot.querySelector('#heros'),nextSection=card.shadowRoot.querySelector('#today');
     const before=[banner.getBoundingClientRect().height,nextSection.getBoundingClientRect().top];
     card.shadowRoot.querySelector('.nw-synthesis-info-button').click();await sleep(20);
@@ -335,11 +335,11 @@ try {
     const e=(entity_id,state,unit)=>({entity_id,state:String(state),attributes:{unit_of_measurement:unit}});
     const states={...window.fixture.states,'weather.test':{...window.fixture.states['weather.test'],state:'rainy'},'sensor.t_ext':e('sensor.t_ext',24.6,'°C'),'sensor.vent':e('sensor.vent',7,'km/h'),'sensor.rafales':e('sensor.rafales',11,'km/h'),'sensor.pluie_taux':e('sensor.pluie_taux',0,'mm/h')};
     const hourly=Array.from({length:6},(_,i)=>({datetime:new Date(Date.now()+(i+1)*3600000).toISOString(),temperature:24.6-i*1.5,precipitation:0,condition:'cloudy'}));
-    card.setConfig({...window.fixture.config,smart_brief:true,pollen_source:'none',pollens:[]});
+    card.setConfig({...window.fixture.config,smart_brief:true,show_bulletin:false,pollen_source:'none',pollens:[]});
     card.hass={states,language:'fr',callWS:async message=>message.type==='call_service'?{response:{'weather.test':{forecast:hourly}}}:{}};
     document.querySelector('main').append(card);await new Promise(r=>setTimeout(r,60));
-    const root=card.shadowRoot,title=root.querySelector('.nw-summary-lead h3').textContent;
-    return {outlookInsteadOfSky:title.includes('Fraîcheur annoncée')&&!title.includes('Pluvieux'),localRainStillAuthoritative:root.querySelector('.nw-current-condition').textContent.includes('sans pluie mesurée'),outlookNotRepeated:root.querySelector('.nw-summary-lines').textContent.includes('Fraîcheur annoncée')===false,informationalNotAlert:root.querySelector('#heros').style.getPropertyValue('--vc').trim()==='61,155,233',explainable:root.querySelector('.nw-brief-details').textContent.includes('Fraîcheur annoncée')};
+    const root=card.shadowRoot,title=root.querySelector('.nw-b-headline').textContent;
+    return {outlookInsteadOfSky:title.includes('Fraîcheur annoncée')&&!title.includes('Pluvieux'),localRainStillAuthoritative:root.querySelector('.nw-current-condition').textContent.includes('sans pluie mesurée'),outlookNotRepeated:(root.querySelector('.nw-b-chips')?.textContent ?? '').includes('Fraîcheur annoncée')===false,informationalNotAlert:root.querySelector('#heros').style.getPropertyValue('--vc').trim()==='61,155,233',explainable:root.querySelector('.nw-brief-details').textContent.includes('Fraîcheur annoncée')};
   });
   for(const [key,value] of Object.entries(noAtmoBrief))assert.equal(value,true,`No Atmo brief: ${key}`);
   for(const width of [375,1440]){
@@ -357,7 +357,7 @@ try {
     const hourly=Array.from({length:6},(_,i)=>({datetime:new Date(Date.now()+(i+1)*3600000).toISOString(),temperature:24,precipitation:0,condition:'cloudy'}));
     card.hass={...base.hass,states,callWS:async msg=>msg.type==='call_service'?{response:{'weather.test':{forecast:hourly}}}:history};
     document.querySelector('main').append(card);await new Promise(r=>setTimeout(r,60));
-    const text=()=>card.shadowRoot.querySelector('.nw-summary-lines').textContent;
+    const text=()=>card.shadowRoot.querySelector('.nw-b-chips')?.textContent ?? '';
     const first=text().includes('Pression en hausse (1,1 hPa sur 3 h)');
     card.requestUpdate();await card.updateComplete;
     const result={pressureAlongsideAir:first&&text().includes('Pression en hausse'),noEmptyOutlook:!text().includes('Pas de signal')&&!text().includes('À venir')};
@@ -367,8 +367,8 @@ try {
   await page.evaluate(()=>{window.briefCard.shadowRoot.querySelector('.nw-brief-panel').hidePopover();});
   await page.emulateMedia({reducedMotion:'no-preference'});
   const haloMotion=await page.evaluate(async()=>{
-    const root=window.briefCard.shadowRoot, circle=root.querySelector('.nw-summary-emblem .me-rond'), halo=root.querySelector('.nw-summary-emblem .me-halo');
-    const animated=getComputedStyle(circle).animationName==='nwEmblemGlow'&&getComputedStyle(halo).animationName==='nwHalo';
+    const root=window.briefCard.shadowRoot, circle=root.querySelector('.nw-b-vigil-mark'), halo=root.querySelector('.nw-b-vigil-halo');
+    const animated=getComputedStyle(circle).animationName==='nwVigilGlow'&&getComputedStyle(halo).animationName==='nwVigilHalo';
     if(getComputedStyle(root.querySelector('.nw-synthesis')).borderLeftWidth!=='0px') throw new Error('Unexpected synthesis stripe');
     const before=halo.getAnimations()[0]?.currentTime;
     await new Promise(r=>setTimeout(r,150));
@@ -377,7 +377,7 @@ try {
   });
   assert.equal(haloMotion.animated,true,'Circle and halo animation enabled');assert.equal(haloMotion.advancing,true,'Halo animation actually advances');
   await page.emulateMedia({reducedMotion:'reduce'});
-  haloMotion.reduced=await page.evaluate(()=>[...window.briefCard.shadowRoot.querySelectorAll('.nw-summary-emblem .me-rond,.nw-summary-emblem .me-halo')].every(e=>getComputedStyle(e).animationName==='none'));
+  haloMotion.reduced=await page.evaluate(()=>[...window.briefCard.shadowRoot.querySelectorAll('.nw-b-vigil-mark,.nw-b-vigil-halo')].every(e=>getComputedStyle(e).animationName==='none'));
   assert.equal(haloMotion.reduced,true,'Reduced motion disables both animations');
   const briefReports=[];
   for(const dark of [false,true]) for(const width of [375,768,1440]){
@@ -490,7 +490,7 @@ try {
     const weather={entity_id:'weather.test',state:'partlycloudy',attributes:{friendly_name:'Gardanne',attribution:'Météo-France',temperature:26.4,temperature_unit:'°C',wind_speed:12,wind_gust_speed:22,wind_bearing:90,wind_speed_unit:'km/h',pressure:1011,pressure_unit:'hPa'}};
     card.setConfig(config);card.hass={states:{'weather.test':weather},language:'fr',callWS:async()=>({})};root.append(card);await card.updateComplete;
     const shadow=card.shadowRoot;
-    const noDuplicate=!shadow.querySelector('.nw-summary-emblem,.nw-summary-lead,.nw-summary-lines,.nw-brief-details') && shadow.querySelectorAll('.nw-current-condition').length===1;
+    const noDuplicate=!shadow.querySelector('.nw-b-vigil,.nw-b-headline,.nw-b-chips,.nw-b-tiles,.nw-brief-details') && shadow.querySelectorAll('.nw-current-condition').length===1;
     const noFakeComfort=!shadow.querySelector('#comfort') && !shadow.querySelector('#today').textContent.includes('Ressenti');
     const providerFrames=shadow.querySelectorAll('.nw-history-source').length===3 && [...shadow.querySelectorAll('.nw-history-source,.nw-current-temperature-source')].every(e=>e.textContent==='Météo-France');
     const truthfulRain=shadow.querySelector('[aria-label="Bilan pluie"]').textContent.includes('Temps sec') && !shadow.querySelector('[aria-label="Bilan pluie"]').textContent.includes('Depuis minuit');
@@ -502,11 +502,20 @@ try {
     }
     const editor=document.createElement('niak-weather-card-editor');editor.setConfig({...config,show_today:false});editor.hass=card.hass;root.append(editor);await editor.updateComplete;
     const form=editor.shadowRoot.querySelector('ha-form[data-category="general"]');
-    const controls=['show_synthesis','show_today','show_predictions'].every(name=>form.schema.some(s=>s.name===name&&s.selector.boolean));
+    const controls=['show_synthesis','show_bulletin','show_today','show_predictions'].every(name=>form.schema.some(s=>s.name===name&&s.selector.boolean));
     const persisted=form.data.show_today===false;editor.remove();
     const noModeControl=!form.schema.some(s=>s.name==='mode');
-    card.setConfig({...config,show_predictions:false});await card.updateComplete;
-    return {noDuplicate,noFakeComfort,providerFrames,truthfulRain,separateProviderWind,switches,controls,persisted,noModeControl};
+    // Daily bulletin: four period tiles from a day of hourly forecasts, hidden by its own switch.
+    const day=Array.from({length:30},(_,i)=>({datetime:new Date(Date.now()+(i+1)*3600000).toISOString(),temperature:18,precipitation:0,condition:'sunny'}));
+    card.hass={...card.hass,config:{time_zone:'Europe/Paris'},callWS:async m=>m.type==='call_service'?{response:{'weather.test':{forecast:day}}}:{}};
+    card.setConfig({...config});card.forecastAt=0;await card.loadForecasts();await card.updateComplete;
+    const tiles=()=>shadow.querySelectorAll('.nw-b-tiles li').length;
+    const bulletinShown=tiles()===4&&shadow.querySelector('.nw-b-kicker')?.textContent==='Bulletin du jour';
+    card.setConfig({...config,show_bulletin:false});await card.updateComplete;
+    const bulletinHidden=tiles()===0&&!shadow.querySelector('.nw-b-kicker')&&!!shadow.querySelector('.nw-current-temperature');
+    card.hass={...card.hass,callWS:async()=>({})};
+    card.setConfig({...config,show_predictions:false});card.forecastAt=0;await card.loadForecasts();await card.updateComplete;
+    return {noDuplicate,noFakeComfort,providerFrames,truthfulRain,separateProviderWind,switches,controls,persisted,noModeControl,bulletinShown,bulletinHidden};
   });
   for(const [key,value] of Object.entries(displayOptions))assert.equal(value,true,`Display options: ${key}`);
   for(const dark of [false,true])for(const width of [375,1440]){
@@ -630,8 +639,8 @@ try {
       document.documentElement.style.setProperty('--card-background-color',dark?'#242424':'#fff4f4');
     },dark);
     const geometry=await page.evaluate(()=>{
-      const root=window.skyCard.shadowRoot, host=window.skyCard.getBoundingClientRect(), current=root.querySelector('.nw-current-content').getBoundingClientRect(), lead=root.querySelector('.nw-summary-lead')?.getBoundingClientRect();
-      return {overflow:current.left<host.left||current.right>host.right,distinct:!lead||current.left>=lead.right||current.top>=lead.bottom,rightAligned:getComputedStyle(root.querySelector('.nw-current-content')).textAlign==='right'};
+      const root=window.skyCard.shadowRoot, host=window.skyCard.getBoundingClientRect(), current=root.querySelector('.nw-current-content').getBoundingClientRect(), lead=root.querySelector('.nw-b-main')?.getBoundingClientRect();
+      return {overflow:current.left<host.left||current.right>host.right,distinct:!lead||current.left>=lead.right||current.top>=lead.bottom||current.bottom<=lead.top,rightAligned:getComputedStyle(root.querySelector('.nw-current-content')).textAlign==='right'};
     });
     assert.equal(geometry.overflow,false);assert.equal(geometry.distinct,true);assert.equal(geometry.rightAligned,true);
     const background=await page.evaluate(()=>{
@@ -643,10 +652,10 @@ try {
       const matches=()=>{const h=header.getBoundingClientRect(),s=sky.getBoundingClientRect();return Math.abs(h.right-s.right)<1&&Math.abs(h.top-s.top)<1&&Math.abs(h.bottom-s.bottom)<1&&Math.abs(h.left-s.left)<1;};
       const closed=matches();details.querySelector('.nw-synthesis-info-button').click();const expanded=matches();
       const stable=!mobile||JSON.stringify(before)===JSON.stringify(artwork());
-      const lines=root.querySelector('.nw-summary-lines')?.getBoundingClientRect(),emblem=root.querySelector('.nw-summary-emblem')?.getBoundingClientRect();
-      return {closed,expanded,clean:!root.querySelector('.nw-current-feels,.nw-current-source'),stable,leftAligned:!lines&&!emblem||!!lines&&!!emblem&&Math.abs(lines.left-emblem.left)<1&&lines.top>=emblem.bottom};
+      const main=root.querySelector('.nw-b-main').getBoundingClientRect(),head=root.querySelector('.nw-b-head').getBoundingClientRect();
+      return {closed,expanded,clean:!root.querySelector('.nw-current-feels,.nw-current-source'),stable,leftAligned:Math.abs(main.left-head.left)<1&&main.top>=head.bottom};
     });
-    assert.deepEqual(background,{closed:true,expanded:true,clean:true,stable:true,leftAligned:true},'Full banner sky, stationary mobile artwork and synthesis lines below the emblem');
+    assert.deepEqual(background,{closed:true,expanded:true,clean:true,stable:true,leftAligned:true},'Full banner sky, stationary mobile artwork and bulletin aligned under the heading');
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/current-expanded-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
     await page.evaluate(()=>{window.skyCard.shadowRoot.querySelector('.nw-brief-panel').hidePopover();});
     await page.locator('niak-weather-card #heros').screenshot({path:`${out}/current-weather-${width}-${dark?'dark':'light'}.png`,animations:'disabled'});
@@ -842,7 +851,7 @@ try {
     const e=(entity_id,state,unit)=>({entity_id,state:String(state),attributes:{unit_of_measurement:unit}});
     const states={'weather.test':{...window.fixture.states['weather.test'],state:'sunny'},'sensor.outdoor':e('sensor.outdoor',20,'°C'),'sensor.humidity':e('sensor.humidity',50,'%'),'sensor.wind':e('sensor.wind',0,'km/h')};
     const card=document.createElement('niak-weather-card');
-    const config={type:'custom:niak-weather-card',weather_entity:'weather.test',temperature_entity:'sensor.outdoor',humidity_entity:'sensor.humidity',wind_speed_entity:'sensor.wind',smart_brief:true};
+    const config={type:'custom:niak-weather-card',weather_entity:'weather.test',temperature_entity:'sensor.outdoor',humidity_entity:'sensor.humidity',wind_speed_entity:'sensor.wind',smart_brief:true,show_bulletin:false};
     let dailyRain=0;
     const callWS=async msg=>{
       if(msg.type!=='call_service')return {};
@@ -852,12 +861,12 @@ try {
     };
     card.setConfig(config);card.hass={states,language:'fr',config:{time_zone:'UTC'},callWS};main.append(card);await new Promise(r=>setTimeout(r,60));
     const root=card.shadowRoot;
-    const empty=!root.querySelector('.nw-summary-lead,.nw-summary-emblem,.nw-attention')&&!!root.querySelector('.nw-current-temperature')&&!!root.querySelector('#comfort');
+    const empty=!root.querySelector('.nw-b-headline,.nw-b-vigil')&&!!root.querySelector('.nw-current-temperature')&&!!root.querySelector('#comfort');
     // 20 °C at 95 % humidity: the humidex computed by the card is about 27 °C, well above the thermometer.
     card.hass={...card.hass,states:{...states,'sensor.humidity':e('sensor.humidity',95,'%')}};await card.updateComplete;
-    const gap=root.querySelector('.nw-summary-lead')?.textContent.includes('ressenti est plus élevé')&&!root.querySelector('.nw-summary-lines').textContent.includes('ressentis')&&!root.querySelector('.nw-attention');
+    const gap=root.querySelector('.nw-b-headline')?.textContent.includes('ressenti est plus élevé')&&!(root.querySelector('.nw-b-chips')?.textContent ?? '').includes('ressentis')&&!root.querySelector('.nw-b-vigil');
     dailyRain=72;card.hass={...card.hass,states};card.forecastAt=0;await card.loadForecasts();await card.updateComplete;
-    const tomorrow=root.querySelector('.nw-summary-lead')?.textContent.includes('Pluie importante prévue demain : 72 mm')&&!root.querySelector('.nw-attention');
+    const tomorrow=root.querySelector('.nw-b-headline')?.textContent.includes('Pluie importante prévue demain : 72 mm')&&!root.querySelector('.nw-b-vigil');
     window.relevantBriefCard=card;return {empty,gap,tomorrow};
   });
   for(const [key,value] of Object.entries(relevantBrief))assert.equal(value,true,`Relevant brief: ${key}`);

@@ -14,7 +14,9 @@ Lorsque le brief est activé, un petit **i** à côté du titre **Synthèse** ou
 
 La ligne **À venir** apparaît seulement lorsqu’une évolution pertinente est détectée dans les prévisions. Une variation de pression d’au moins 1 hPa peut accompagner les autres informations de la synthèse : c’est une mesure de tendance sur les trois dernières heures, pas une prévision de pluie. L’historique reste affiché pendant le rechargement des données ; sa référence tient compte des changements enregistrés par Home Assistant, sans perdre une mesure simplement parce qu’elle passe la limite exacte des trois heures.
 
-Options YAML correspondantes : `show_synthesis`, `show_today` et `show_predictions` (valeurs `true` ou `false`).
+Un quatrième interrupteur, **Afficher le bulletin du jour (prévisions par période)**, affiche ou masque le bulletin du bandeau : une phrase qui résume la journée et quatre tuiles pour les prochaines périodes (matin, après-midi, soir, nuit) avec températures, ciel, pluie et vent notable. Il est activé par défaut ; masqué, le bandeau garde la synthèse et la météo actuelle.
+
+Options YAML correspondantes : `show_synthesis`, `show_bulletin`, `show_today` et `show_predictions` (valeurs `true` ou `false`).
 
 ## Utiliser la carte sans station
 

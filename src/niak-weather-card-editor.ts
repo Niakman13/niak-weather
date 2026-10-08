@@ -8,15 +8,15 @@ import { cleanConfig } from './config';
 import {modelDevices,selectedStationModel,stationGroups,stationModelOptions,stationReport} from './station-profiles';
 import type { AtmoField, AtmoMetric } from './types';
 const categoryOptions:Record<SourceCategory,string[]>={
-  general:['location','smart_brief','weather_animations','weather_animation_quality','weather_path','show_synthesis','show_today','show_predictions'],
+  general:['location','smart_brief','weather_animations','weather_animation_quality','weather_path','show_synthesis','show_bulletin','show_today','show_predictions'],
   weather:['forecast_source'],station:['station_device_id','station_history','station_model'],
   atmo:['atmo_area','show_atmo_details','show_atmo_tomorrow'],
 };
-const defaults:Partial<WeatherCardConfig>={show_synthesis:true,show_today:true,show_predictions:true,smart_brief:true,weather_animations:true,weather_animation_quality:'standard',show_atmo_details:true,show_atmo_tomorrow:true,station_history:true};
+const defaults:Partial<WeatherCardConfig>={show_synthesis:true,show_bulletin:true,show_today:true,show_predictions:true,smart_brief:true,weather_animations:true,weather_animation_quality:'standard',show_atmo_details:true,show_atmo_tomorrow:true,station_history:true};
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   weather_entity: 'Source météo', location: 'Lieu', forecast_source: 'Fournisseur des prévisions',
   smart_brief: 'Activer le brief intelligent', vigilance_entity: 'Vigilance officielle Météo-France (département)',
-  show_synthesis:'Afficher la section Synthèse / météo actuelle',show_today:'Afficher la section Aujourd’hui',show_predictions:'Afficher la section Prévisions',
+  show_synthesis:'Afficher la section Synthèse / météo actuelle',show_bulletin:'Afficher le bulletin du jour (prévisions par période)',show_today:'Afficher la section Aujourd’hui',show_predictions:'Afficher la section Prévisions',
   weather_animations: 'Animer le ciel de la météo actuelle', weather_animation_quality: 'Qualité des animations météo',
   temperature_entity: 'Température extérieure', humidity_entity: 'Humidité extérieure',
   wind_speed_entity: 'Vitesse du vent (moyenne si disponible)', wind_gust_entity: 'Rafales', wind_bearing_entity: 'Direction du vent',
@@ -174,7 +174,7 @@ export class NiakWeatherCardEditor extends LitElement {
     };
     const schemas: Record<SourceCategory, ()=>unknown[]> = {
       general: ()=>[{ name: 'location', selector: { text: {} } },
-      ...['show_synthesis','show_today','show_predictions'].map(name=>({name,selector:{boolean:{}}})),
+      ...['show_synthesis','show_bulletin','show_today','show_predictions'].map(name=>({name,selector:{boolean:{}}})),
       {name:'smart_brief',selector:{boolean:{}}}, {name:'weather_animations',selector:{boolean:{}}},
       {name:'weather_animation_quality',selector:{select:{options:[{value:'standard',label:'Standard'},{value:'low',label:'Allégée (tablette)'}]}}},
       {name:'weather_path',selector:{text:{}}}],
