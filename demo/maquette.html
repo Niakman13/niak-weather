@@ -33,6 +33,7 @@
      plus foncée en thème clair, plus claire en thème sombre, toujours lisible. */
   --nw-rain: var(--niak-rain-color, var(--p-rain)); --nw-wind: var(--niak-wind-color, var(--p-wind));
   --nw-heat: var(--niak-heat-color, var(--p-heat)); --nw-cold: var(--niak-cold-color, var(--p-cold));
+  --nw-calm: var(--niak-calm-color, var(--p-calm)); --nw-pressure: var(--niak-pressure-color, var(--p-pressure));
   --nw-level1: var(--niak-level1-color, var(--p-l1)); --nw-level2: var(--niak-level2-color, var(--p-l2)); --nw-level3: var(--niak-level3-color, var(--p-l3));
   --nw-ink: 52%;
   /* Mouvement */
@@ -40,11 +41,12 @@
 }
 
 /* Palettes proposées. OKLCH : même clarté et même saturation pour toutes les couleurs d'une palette, seule la teinte change → elles s'accordent. */
-:root {--p-rain:oklch(.76 .085 205);--p-wind:oklch(.74 .09 262);--p-heat:oklch(.8 .095 55);--p-cold:oklch(.82 .06 232);
-  --p-l1:oklch(.85 .115 92);--p-l2:oklch(.77 .125 58);--p-l3:oklch(.69 .135 24)}
-:root.pal-aube {--p-rain:oklch(.8 .07 190);--p-wind:oklch(.79 .075 280);--p-heat:oklch(.83 .085 42);--p-cold:oklch(.85 .05 220);
-  --p-l1:oklch(.88 .1 96);--p-l2:oklch(.81 .105 64);--p-l3:oklch(.74 .115 18)}
-:root.pal-actuelle {--p-rain:rgb(27,171,175);--p-wind:rgb(40,130,240);--p-heat:#f4a259;--p-cold:#4a7fd0;--p-l1:rgb(232,184,20);--p-l2:rgb(238,124,30);--p-l3:rgb(214,52,58)}
+:root {--p-rain:oklch(.8 .07 190);--p-wind:oklch(.79 .075 280);--p-heat:oklch(.83 .085 42);--p-cold:oklch(.85 .05 220);
+  --p-calm:oklch(.83 .075 150);--p-pressure:oklch(.78 .07 315);--p-l1:oklch(.88 .1 96);--p-l2:oklch(.81 .105 64);--p-l3:oklch(.74 .115 18)}
+:root.pal-brume {--p-rain:oklch(.76 .085 205);--p-wind:oklch(.74 .09 262);--p-heat:oklch(.8 .095 55);--p-cold:oklch(.82 .06 232);
+  --p-calm:oklch(.78 .085 150);--p-pressure:oklch(.74 .08 310);--p-l1:oklch(.85 .115 92);--p-l2:oklch(.77 .125 58);--p-l3:oklch(.69 .135 24)}
+:root.pal-actuelle {--p-rain:rgb(27,171,175);--p-wind:rgb(40,130,240);--p-heat:#f4a259;--p-cold:#4a7fd0;--p-calm:rgb(76,175,80);--p-pressure:rgb(135,117,190);
+  --p-l1:rgb(232,184,20);--p-l2:rgb(238,124,30);--p-l3:rgb(214,52,58)}
 .ink-rain {color:color-mix(in oklab,var(--nw-rain) var(--nw-ink),var(--primary-text-color))}
 .ink-wind {color:color-mix(in oklab,var(--nw-wind) var(--nw-ink),var(--primary-text-color))}
 
@@ -183,7 +185,7 @@ Toutes les pièces viennent de la <b>charte</b> en bas de page, tirée du bandea
   <label>Moment<select id="phase"><option value="day">Journée</option><option value="twilight">Crépuscule</option><option value="night">Nuit</option></select></label>
   <label>Vigilance<select id="vigilance"><option value="">Aucune</option><option>Jaune</option><option>Orange</option><option>Rouge</option></select></label>
   <label>Prévisions dépliées<select id="variant"><option value="hours">A · les heures</option><option value="days">B · les jours</option><option value="both">C · heures et jours</option></select></label>
-  <label>Couleurs<select id="palette"><option value="brume">Brume (proposée)</option><option value="aube">Aube (plus pastel)</option><option value="actuelle">Actuelle</option></select></label>
+  <label>Couleurs<select id="palette"><option value="aube">Aube (retenue)</option><option value="brume">Brume</option><option value="actuelle">Actuelle</option></select></label>
   <label>Thème<select id="theme"><option value="light">Clair</option><option value="dark">Sombre</option></select></label>
   <label>Écran<select id="screen"><option value="desktop">Ordinateur</option><option value="phone">Téléphone</option></select></label>
 </div>
@@ -376,11 +378,48 @@ const PREVIEW_CSS = `
   section.nw-folded .nw-fold ha-icon {transform:rotate(-90deg)}
   section.nw-folded > :not(.nw-section-heading) {display:none !important}
   section.nw-folded > .nw-section-heading {margin-bottom:0}`;
+/* Correspondance anciennes couleurs → charte (servira telle quelle à la refonte). Les dessins du ciel ne sont pas touchés. */
+const OLD_COLORS = {
+  wind: ['40,130,240', '61,155,233', '103,167,243', '33,150,243', '63,81,181', '#4a7fd0'],
+  rain: ['27,171,175', '77,182,172', '#4db6ac', '#50f0e6'],
+  heat: ['244,180,86', '#f4a259', '#eab360', '243,182,82'], level1: ['255,193,7', '#f2c94c', '#f0e641', '232,184,20', '#e1d066'], level2: ['238,124,30', '#e88b60'],
+  level3: ['244,105,102', '#f46966', '#ff5050', '214,52,58', '#dd5b69', '#cf4b60'], calm: ['76,175,80', '#58b995', '#66bb6a', '#50ccaa', '#93c977'], pressure: ['135,117,190'],
+};
+/** Couleurs de la palette choisie, converties en triplets r,g,b (le canvas résout l'OKLCH). */
+function paletteRGB() {
+  const c = document.createElement('canvas'); c.width = c.height = 1; const x = c.getContext('2d', { willReadFrequently: true }), css = getComputedStyle(document.documentElement), out = {};
+  for (const k of Object.keys(OLD_COLORS)) { x.clearRect(0, 0, 1, 1); x.fillStyle = css.getPropertyValue(`--nw-${k}`).trim(); x.fillRect(0, 0, 1, 1); const d = x.getImageData(0, 0, 1, 1).data; out[k] = `${d[0]},${d[1]},${d[2]}`; }
+  return out;
+}
+// Le navigateur réécrit #58b995 en rgb(88, 185, 149) : chaque couleur hexadécimale est aussi cherchée sous forme de triplet.
+const hexToTriplet = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(',');
+const tripletRe = t => new RegExp(`\\b${t.split(',').join('\\s*,\\s*')}\\b`, 'g');
+const PATTERNS = Object.entries(OLD_COLORS).flatMap(([k, list]) => list.flatMap(o => o.startsWith('#')
+  ? [[k, new RegExp(o, 'gi'), true], [k, tripletRe(hexToTriplet(o)), false]] : [[k, tripletRe(o), false]]));
+const recolorText = (t, pal) => PATTERNS.reduce((v, [k, re, hex]) => v.replace(re, hex ? `rgb(${pal[k]})` : pal[k]), t);
+const originals = new WeakMap();
+/** Remplace les couleurs dans les feuilles de style et les attributs de la carte (et de ses sous-composants), à partir des valeurs d'origine. */
+function recolor(root, pal) {
+  const keep = (owner, key, value) => { let m = originals.get(owner); if (!m) originals.set(owner, m = {}); if (!(key in m)) m[key] = value; return m[key]; };
+  const walkRules = rules => { for (const r of rules) {
+    if (r.style) { const v = keep(r, 'css', r.style.cssText), nv = recolorText(v, pal); if (nv !== r.style.cssText) r.style.cssText = nv; }
+    if (r.cssRules) walkRules(r.cssRules); } };
+  const visit = node => {
+    for (const sheet of [...(node.adoptedStyleSheets ?? []), ...node.querySelectorAll('style')].map(x => x.sheet ?? x)) { try { walkRules(sheet.cssRules); } catch {} }
+    for (const el of node.querySelectorAll('*')) {
+      for (const a of ['style', 'fill', 'stroke', 'stop-color']) if (el.hasAttribute(a)) { const v = keep(el, a, el.getAttribute(a)), nv = recolorText(v, pal); if (nv !== el.getAttribute(a)) el.setAttribute(a, nv); }
+      if (el.shadowRoot && el.localName !== 'niak-weather-sky') visit(el.shadowRoot);
+    }
+  };
+  visit(root);
+}
 const foldPrefs = () => ({ today: $('foldToday').value, predictions: $('foldPredictions').value });
 async function preview(card) {
   await card.updateComplete; await new Promise(r => setTimeout(r, 250));
   const root = card.shadowRoot; if (!root) return;
   if (!root.getElementById('nw-preview')) { const st = document.createElement('style'); st.id = 'nw-preview'; st.textContent = PREVIEW_CSS; root.append(st); }
+  const paint = () => recolor(root, paletteRGB());
+  paint(); setTimeout(paint, 900); setTimeout(paint, 2000); // les prévisions et graphiques arrivent un peu après
   const prefs = foldPrefs();
   for (const id of ['today', 'predictions']) {
     const section = root.getElementById(id), head = section?.querySelector(':scope > .nw-section-heading');
@@ -422,10 +461,10 @@ function specimens() {
     spec('Étiquette', '<span class="nw-label">En ce moment</span><span class="nw-label">Bulletin du jour</span>', ['--nw-label', '--nw-label-spacing'], 'Petites capitales, une seule taille partout.'),
     spec('Contour et verre', '<span class="swatch nw-glass"></span><span class="swatch" style="background:var(--nw-glass-strong);border:1px solid var(--nw-line)"></span>', ['--nw-line', '--nw-glass', '--nw-blur'], 'Le contour de toutes les bulles et tuiles.'),
     spec('Pastille de source', '<span class="nw-badge">Station locale</span><span class="nw-badge">Météo-France</span>', ['--nw-radius-pill', '--nw-line'], 'D’où vient la valeur.'),
-    spec('Couleurs de sens', `<div class="palette">${[['Pluie', 'rain', '8,6 mm'], ['Vent', 'wind', '22 km/h'], ['Chaleur', 'heat', '34 °C'], ['Froid', 'cold', '−3 °C'],
+    spec('Couleurs de sens', `<div class="palette">${[['Pluie', 'rain', '8,6 mm'], ['Vent', 'wind', '22 km/h'], ['Chaleur', 'heat', '34 °C'], ['Froid', 'cold', '−3 °C'], ['Calme', 'calm', 'Air bon'], ['Pression', 'pressure', '1014 hPa'],
       ['Vigilance jaune', 'level1', 'Orages'], ['Vigilance orange', 'level2', 'Vent violent'], ['Vigilance rouge', 'level3', 'Crues']].map(([n, k, v]) =>
       `<div class="chip-color"><i style="background:var(--nw-${k})"></i><div><b>${n}</b><span style="color:color-mix(in oklab,var(--nw-${k}) var(--nw-ink),var(--primary-text-color))">${v}</span></div></div>`).join('')}</div>`,
-      ['--nw-rain', '--nw-wind', '--nw-heat', '--nw-cold', '--nw-level1…3'], 'Pastel pour les surfaces ; le texte coloré (encre) est tiré de la même couleur, lisible en clair comme en sombre. Les couleurs de base (fond, textes, accent) suivent le thème Home Assistant.'),
+      ['--nw-rain', '--nw-wind', '--nw-heat', '--nw-cold', '--nw-calm', '--nw-pressure', '--nw-level1…3'], 'Pastel pour les surfaces ; le texte coloré (encre) est tiré de la même couleur, lisible en clair comme en sombre. Les couleurs de base (fond, textes, accent) suivent le thème Home Assistant.'),
     spec('En ce moment', `<div class="nw-now"><span class="cond"><ha-icon icon="mdi:weather-partly-cloudy"></ha-icon>Éclaircies</span><span class="temp" style="font-size:var(--nw-temp-l)">22,4<small>°C</small></span><span class="nw-badge">Station locale</span></div>`, ['--nw-temp-l', '--nw-temp-m'], 'Condition, température, source.'),
   ].join('');
 }
@@ -435,8 +474,8 @@ function refresh() {
   scenario = { condition, phase, vigilance: $('vigilance').value || undefined, season: 'autumn', animated: true };
   state.variant = $('variant').value; state.index = 0;
   document.documentElement.classList.toggle('dark', $('theme').value === 'dark');
-  document.documentElement.classList.remove('pal-aube', 'pal-actuelle');
-  if ($('palette').value !== 'brume') document.documentElement.classList.add(`pal-${$('palette').value}`);
+  document.documentElement.classList.remove('pal-brume', 'pal-actuelle');
+  if ($('palette').value !== 'aube') document.documentElement.classList.add(`pal-${$('palette').value}`);
   document.body.classList.toggle('phone', $('screen').value === 'phone');
   render(); startTicker(); fullCard($('pageCard'));
 }
