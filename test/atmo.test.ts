@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { atmoAreas, atmoCandidates, atmoField, atmoFields, atmoMetrics, atmoReading, detectAtmo } from '../src/atmo';
-import { detectEcowittStation } from '../src/station-detection';
-import { usesAtmoPollens } from '../src/atmo-view';
+import { atmoAreas, atmoCandidates, atmoField, atmoFields, atmoMetrics, atmoReading, detectAtmo } from '../src/engine/atmo';
+import { detectEcowittStation } from '../src/editor/station-detection';
+import { usesAtmoPollens } from '../src/engine/atmo';
 import type { AtmoMetric, HassEntity, HomeAssistantEntityRegistryEntry, WeatherCardConfig } from '../src/types';
 
 function fixture(city = 'Ma commune', entry = 'a') {

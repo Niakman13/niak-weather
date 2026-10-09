@@ -1,16 +1,20 @@
 # Affichage modulable et sources des conditions actuelles
 
-Ces réglages sont disponibles dans la version stable **1.4.0**.
+Ces réglages correspondent à la version stable **1.20.0**.
 
 ## Choisir le format
 
 Dans **Général**, le premier réglage choisit le format de la carte :
 
-- **Complète** : Synthèse, Aujourd’hui et Prévisions, avec les réglages habituels.
-- **Intermédiaire** : la Synthèse seule, pour une page d’accueil. En-tête, vigilance, points du brief qui défilent, « En ce moment » et, en option, les quatre moments de la journée (**Afficher les prévisions du jour**).
-- **Tuile** : une bande compacte, en pleine ou demi-largeur. Vigilance en petite bulle, points du brief qui défilent et météo du moment.
+- **Complète** : la page météo. Synthèse, Aujourd’hui et Prévisions ; ces deux dernières sections se replient d’un appui sur leur titre.
+- **Tuile** : une bande pour la page d’accueil, en pleine ou demi-largeur. Le lieu, l’alerte, la bulle du brief qui défile et la météo du moment.
+- **Tuile dépliée** (`intermediate`) : la même tuile, ouverte au départ.
 
-Les trois formats gardent le ciel animé, réduit à leur taille. Dans la tuile et l’intermédiaire, les points du brief défilent toutes les 5 secondes ; survoler la carte met en pause. Un simple appui ouvre la page indiquée dans **Page ouverte d’un appui** (par exemple `/meteo`), où vous placez la carte complète. Sans page, l’appui ouvre l’entité météo.
+**Un appui** déplie ou replie la tuile sur place : la phrase du bulletin, les quatre moments de la journée (**Afficher le bulletin du jour**) et les prévisions, avec un sélecteur **Heures / Jours**. La tuile se souvient d’être dépliée, sur chaque appareil. **Un appui long** (une demi-seconde, un anneau se remplit sous le doigt) ouvre la carte complète par-dessus la page, en plein écran sur téléphone ; **Fermer** ou Échap la referment. Au clavier : Entrée déplie, Maj + Entrée ouvre la carte complète.
+
+Si vous avez déjà une page météo, indiquez-la dans **Appui long : ouvrir cette page** (par exemple `/meteo`) : l’appui long y mène au lieu d’ouvrir la carte complète.
+
+Dans la tuile, la vigilance officielle a sa place sous le lieu. Une seconde alerte (par exemple une forte pluie mesurée chez vous) passe en tête de la bulle qui défile, avec son style d’alerte ; une fois la tuile dépliée, les deux alertes sont empilées. Les points du brief défilent toutes les 5 secondes ; survoler la carte met en pause.
 
 Les sources (météo, station, Atmo France) sont les mêmes pour les trois formats : vous pouvez copier la configuration d’une carte à l’autre et changer seulement `format`.
 
@@ -18,7 +22,6 @@ Les sources (météo, station, Atmo France) sont les mêmes pour les trois forma
 type: custom:niak-weather-card
 format: tile
 weather_entity: weather.ma_commune
-weather_path: /meteo
 ```
 
 ## Choisir les sections
@@ -29,19 +32,21 @@ Le choix Accueil (compact) / Complet est supprimé. Une ancienne configuration `
 
 Quand le brief intelligent est désactivé, le bandeau devient **Météo actuelle** : le résumé de gauche disparaît pour éviter de répéter la condition déjà affichée à droite. Le ciel animé reste disponible.
 
-Lorsque le brief est activé, un petit **i** à côté du titre **Synthèse** ouvre les points à retenir, leurs sources et les limites des données dans un panneau superposé sur toute la largeur de la carte. L’ouverture ne change pas la hauteur du bandeau et ne déplace pas les sections suivantes. Fermé par défaut, le panneau se referme avec le bouton Fermer, le « i », Échap ou un clic à l’extérieur. Sur un écran trop petit pour tout afficher, seul le panneau fait défiler ses informations.
+Lorsque le brief est activé, un petit **i** à côté du titre **Synthèse** ouvre une bulle : ce qu’est la synthèse, puis les points à retenir par groupe (vigilance, maintenant, à venir, air et pollens) et les données à vérifier. Elle s’ouvre sous le bouton sans déplacer la carte et se referme avec Échap ou un clic à l’extérieur. Le **i** du cadre **Ressenti** explique de la même façon ce qu’est le ressenti, avec le calcul du moment.
 
 La ligne **À venir** apparaît seulement lorsqu’une évolution pertinente est détectée dans les prévisions. Une variation de pression d’au moins 1 hPa peut accompagner les autres informations de la synthèse : c’est une mesure de tendance sur les trois dernières heures, pas une prévision de pluie. L’historique reste affiché pendant le rechargement des données ; sa référence tient compte des changements enregistrés par Home Assistant, sans perdre une mesure simplement parce qu’elle passe la limite exacte des trois heures.
 
 Un quatrième interrupteur, **Afficher le bulletin du jour (prévisions par période)**, affiche ou masque le bulletin du bandeau : une phrase qui résume la journée et quatre tuiles pour les prochaines périodes (matin, après-midi, soir, nuit) avec températures, ciel, pluie et vent notable. Il est activé par défaut ; masqué, le bandeau garde la synthèse et la météo actuelle.
 
-Options YAML correspondantes : `show_synthesis`, `show_bulletin`, `show_today` et `show_predictions` (valeurs `true` ou `false`).
+Deux autres réglages choisissent l’état de départ des sections : **Section Aujourd’hui repliée au départ** et **Section Prévisions repliée au départ**. Un appui sur le titre d’une section la replie ou la déplie ensuite à tout moment.
+
+Options YAML correspondantes : `show_synthesis`, `show_bulletin`, `show_today`, `show_predictions`, `collapse_today` et `collapse_predictions` (valeurs `true` ou `false`).
 
 ## Utiliser la carte sans station
 
 Une entité météo suffit pour afficher les conditions du bulletin. La température reste dans le bandeau supérieur ; les cadres Pluie, Vent et Pression regroupent les autres lectures, sans rangée de petits cadres en double. Ils utilisent les attributs du bulletin lorsqu’ils sont disponibles. Une bulle indique leur source : **Météo-France**, ou le fournisseur du bulletin choisi.
 
-Chaque cadre dispose d’un volet **Statistiques** replié par défaut pour ses graphiques. Les chiffres clés et la petite rose des vents restent visibles. Les historiques des capteurs ne sont jamais fabriqués à partir des prévisions météo.
+Chaque cadre montre directement son petit graphique, ses chiffres clés et, pour le vent, la rose des directions. Les historiques des capteurs ne sont jamais fabriqués à partir des prévisions météo.
 
 La rose des vents accompagne les chiffres sur la même ligne ; le maximum journalier est réservé aux statistiques. Les commentaires répétant les chiffres disparaissent au profit des informations pertinentes du brief. Air extérieur et pollens ont chacun leur cadre, leur source et leurs détails repliables, aujourd’hui comme demain. La courbe horaire et le tableau de la semaine disposent également de deux cadres distincts.
 

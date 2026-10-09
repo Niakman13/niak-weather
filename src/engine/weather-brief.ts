@@ -1,0 +1,161 @@
+import { atmoField, atmoFields, atmoMetrics, atmoReading, pollenMetrics, pollutantMetrics, normal } from './atmo';
+import { finite } from './local-model';
+import type { HassEntity, HomeAssistant, WeatherCardConfig,WeatherForecast } from '../types';
+import { dateFormat, numberFormat } from '../intl-cache';
+
+export interface BriefPoint { hours: number; temperature?: number; precipitation?: number; condition?: string; }
+export interface BriefSignal {
+  key: string; group: 'now' | 'future' | 'environment' | 'official'; severity: 0 | 1 | 2 | 3;
+  text: string; explanation: string; entity?: string; icon: string;
+}
+export interface WeatherBrief {
+  title: string; label: string; rgb: string; icon: string; summary: string; signals: BriefSignal[]; caveats: string[]; available: boolean;
+}
+const format = (n: number) => numberFormat('fr-FR', { maximumFractionDigits: 1 }).format(n);
+const timing = (h: number) => h < 1 ? 'dans l’heure' : `dans environ ${Math.round(h)} h`;
+const colors = ['61,155,233', '190,140,35', '230,125,45', '215,70,75'];
+const COLOR_NAMES = ['verte', 'jaune', 'orange', 'rouge'];
+/** "Graminées" → "graminées", but "PM2.5" and "NO2" stay as they are. */
+const lowerFirst = (t: string) => /^[A-ZÀ-Ý][a-zà-ÿ]/.test(t) ? t[0].toLowerCase() + t.slice(1) : t;
+const levels = ['Synthèse', 'À surveiller', 'Attention renforcée', 'Vigilance rouge officielle'];
+const knownColor = (v: unknown): number | undefined => ({ vert: 0, green: 0, jaune: 1, yellow: 1, orange: 2, rouge: 3, red: 3 })[normal(v).trim() as 'vert'];
+
+/** An attention hierarchy, never a weather model or a health recommendation. */
+export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig, model: HassEntity, points: BriefPoint[], now = new Date(),daily:WeatherForecast[]=[]): WeatherBrief {
+  const a = model.attributes, signals: BriefSignal[] = [], caveats: string[] = [];
+  const add = (s: BriefSignal) => signals.push(s);
+  const source = (key: string) => (a.sources as Record<string, string> | undefined)?.[key];
+  const temp = finite(a.t_ext), feels = finite(a.ressenti), wind = finite(a.vent), gust = finite(a.rafales), rain = finite(a.pluie_taux);
+  let current = feels === undefined ? 'Ressenti indisponible.' : `${format(feels)} °C ressentis`;
+  if (feels !== undefined && temp !== undefined) {
+    const thermometer = config.temperature_entity ? 'thermomètre' : 'température météo';
+    const delta = feels - temp;
+    current += Math.abs(delta) < .6 ? `, proche ${thermometer === 'thermomètre' ? 'du thermomètre' : 'de la température météo'}.` : `, ${format(Math.abs(delta))} °C ${delta > 0 ? 'de plus' : 'de moins'} que ${thermometer === 'thermomètre' ? 'le thermomètre' : 'la température météo'}.`;
+    const effects = [['effet_vent', 'le vent'], ['effet_soleil', 'le soleil'], ['effet_pluie', 'la pluie'], ['effet_nuit', 'le ciel nocturne']] as const;
+    const effect = effects.map(([key, name]) => ({ value: finite(a[key]) ?? 0, name })).sort((x, y) => Math.abs(y.value) - Math.abs(x.value))[0];
+    if (Math.abs(delta) >= .6) current += Math.abs(effect.value) >= .6
+      ? ` ${effect.name[0].toUpperCase() + effect.name.slice(1)} ${effect.value > 0 ? 'accentue la chaleur' : 'accentue la fraîcheur'}.`
+      : finite(a.humidex) !== undefined && (finite(a.humidex)! - temp) >= .6 ? ' L’humidité accentue la chaleur.' : '';
+  }
+  if (feels !== undefined && !a.hum_source && finite(a.humidex) === undefined) caveats.push('Humidité inconnue : le ressenti n’en tient pas compte.');
+  if (feels !== undefined && (feels >= 34 || feels <= 2)) add({ key: 'temperature', group: 'now', severity: feels >= 38 || feels <= -3 ? 2 : 1,
+    text: feels >= 34 ? `Forte chaleur : ${format(feels)} °C ressentis` : `${feels <= -3 ? 'Grand froid' : 'Froid'} : ${format(feels)} °C ressentis`, explanation: 'Ressenti calculé par la carte. Ce n’est pas une vigilance officielle.', entity: source('t_ext'), icon: feels >= 34 ? 'mdi:thermometer-high' : 'mdi:thermometer-low' });
+  if(temp!==undefined&&feels!==undefined&&Math.abs(feels-temp)>4&&!signals.some(s=>s.key==='temperature'))add({key:'comfort-gap',group:'now',severity:0,
+    text:`Ressenti : ${format(Math.abs(feels-temp))} °C de ${feels>temp?'plus':'moins'} ${config.temperature_entity?'qu’au thermomètre':'que la température annoncée'}`,
+    explanation:'Plus de 4 °C d’écart entre le ressenti calculé et la température.',entity:source('t_ext'),icon:feels>temp?'mdi:thermometer-high':'mdi:thermometer-low'});
+  if ((wind ?? 0) >= 30 || (gust ?? 0) >= 40) add({ key: 'wind', group: 'now', severity: (wind ?? 0) >= 50 || (gust ?? 0) >= 60 ? 2 : 1,
+    text: `Vent ${Math.max(wind ?? 0, gust ?? 0) >= 60 ? 'très fort' : 'fort'}${gust !== undefined ? `, rafales à ${Math.round(gust)} km/h` : ` : ${Math.round(wind!)} km/h`}`,
+    explanation: 'Mesuré par votre station : vent moyen dès 30 km/h ou rafales dès 40 km/h.', entity: source(gust !== undefined ? 'rafales' : 'vent'), icon: 'mdi:weather-windy' });
+  else if (wind !== undefined && wind >= 0) add({ key: 'wind-soft', group: 'now', severity: 0,
+    text: `Vent ${wind < 15 ? 'faible' : 'modéré'} : ${Math.round(wind)} km/h`, explanation: 'Vent moyen mesuré en ce moment.', entity: source('vent'), icon: 'mdi:weather-windy' });
+  if (rain !== undefined && rain >= .3) add({ key: 'rain-now', group: 'now', severity: rain >= 4 ? 2 : rain >= 1 ? 1 : 0,
+    text: `${rain >= 4 ? 'Forte pluie' : 'Il pleut'} : ${format(rain)} mm/h`, explanation: 'Pluie mesurée par votre station en ce moment.', entity: source('pluie_taux'), icon: 'mdi:weather-pouring' });
+  if ((wind ?? 0) >= 30 && (rain ?? 0) >= 1) add({ key: 'wind-rain', group: 'now', severity: 2, text: 'Pluie et vent fort en même temps',
+    explanation: 'Au moins 1 mm/h de pluie et 30 km/h de vent moyen en même temps.', entity: source('pluie_taux'), icon: 'mdi:weather-pouring' });
+  if (a.condition === 'fog' && a.cond_source === 'station') add({ key: 'fog', group: 'now', severity: 1, text: 'Brouillard possible', explanation: 'Estimé avec l’humidité et le point de rosée. La visibilité n’est pas mesurée.', entity: source('hr_ext'), icon: 'mdi:weather-fog' });
+  if ((finite(a.uv) ?? 0) >= 6) add({ key: 'uv', group: 'now', severity: finite(a.uv)! >= 8 ? 2 : 1, text: `UV élevés : indice ${format(finite(a.uv)!)}`, explanation: 'Indice UV de vos capteurs.', entity: source('uv'), icon: 'mdi:weather-sunny-alert' });
+  const pressureTrend = a.baro as { s?: string; d?: number; f?: number } | undefined;
+  if (pressureTrend && ['hausse', 'baisse'].includes(pressureTrend.s ?? '') && finite(pressureTrend.d) !== undefined) add({ key: 'pressure', group: 'now', severity: 0,
+    text: `La pression ${pressureTrend.s === 'hausse' ? 'monte : +' : 'baisse : −'}${format(Math.abs(pressureTrend.d!))} hPa en ${format((pressureTrend.f ?? 180) / 60)} h`,
+    explanation: 'Calculé avec l’historique de la station. Cela ne suffit pas à prévoir la pluie.', entity: source('pression'), icon: 'mdi:gauge' });
+  // Use timestamps/explicit offsets, not array positions; ignore past and invalid points.
+  const upcoming = points.filter(p => Number.isFinite(p.hours) && p.hours >= 0 && p.hours <= 6).sort((x, y) => x.hours - y.hours);
+  const rains = upcoming.filter(p => finite(p.precipitation) !== undefined && p.precipitation! >= .3);
+  const total = upcoming.reduce((sum, p) => sum + Math.max(0, finite(p.precipitation) ?? 0), 0);
+  // Less than 1 mm over 6 h is a few drops: not worth a line.
+  if (rains.length && total >= 1) {
+    const peak = Math.max(...rains.map(p => p.precipitation!));
+    add({ key: 'rain-future', group: 'future', severity: peak >= 5 || total >= 20 ? 2 : total >= 5 ? 1 : 0,
+      text: `${peak >= 5 || total >= 20 ? 'Fortes pluies' : 'Pluie'} ${timing(rains[0].hours)} : ${upcoming.some(p => finite(p.precipitation) === undefined) ? 'au moins ' : ''}${format(total)} mm prévus`,
+      explanation: 'Total prévu sur les 6 prochaines heures.', entity: config.weather_entity, icon: 'mdi:weather-pouring' });
+  }
+  const storm = upcoming.find(p => ['lightning', 'lightning-rainy', 'hail'].includes((p.condition ?? '').replaceAll('_', '-')));
+  if (storm) add({ key: 'storm', group: 'future', severity: 2, text: `Orage ou grêle ${timing(storm.hours)}`, explanation: 'Annoncé par le fournisseur météo pour les 6 prochaines heures.', entity: config.weather_entity, icon: 'mdi:weather-lightning' });
+  const cold = upcoming.find(p => finite(p.temperature) !== undefined && p.temperature! <= 0);
+  if (cold) add({ key: 'freeze-future', group: 'future', severity: 1, text: `Gel ${timing(cold.hours)} : ${format(cold.temperature!)} °C prévus`, explanation: 'Prévision du fournisseur météo.', entity: config.weather_entity, icon: 'mdi:snowflake' });
+  // Tonight: the forecast minimum of the next 18 h against the frost and dew points measured now.
+  const at = (h: number) => `vers ${Number(dateFormat('en-GB', { timeZone: hass.config?.time_zone, hour: 'numeric', hourCycle: 'h23' }).format(new Date(now.getTime() + h * 3600_000)))} h`;
+  const night = points.filter(p => Number.isFinite(p.hours) && p.hours >= 0 && p.hours <= 18 && finite(p.temperature) !== undefined);
+  const low = night.length ? night.reduce((m, p) => p.temperature! < m.temperature! ? p : m) : undefined;
+  const frostPoint = finite(a.gelee), dewPoint = finite(a.rosee);
+  // The ground cools 2–3 °C below the sheltered thermometer on a calm night: frost can form with +3 °C forecast.
+  if (low && low.temperature! <= 3) add({ key: 'frost-night', group: 'future', severity: 1,
+    text: low.temperature! <= 0 ? `Gel ${at(low.hours)} : ${format(low.temperature!)} °C prévus`
+      : `${frostPoint !== undefined && frostPoint >= low.temperature! - 3 ? 'Gelée blanche possible' : 'Gel au sol possible'} ${at(low.hours)} : ${format(low.temperature!)} °C prévus`,
+    explanation: 'Minimum prévu dans les 18 h. Au sol, il fait 2 à 3 °C de moins que sous abri. Pensez aux plantes et au pare-brise.', entity: config.weather_entity, icon: 'mdi:snowflake-alert' });
+  // The night's minimum says more than the first freezing hour: keep one frost line.
+  if (signals.some(s => s.key === 'frost-night')) signals.splice(signals.findIndex(s => s.key === 'freeze-future'), signals.some(s => s.key === 'freeze-future') ? 1 : 0);
+  const calm = (wind ?? 0) < 8, dryAt = (p: BriefPoint) => (finite(p.precipitation) ?? 0) < .3;
+  if (low && dewPoint !== undefined && a.condition !== 'fog' && calm && dryAt(low) && low.temperature! <= dewPoint && low.temperature! > 0)
+    add({ key: 'fog-later', group: 'future', severity: 0, text: `Brouillard possible ${at(low.hours)}`,
+      explanation: 'La température va descendre jusqu’au point de rosée, sans vent ni pluie.', entity: config.weather_entity, icon: 'mdi:weather-fog' });
+  const validTemps = upcoming.filter(p => finite(p.temperature) !== undefined);
+  if (temp !== undefined && validTemps.length && !cold) {
+    const maximum=Math.max(...validTemps.map(p=>p.temperature!)),minimum=Math.min(...validTemps.map(p=>p.temperature!));
+    if(maximum-temp>=3||temp-minimum>=3)add({ key: 'temperature-future', group: 'future', severity: 0,
+      text: maximum-temp>=3?`Montée jusqu’à ${format(maximum)} °C dans les 6 h`:`Baisse jusqu’à ${format(minimum)} °C dans les 6 h`, explanation: 'Comparé à la température actuelle, sur les 6 prochaines heures.', entity: config.weather_entity, icon: 'mdi:thermometer' });
+  }
+  const zone=hass.config?.time_zone??'UTC',dateKey=(date:Date)=>dateFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+  const today=dateKey(now),tomorrowDate=new Date(`${today}T12:00:00Z`);tomorrowDate.setUTCDate(tomorrowDate.getUTCDate()+1);
+  const tomorrow=tomorrowDate.toISOString().slice(0,10);
+  const tomorrowRain=daily.find(p=>Number.isFinite(Date.parse(p.datetime))&&dateKey(new Date(p.datetime))===tomorrow&&finite(p.precipitation)!==undefined&&p.precipitation!>=20);
+  if(tomorrowRain)add({key:'rain-tomorrow',group:'future',severity:0,text:`Forte pluie demain : ${format(tomorrowRain.precipitation!)} mm`,explanation:'Prévision du fournisseur météo pour demain, dès 20 mm.',entity:config.weather_entity,icon:'mdi:weather-pouring'});
+  if (!upcoming.length) caveats.push('Prévisions des 6 prochaines heures indisponibles.');
+  else if (upcoming.some(p => finite(p.precipitation) === undefined)) caveats.push('Certaines quantités de pluie manquent : le total peut être plus élevé.');
+
+  for (const tomorrow of [false, true]) {
+    const readGroup = (metrics: typeof pollutantMetrics, pollen: boolean) => metrics.map(metric => ({ metric, reading: atmoReading(hass, config[atmoField(metric, tomorrow)], pollen, false, now) }))
+      .filter(x => x.reading && x.reading.value !== undefined);
+    const air = readGroup(['air', ...pollutantMetrics], false), pollens = config.pollen_source === 'none' || config.pollen_source === 'legacy' ? [] : readGroup(['pollen', ...pollenMetrics], true);
+    for (const [kind, readings] of [['air', air], ['pollen', pollens]] as const) {
+      const fresh = readings.filter(x => !x.reading!.stale && x.reading!.value! <= 6).sort((x, y) => y.reading!.value! - x.reading!.value!);
+      if (readings.some(x => x.reading!.stale)) caveats.push(`Atmo ${kind === 'air' ? 'air' : 'pollens'} ${tomorrow ? 'demain' : 'aujourd’hui'} : données trop anciennes, non utilisées.`);
+      if (fresh.some(x => !x.reading!.updated)) caveats.push(`Atmo ${kind === 'air' ? 'air' : 'pollens'} : date de publication inconnue.`);
+      const worst = fresh[0], r = worst?.reading;
+      if (r) add({ key: `${kind}-${tomorrow}`, group: 'environment', severity: r.value! >= (kind === 'air' ? 4 : 5) ? 2 : r.value! >= (kind === 'air' ? 3 : 4) ? 1 : 0,
+        text: `${kind === 'air' ? 'Air extérieur : ' : 'Pollens : niveau '}${r.label.toLowerCase()} ${tomorrow ? 'demain' : 'aujourd’hui'}${worst.metric !== kind ? ` (${lowerFirst(atmoMetrics[worst.metric].label.replace(' — sous-indice', ''))})` : ''}`,
+        explanation: `Indice Atmo ${r.value} sur 6${r.zone ? ', zone ' + r.zone : ''}. ${r.updated ? 'Publié le ' + r.updated + '.' : 'Date de publication inconnue.'} Ce n’est pas une mesure faite chez vous.`, entity: r.id, icon: kind === 'air' ? 'mdi:air-filter' : 'mdi:flower-pollen' });
+      const event = readings.find(x => x.reading!.value === 7 && !x.reading!.stale);
+      if (event) add({ key: `atmo-event-${tomorrow}`, group: 'environment', severity: 1, text: `Événement signalé par Atmo ${tomorrow ? 'demain' : 'aujourd’hui'}`, explanation: 'Atmo signale un événement particulier (code 7). Ce n’est pas un niveau de pollution.', entity: event.reading!.id, icon: 'mdi:information-outline' });
+    }
+  }
+  if (config.pollen_source !== 'none' && config.pollen_source !== 'atmo' && !(config.pollen_source === undefined && atmoFields.some(f => !!config[f]))) {
+    for (const p of config.pollens ?? []) {
+      const e = hass.states[p.id], level = ({ high: 3, eleve: 3, fort: 3, very_high: 4, 'very high': 4, 'tres eleve': 4, moderate: 2, modere: 2, low: 1, faible: 1, none: 0, aucun: 0 })[normal(e?.state) as 'high'] ?? finite(e?.state);
+      if (level !== undefined && level >= 3 && level <= 4) add({ key: `legacy-${p.id}`, group: 'environment', severity: level === 4 ? 2 : 1, text: `${p.nom} : pollens ${level === 4 ? 'très élevés' : 'élevés'}`, explanation: 'Niveau Polleninformation, sur une échelle de 0 à 4.', entity: p.id, icon: 'mdi:flower-pollen' });
+    }
+  }
+  const official = config.vigilance_entity ? hass.states[config.vigilance_entity] : undefined;
+  if (config.vigilance_entity) {
+    const recognized = official && (/meteo.?france/.test(normal(official.attributes.attribution)) || hass.entities?.[config.vigilance_entity]?.platform === 'meteo_france');
+    const level = recognized ? knownColor(official.state) : undefined;
+    const stamp = Date.parse(official?.last_updated ?? ''), old = Number.isFinite(stamp) && now.getTime() - stamp > 48 * 3600_000;
+    if (level === undefined || old) caveats.push('Vigilance indisponible ou trop ancienne : consultez Météo-France.');
+    else if (level > 0) {
+      // One text for every format: "Vigilance jaune · vent violent"; a phenomenon below the overall level says its own colour.
+      const phenomena = Object.entries(official!.attributes).filter(([key, value]) => !['attribution', 'friendly_name', 'icon'].includes(key) && knownColor(value) !== undefined && knownColor(value)! > 0)
+        .sort((x, y) => knownColor(y[1])! - knownColor(x[1])!).map(([key, value]) => `${key.toLowerCase()}${knownColor(value) === level ? '' : ` (${COLOR_NAMES[knownColor(value)!]})`}`);
+      add({ key: 'official', group: 'official', severity: level as 1 | 2 | 3, text: `Vigilance ${COLOR_NAMES[level]}${phenomena.length ? ' · ' + phenomena.join(', ') : ''}`,
+        explanation: 'Vigilance officielle de votre département. Ouvrez le capteur pour lire les consignes.', entity: config.vigilance_entity, icon: 'mdi:alert-outline' });
+    }
+  }
+  const severity = Math.max(0, ...signals.map(s => s.severity));
+  const groupOrder = { official: 0, now: 1, future: 2, environment: 3 };
+  signals.sort((x, y) => y.severity - x.severity || groupOrder[x.group] - groupOrder[y.group] || x.key.localeCompare(y.key));
+  const phrases = (group: BriefSignal['group']) => signals.filter(s => s.group === group).slice(0, 2).map(s => s.text).join(' ; ');
+  const lines = [`Maintenant : ${current}${phrases('now') ? ' ' + phrases('now') + '.' : ''}`];
+  const future = phrases('future'); if (future) lines.push(`À venir : ${future}.`);
+  else if (!upcoming.length) lines.push('À venir : prévisions indisponibles.');
+  const environment = phrases('environment'); if (environment) lines.push(`Air et pollens : ${environment}.`);
+  const officialText = phrases('official'); if (officialText) lines.push(officialText + '.');
+  const omitted = ['now', 'future', 'environment'].reduce((sum, g) => sum + signals.filter(s => s.group === g).slice(2).filter(s => s.severity > 0).length, 0);
+  if (omitted > 0) lines.push(`${omitted} autre${omitted > 1 ? 's' : ''} point${omitted > 1 ? 's' : ''} à consulter dans les explications.`);
+  const available = feels !== undefined || signals.length > 0 || upcoming.length > 0;
+  const officialSignal = signals.find(s => s.key === 'official');
+  const themes: Record<string, string> = { wind: 'Vent', 'wind-rain': 'Pluie et vent', 'rain-now': 'Pluie', 'rain-future': 'Pluie', storm: 'Orage', temperature: feels !== undefined && feels >= 34 ? 'Chaleur' : 'Froid', 'freeze-future': 'Froid', 'frost-night': 'Gel', fog: 'Brouillard', uv: 'UV' };
+  const topics = [...new Set(signals.filter(s => s.severity > 0 && s.group !== 'official').map(s => themes[s.key] ?? (s.key.startsWith('air-') || s.key.startsWith('atmo-event') ? 'Air extérieur' : s.group === 'environment' ? 'Pollens' : 'Météo')))];
+  const title = officialSignal && officialSignal.severity === severity ? officialSignal.text
+    : topics.length ? topics.slice(0, 3).join(' · ') : 'Votre météo en bref';
+  return { title, label: !available ? 'Données insuffisantes' : severity === 0 && caveats.length ? 'Synthèse partielle' : levels[severity], rgb: available ? colors[severity] : '150,150,150',
+    icon: signals.find(s => s.severity > 0)?.icon ?? 'mdi:weather-partly-cloudy', summary: lines.join('\n'), signals, caveats: [...new Set(caveats)], available };
+}

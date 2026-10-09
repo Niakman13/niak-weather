@@ -1,5 +1,5 @@
 import { describe,expect,it } from 'vitest';
-import { currentMetrics,meaningfulComfort } from '../src/current-measurements';
+import { currentMetrics,meaningfulComfort } from '../src/engine/current-measurements';
 import type { HassEntity,HomeAssistant,WeatherCardConfig } from '../src/types';
 const e=(id:string,state='20',attributes:Record<string,unknown>={}):HassEntity=>({entity_id:id,state,attributes});
 const config:WeatherCardConfig={type:'custom:niak-weather-card',weather_entity:'weather.city'};

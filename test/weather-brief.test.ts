@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildWeatherBrief, type BriefPoint } from '../src/weather-brief';
+import { buildWeatherBrief, type BriefPoint } from '../src/engine/weather-brief';
 import type { HomeAssistant, WeatherCardConfig, HassEntity } from '../src/types';
 
 const now = new Date('2026-10-04T10:00:00Z');

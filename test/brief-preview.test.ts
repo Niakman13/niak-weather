@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { briefPreview, briefPresentation, briefSecondarySignals } from '../src/brief-preview';
-import type { WeatherBrief, BriefSignal } from '../src/weather-brief';
+import { briefPreview, briefPresentation, briefSecondarySignals } from '../src/engine/brief-preview';
+import type { WeatherBrief, BriefSignal } from '../src/engine/weather-brief';
 const signal = (key: string, group: BriefSignal['group'], severity: BriefSignal['severity']): BriefSignal => ({key,group,severity,text:key,explanation:key,icon:'mdi:weather-sunny'});
 const brief = (signals: BriefSignal[]): WeatherBrief => ({signals,title:'',summary:'',label:'',rgb:'',icon:'',available:true,caveats:[]});
 describe('Concise summary presentation', () => {

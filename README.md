@@ -20,7 +20,7 @@ Illustration de présentation avec des données d’exemple ; le rendu réel du 
 
 **En pratique :** l’entité météo seule suffit pour afficher la carte et ses prévisions. Ajoutez une station pour suivre les observations chez vous, et Atmo France si vous souhaitez les informations sur l’air et les pollens. La carte indique la source de chaque valeur et distingue toujours une prévision d’une mesure réelle. [Détails des sources et de leurs limites](docs/sources.md).
 
-**Version stable : v1.16.3.** Des phrases plus simples, des bulles plus lisibles et la vigilance sous le bulletin. [Nouveautés de la version 1.16.1](docs/release-1.16.1.md) · [plus fluide 1.16.3](docs/release-1.16.3.md) · [correctif 1.16.2](docs/release-1.16.2.md) · [1.16.0](docs/release-1.16.0.md) · [Trois formats (1.15.0)](docs/release-1.15.0.md) · [Installation et mise à jour](docs/installation.md).
+**Version stable : v1.20.0.** Une carte redessinée de bout en bout : une tuile qui se déplie d’un appui, la carte complète d’un appui long, un seul style partout. [Nouveautés de la version 1.20.0](docs/release-1.20.0.md) · [plus fluide 1.16.3](docs/release-1.16.3.md) · [1.16.1](docs/release-1.16.1.md) · [Installation et mise à jour](docs/installation.md).
 
 [![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
@@ -32,11 +32,18 @@ Illustration de présentation avec des données d’exemple ; le rendu réel du 
 
 Aperçus réalisés avec des données de démonstration dans le navigateur de test. La carte suit le thème Home Assistant ; les sources et valeurs illustrées peuvent différer de votre installation.
 
-## Trois formats
+## Une tuile qui se déplie, une page complète
 
-La carte **complète** pour une page météo, et deux formats pour la page d’accueil : l’**intermédiaire** (la Synthèse seule) et la **tuile** (pleine ou demi-largeur). Les deux petits formats gardent le ciel animé, font défiler les points du brief et ouvrent la page de la carte complète d’un simple appui. Le format se choisit dans **Général** ; les sources restent les mêmes. [Détails](docs/display-options.md#choisir-le-format).
+Sur la page d’accueil, la **tuile** (pleine ou demi-largeur) montre le lieu, l’alerte s’il y en a une, la bulle du brief qui défile et la météo du moment, sur le ciel animé.
 
-![Niak Weather — tuile pleine et demi-largeur, et format intermédiaire, par temps d’orage avec vigilance jaune](docs/images/niak-weather-formats.png)
+- **Un appui** déplie la tuile sur place : la phrase du bulletin, les quatre moments de la journée et les prévisions, par heures ou par jours. Elle se souvient d’être dépliée, sur chaque appareil.
+- **Un appui long** ouvre la carte complète par-dessus la page, en plein écran sur téléphone. Si vous préférez votre propre page météo, indiquez-la dans les réglages : l’appui long y mènera.
+
+La carte **complète** reste un format à part entière pour une page météo dédiée. Ses sections **Aujourd’hui** et **Prévisions** se replient d’un appui sur leur titre ; leur état de départ se règle dans **Général**. [Détails](docs/display-options.md#choisir-le-format).
+
+![Niak Weather — tuile pleine et demi-largeur repliées, puis tuile dépliée, par temps d’orage avec vigilance jaune](docs/images/niak-weather-formats.png)
+
+Tous les formats partagent **une seule charte** : mêmes bulles, mêmes pastilles, mêmes cadres et une palette de couleurs douces, accordées entre elles. La vigilance officielle et l’alerte mesurée chez vous s’affichent ensemble, sans que l’une efface l’autre.
 
 ## Ce que la carte apporte
 
@@ -44,18 +51,18 @@ La carte **complète** pour une page météo, et deux formats pour la page d’a
 
 La carte s’organise en trois temps : **maintenant**, **ensuite** et **les relevés**. La synthèse du bandeau attire l’attention sur une alerte ou un changement utile ; si rien ne ressort, elle ne remplit pas l’espace avec un message banal. Le ciel animé montre les conditions actuelles fournies par la météo. Les mesures de la station restent des observations locales et les prévisions gardent leur source météo.
 
-Dans **Aujourd’hui**, la jauge explique l’écart entre le ressenti estimé et le thermomètre. Trois colonnes de même hauteur regroupent **Pluie**, **Vent** et **Pression**. Le vent réunit vitesse, rafales et rose des directions ; la pression montre sa valeur et son évolution. Les cadres indiquent d’où vient chaque lecture et gardent leurs graphiques dans **Statistiques**, replié au départ. La pluie rassemble les cumuls disponibles et leur historique.
+Dans **Aujourd’hui**, le cadre **Ressenti** explique l’écart avec le thermomètre : ce qui le fait monter ou baisser (humidité, soleil, vent…) en pastilles, et un bouton **i** qui détaille le calcul du moment. Trois cadres sur le même modèle regroupent **Pluie**, **Vent** et **Pression** : la valeur du moment, un petit graphique (les 7 derniers jours de pluie, les 6 dernières heures de vent et de pression, avec les valeurs posées dessus) et trois chiffres utiles en bas. Chaque cadre indique d’où vient sa lecture.
 
-![Détails Pluie et Vent — données de démonstration](docs/images/3.png)
-Quand Atmo France est configuré, **Air extérieur** et **Pollens** sont présentés dans deux cadres distincts, avec une source et des cercles colorés. Les données du jour et les prévisions de demain restent distinctes ; les détails des polluants et des espèces de pollens sont repliés. [Sources des graphiques et limites](docs/recent-details.md).
+![Cadres Pluie, Vent et Pression — données de démonstration](docs/images/3.png)
+Quand Atmo France est configuré, **Air extérieur** et **Pollens** sont présentés dans deux cadres distincts, avec une source et un disque à six crans. Les données du jour et les prévisions de demain restent distinctes ; les détails des polluants et des espèces de pollens sont repliés. [Sources des graphiques et limites](docs/recent-details.md).
 
 Dans **Prévisions**, deux cadres séparent la courbe des prochaines heures du tableau de la semaine. Les unités **Min °C**, **Max °C** et **Pluie mm** sont rappelées en tête du tableau. Les statistiques historiques des capteurs locaux ne se confondent pas avec ces prévisions. [Sources des graphiques et limites](docs/recent-details.md).
 
 **Les saisons** se devinent dans le ciel animé, par petites touches qui ne contredisent jamais la météo : pétales au printemps, chaleur qui monte l’été, feuilles rousses en automne, flocons dans l’angle en hiver. Pendant la première semaine d’une nouvelle saison, une pastille l’annonce ; au survol, elle donne la durée du jour et son évolution. La saison vient de l’intégration **Saison** de Home Assistant si un capteur est choisi, sinon de la date et de l’hémisphère.
 
-Le rendu s’adapte à la largeur disponible et au thème Home Assistant. Les colonnes se réorganisent sur mobile et les interrupteurs des sections permettent de choisir les informations affichées, sans mode compact séparé.
+Le rendu s’adapte à la largeur disponible et au thème Home Assistant. Les colonnes se réorganisent sur mobile et les interrupteurs des sections permettent de choisir les informations affichées.
 
-Les sections Synthèse / météo actuelle, Aujourd’hui et Prévisions peuvent être activées séparément. Le **bulletin du jour** du bandeau (une phrase et quatre tuiles : matin, après-midi, soir, nuit, avec températures, pluie et vent) a aussi son interrupteur dans **Général**. Sans station, les cadres s’appuient sur les données météo disponibles et indiquent leur source. Si un capteur local configuré devient indisponible et que la météo fournit une valeur de remplacement, ce repli est signalé. La jauge du ressenti s’appuie sur la température locale ou, sans station, sur la température et l’humidité du bulletin, en le signalant. [Affichage et priorité des sources](docs/display-options.md).
+Les sections Synthèse / météo actuelle, Aujourd’hui et Prévisions peuvent être activées séparément, et Aujourd’hui et Prévisions peuvent démarrer repliées. Le **bulletin du jour** du bandeau (une phrase et quatre tuiles : matin, après-midi, soir, nuit, avec températures, pluie et vent) a aussi son interrupteur dans **Général**. Sans station, les cadres s’appuient sur les données météo disponibles et indiquent leur source. Si un capteur local configuré devient indisponible et que la météo fournit une valeur de remplacement, ce repli est signalé. La jauge du ressenti s’appuie sur la température locale ou, sans station, sur la température et l’humidité du bulletin, en le signalant. [Affichage et priorité des sources](docs/display-options.md).
 
 Les prévisions affichent jusqu’à **18 heures et 7 jours**, selon les données réellement fournies. La carte distingue les conditions prévues pour la zone des mesures prises chez vous. Une mesure de station indisponible n’est pas remplacée par un zéro, et un orage prévu n’est pas présenté comme de la foudre détectée par la station.
 
@@ -88,7 +95,7 @@ Au-dessus de la jauge, un mot résume la sensation, selon les seuils de l’éch
 
 Par exemple : un humidex de **29 °C**, un effet du vent de **−0,4 °C** et du soleil de **+1 °C**, sans autre correction, donnent **29,6 °C ressentis**. La pression, les UV, la pollution et les pollens ne sont pas additionnés à ce chiffre ; ils peuvent en revanche enrichir la synthèse.
 
-Ces coefficients sont des règles d’estimation de la carte, pas une formule standard validée. La carte ne connaît pas vos vêtements, votre activité ni votre exposition réelle : l’effet solaire représente une ambiance exposée, pas forcément le ressenti à l’ombre. Sans station, la jauge s’appuie sur la température et l’humidité du bulletin et l’indique ; sans humidité du bulletin non plus, elle est masquée. [Calcul détaillé dans le code](src/weather-model.ts).
+Ces coefficients sont des règles d’estimation de la carte, pas une formule standard validée. La carte ne connaît pas vos vêtements, votre activité ni votre exposition réelle : l’effet solaire représente une ambiance exposée, pas forcément le ressenti à l’ombre. Sans station, la jauge s’appuie sur la température et l’humidité du bulletin et l’indique ; sans humidité du bulletin non plus, elle est masquée. [Calcul détaillé dans le code](src/engine/weather-model.ts).
 
 ### Anticiper les prochaines heures et les prochains jours
 
@@ -106,7 +113,7 @@ L’historique Home Assistant permet de qualifier l’évolution de la pression 
 
 1. Ouvrez le bouton HACS en haut de cette page. Il ouvre le dépôt, sans installer automatiquement la carte.
 2. Si le dépôt n’est pas trouvé, ajoutez `https://github.com/Niakman13/niak-weather` dans **HACS → ⋮ → Dépôts personnalisés**, catégorie **Tableau de bord / Dashboard**. Il s’agit d’un dépôt personnalisé, pas d’un référencement dans le catalogue HACS par défaut.
-3. Téléchargez **Niak Weather v1.16.3**, puis rechargez le navigateur.
+3. Téléchargez **Niak Weather v1.20.0**, puis rechargez le navigateur.
 4. Dans votre tableau de bord, choisissez **Ajouter une carte → Niak Weather** et sélectionnez votre entité météo.
 5. Ajoutez si souhaité les sources **Station météo locale** et **Atmo France**. Utilisez **Remplir automatiquement** dans chaque catégorie, puis vérifiez les propositions avant d’enregistrer. Sans station, les cadres utilisent les attributs du bulletin disponibles, avec une bulle de source ; la pluie prévue reste distinguée de la pluie mesurée.
 
@@ -131,9 +138,9 @@ daily_rain_entity: sensor.station_daily_rain
 
 Ces identifiants sont des **exemples**, pas des noms imposés. Privilégiez vos entités réelles dans l’éditeur. Le [tutoriel d’installation](docs/installation.md) détaille les ressources, les réglages et le dépannage.
 
-## Mettre à jour vers v1.16.3
+## Mettre à jour vers v1.20.0
 
-Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.16.3**. Il n’est pas nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
+Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.20.0**. Il n’est pas nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
 
 Les mises à jour utilisent la même ressource et conservent vos entités. Les anciens modes sont convertis en réglages de sections : les prévisions d’une ancienne configuration compacte restent masquées sauf choix explicite contraire. Vous pouvez enrichir la configuration progressivement, sans recommencer l’installation. [Notes de version](docs/release-1.4.0.md).
 
@@ -152,8 +159,8 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-`npm run build` produit `dist/niak-weather-card.js`. Les releases GitHub vérifient le code et le rendu, puis joignent le fichier installable et sa carte de sources. Les utilisateurs reçoivent les mises à jour par HACS sans compilation.
+`npm run build` produit `dist/niak-weather-card.js`. Le code est rangé en trois étages : `src/engine` calcule (sans rien afficher), `src/ui/charter.ts` décide de l’apparence de toute la carte, `src/views` assemble les écrans. [Charte et organisation du code](docs/charte.md). Les releases GitHub vérifient le code et le rendu, puis joignent le fichier installable et sa carte de sources. Les utilisateurs reçoivent les mises à jour par HACS sans compilation.
 
-Les tests couvrent le ressenti, les conditions observées, les prévisions, les données manquantes, le préremplissage et les interactions. Des contrôles visuels à 375, 768 et 1440 px en clair/sombre détectent les régressions du rendu et les débordements. Ils utilisent des composants hôtes Home Assistant simulés : ils ne garantissent pas tous les thèmes tiers ni la disponibilité des capteurs de chaque installation. [Vérifications et limites](docs/parity.md).
+Les tests couvrent le ressenti, les conditions observées, les prévisions, les données manquantes, le préremplissage et les interactions. Les contrôles navigateur vérifient chaque format à 375, 768 et 1180 px en clair et en sombre, l’accessibilité, les gestes, la fenêtre complète, les sections repliables et le respect de la charte. Le banc visuel (`npm run visual:capture`) photographie 94 scènes à heure fixe pour comparer deux versions ; `npm run visual:docs` refait les images de ce README. Ils utilisent des composants hôtes Home Assistant simulés : ils ne garantissent pas tous les thèmes tiers ni la disponibilité des capteurs de chaque installation. [Vérifications et limites](docs/parity.md).
 
 Licence MIT — [LICENSE](LICENSE).

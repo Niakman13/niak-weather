@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { fillCategory, manualCandidates, measurementMatches, sourceDevices, sourceStatus } from '../src/config-sources';
-import { candidates, type RegistryContext } from '../src/station-detection';
-import { renderLocal } from '../src/local-renderer';
-import { measurement } from '../src/local-model';
+import { fillCategory, manualCandidates, measurementMatches, sourceDevices, sourceStatus } from '../src/editor/config-sources';
+import { candidates, type RegistryContext } from '../src/editor/station-detection';
+import { measurement } from '../src/engine/local-model';
 import type { HassEntity, HomeAssistant, WeatherCardConfig } from '../src/types';
 const base: WeatherCardConfig = {type:'custom:niak-weather-card',weather_entity:'weather.city'};
 const entity = (id:string, state='20', attributes:Record<string,unknown>={}):HassEntity => ({entity_id:id,state,attributes});
@@ -75,12 +74,6 @@ describe('Source configuration and repairs',()=>{
   it('fills only weather sources and does not require a station',()=>{
     const states={'weather.city':entity('weather.city','sunny'),'sun.sun':entity('sun.sun','above_horizon'),'sensor.outdoor_temperature':entity('sensor.outdoor_temperature')};
     expect(fillCategory(hass(states),empty,{...base,weather_entity:'weather.deleted'},'weather')).toEqual({...base,sun_entity:'sun.sun'});
-  });
-  it('hides unconfigured station metrics but retains configured unavailable ones',()=>{
-    const render=(configured:Partial<WeatherCardConfig>)=>renderLocal({ent:'sensor.model',dashboard:true,adaptive:true,configured},{'sensor.model':{state:'20',attributes:{t_ext:20,ressenti:20}}},{});
-    expect(render({}).tuiles.match(/class="me-tu"/g)).toHaveLength(1);
-    expect(render({wind_speed_entity:'sensor.unavailable'}).tuiles).toContain('Vent');
-    expect(render({}).tuiles).not.toContain('Pression');
   });
   it('converts the additional compatible pressure and temperature-trend units',()=>{
     expect(measurement(760,'mmHg','pressure')).toBeCloseTo(1013.25,1);
