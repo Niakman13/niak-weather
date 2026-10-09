@@ -21,6 +21,10 @@
   --nw-blur: blur(3px) saturate(1.15);
   /* Espacements */
   --nw-gap: 10px; --nw-pad: 14px 16px; --nw-pad-bubble: 6px 14px 7px 10px; --nw-pad-tile: 11px 13px;
+  /* Échelle de texte : 6 tailles pour toute la carte, rien d'autre.
+     étiquette 10 (petites capitales) · secondaire 12 · texte 13 · titre 17 · valeur 30 · température 42 */
+  --nw-fs-label: 10px; --nw-fs-small: 12px; --nw-fs-text: 13px; --nw-fs-title: 17px; --nw-fs-value: 30px; --nw-fs-temp: 42px;
+  --nw-radius-panel: 16px;
   /* Typographie : 6 tailles seulement */
   --nw-label: 700 10px/13px Roboto, system-ui, sans-serif;  --nw-label-spacing: .6px;
   --nw-text: 500 13px/16px Roboto, system-ui, sans-serif;
@@ -149,6 +153,64 @@ select {font:inherit;font-size:14px;padding:7px 24px 7px 9px;border:1px solid va
 .notes {background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:12px;padding:16px 18px}
 .notes h3 {margin:0 0 8px;font-size:15px} .notes ol, .notes ul {margin:0;padding-left:20px} .notes li {margin:5px 0}
 .kbd {font:600 11px/1 Roboto,system-ui;border:1px solid var(--divider-color);border-radius:5px;padding:2px 6px;background:var(--page)}
+/* ───────────── Cadres refaits (proposition) : uniquement des jetons de la charte ───────────── */
+.nw-panels {display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;align-items:stretch}
+.nw-panels--two {grid-template-columns:repeat(2,minmax(0,1fr))}
+@container (max-width:980px) {.nw-panels:not(.nw-panels--two) {grid-template-columns:minmax(0,1fr)}}
+@container (max-width:640px) {.nw-panels--two {grid-template-columns:minmax(0,1fr)}}
+.nw-panel {background:var(--card-background-color);border:1px solid var(--nw-line);border-radius:var(--nw-radius-panel);padding:18px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.nw-panel-head {display:flex;align-items:center;gap:10px}
+.nw-panel-head h3 {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0;font-size:var(--nw-fs-title);font-weight:700;letter-spacing:-.2px;flex:1;min-width:0}
+.nw-panel-icon {display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:color-mix(in oklab,var(--c) 28%,transparent);color:color-mix(in oklab,var(--c) 60%,var(--primary-text-color));flex:none}
+.nw-panel-icon ha-icon {--mdc-icon-size:18px;display:flex}
+.nw-sub {margin:-8px 0 0;font-size:var(--nw-fs-small);color:var(--secondary-text-color)}
+.nw-legend {display:flex;justify-content:center;flex-wrap:wrap;gap:6px 16px;font-size:var(--nw-fs-small);color:var(--secondary-text-color);margin-top:auto}
+.nw-legend span {display:inline-flex;align-items:center;gap:6px} .nw-legend i {width:12px;height:4px;border-radius:2px;background:var(--c)}
+.nw-legend i.sq {height:10px;width:10px;border-radius:3px}
+/* 18 prochaines heures */
+.fc {display:grid;grid-template-rows:auto 168px auto;gap:6px}
+.fc-marks {position:relative;height:14px}
+.fc-marks span {position:absolute;top:0;font:var(--nw-label);letter-spacing:var(--nw-label-spacing);text-transform:uppercase;color:var(--secondary-text-color);transform:translateX(-50%);white-space:nowrap}
+.fc-marks span:first-child {transform:none}
+.fc-plot {position:relative;border-radius:12px;overflow:visible;background:linear-gradient(color-mix(in oklab,var(--nw-line) 40%,transparent) 1px,transparent 1px) 0 0/100% 42px}
+.fc-night {position:absolute;top:0;bottom:0;background:color-mix(in oklab,var(--nw-wind) 14%,transparent)}
+.fc-plot svg {position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.fc-line {fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.fc-bar {position:absolute;bottom:0;border-radius:6px 6px 2px 2px;background:color-mix(in oklab,var(--nw-rain) 75%,transparent)}
+.fc-divider {position:absolute;top:0;bottom:0;width:0;border-left:1px dashed color-mix(in oklab,var(--secondary-text-color) 55%,transparent)}
+.fc-pill {position:absolute;transform:translate(-50%,-130%);font-size:var(--nw-fs-small);font-weight:700;padding:2px 8px;border-radius:var(--nw-radius-pill);
+  background:var(--card-background-color);border:1px solid var(--nw-line);box-shadow:0 2px 6px #0001;white-space:nowrap}
+.fc-pill.low {transform:translate(-50%,40%)}
+.fc-dot {position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--card-background-color);border:3px solid var(--c)}
+/* Chaque heure est posée exactement sous son point de la courbe. */
+.fc-hours {position:relative;height:78px}
+.fc-hours div {position:absolute;top:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:3px}
+.fc-hours .nw-label {font-size:var(--nw-fs-label)} .fc-hours ha-icon {--mdc-icon-size:20px;display:flex;color:var(--primary-text-color)}
+.fc-hours b {font-size:var(--nw-fs-text);font-weight:700}
+.fc-wind {display:inline-flex;align-items:center;gap:3px;font-size:var(--nw-fs-small);color:var(--secondary-text-color)} .fc-wind svg {width:10px;height:10px;fill:color-mix(in oklab,var(--nw-wind) 70%,var(--primary-text-color))}
+/* 7 prochains jours */
+.wk {display:grid;grid-template-columns:auto auto auto minmax(60px,1fr) auto auto auto;align-items:center;column-gap:12px;row-gap:2px}
+.wk > .head {font:var(--nw-label);letter-spacing:var(--nw-label-spacing);text-transform:uppercase;color:var(--secondary-text-color);padding-bottom:4px}
+.wk > .day {font-size:var(--nw-fs-text);font-weight:700;padding:7px 0;text-transform:capitalize} .wk > .day.today {color:color-mix(in oklab,var(--nw-wind) 60%,var(--primary-text-color))}
+.wk ha-icon {--mdc-icon-size:20px;display:flex;color:var(--secondary-text-color)}
+.wk .lo {font-size:var(--nw-fs-text);color:var(--secondary-text-color);text-align:right;font-variant-numeric:tabular-nums}
+.wk .hi {font-size:var(--nw-fs-text);font-weight:700;font-variant-numeric:tabular-nums}
+.wk .track {position:relative;height:6px;border-radius:3px;background:color-mix(in oklab,var(--nw-line) 70%,transparent)}
+.wk .fill {position:absolute;top:0;bottom:0;border-radius:3px}
+.wk .rain {white-space:nowrap;font-size:var(--nw-fs-small);font-weight:600;color:color-mix(in oklab,var(--nw-rain) var(--nw-ink),var(--primary-text-color));text-align:right;min-width:42px}
+.wk .wind {white-space:nowrap;font-size:var(--nw-fs-small);color:var(--secondary-text-color);text-align:right;min-width:30px}
+.wk .rule {grid-column:1/-1;height:1px;background:color-mix(in oklab,var(--nw-line) 60%,transparent)}
+/* Air et pollens */
+.aq {display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:16px}
+.aq svg {width:76px;height:76px} .aq .txt {display:flex;flex-direction:column;gap:2px;min-width:0}
+.aq strong {font-size:var(--nw-fs-title);font-weight:700} .aq small {font-size:var(--nw-fs-small);color:var(--secondary-text-color)}
+.aq-steps {display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:6px} .aq-steps i {height:4px;border-radius:2px;background:color-mix(in oklab,var(--nw-line) 70%,transparent)}
+.nw-details {font-size:var(--nw-fs-small);color:var(--secondary-text-color);border-top:1px solid color-mix(in oklab,var(--nw-line) 60%,transparent);padding-top:10px;margin-top:auto}
+.nw-details summary {cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;font-weight:600} .nw-details summary::-webkit-details-marker {display:none}
+.nw-details summary ha-icon {--mdc-icon-size:16px;display:flex;transition:transform .2s} .nw-details[open] summary ha-icon {transform:rotate(90deg)}
+.nw-details ul {margin:8px 0 0;padding:0;list-style:none;display:grid;gap:6px} .nw-details li {display:flex;justify-content:space-between;font-size:var(--nw-fs-text);color:var(--primary-text-color)}
+.compare {display:grid;gap:16px;container-type:inline-size}
+
 /* Page météo complète */
 .page-grid {display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:22px;align-items:start}
 .phone .page-grid {grid-template-columns:375px minmax(0,1fr)}
@@ -184,7 +246,7 @@ Toutes les pièces viennent de la <b>charte</b> en bas de page, tirée du bandea
   <label>Météo<select id="condition"><option value="partlycloudy">Éclaircies</option><option value="sunny">Soleil</option><option value="cloudy">Ciel couvert</option><option value="rainy">Pluie</option><option value="pouring">Fortes pluies</option><option value="lightning-rainy">Orage et pluie</option><option value="snowy">Neige</option><option value="fog">Brouillard</option><option value="windy">Vent</option><option value="clear-night">Nuit claire</option></select></label>
   <label>Moment<select id="phase"><option value="day">Journée</option><option value="twilight">Crépuscule</option><option value="night">Nuit</option></select></label>
   <label>Vigilance<select id="vigilance"><option value="">Aucune</option><option>Jaune</option><option>Orange</option><option>Rouge</option></select></label>
-  <label>Prévisions dépliées<select id="variant"><option value="hours">A · les heures</option><option value="days">B · les jours</option><option value="both">C · heures et jours</option></select></label>
+  <label>Prévisions dépliées<select id="variant"><option value="both">C · heures et jours (retenu)</option><option value="hours">A · les heures</option><option value="days">B · les jours</option></select></label>
   <label>Couleurs<select id="palette"><option value="aube">Aube (retenue)</option><option value="brume">Brume</option><option value="actuelle">Actuelle</option></select></label>
   <label>Thème<select id="theme"><option value="light">Clair</option><option value="dark">Sombre</option></select></label>
   <label>Écran<select id="screen"><option value="desktop">Ordinateur</option><option value="phone">Téléphone</option></select></label>
@@ -229,10 +291,17 @@ Toutes les pièces viennent de la <b>charte</b> en bas de page, tirée du bandea
   </aside>
 </div>
 
-<h2>3 · La charte</h2>
+<h2>3 · Prévisions, air et pollens, refaits</h2>
+<p class="lead">Proposition pour la carte complète, à comparer avec la carte actuelle juste au-dessus. Même charte partout : cadre, en-tête avec icône teintée, pastille de source, légende centrée, six tailles de texte. Plus de « Pluie dans… » : le brief le dit déjà.</p>
+<div class="compare">
+  <div class="nw-panels" id="newForecasts"></div>
+  <div class="nw-panels nw-panels--two" id="newAir"></div>
+</div>
+
+<h2>4 · La charte</h2>
 <p class="lead">Les pièces de base de toute la carte, avec leur nom. Modifier un réglage (par exemple le contour <code>--nw-line</code>) le change partout : tuile, tuile dépliée et carte complète. Les valeurs sont celles du bandeau actuel.</p>
 <div class="specimens" id="specimens"></div>
-<h2>4 · Ce que la charte unifie</h2>
+<h2>5 · Ce que la charte unifie</h2>
 <p class="lead">Écarts relevés dans le code actuel, que la refonte ramène à un seul réglage chacun.</p>
 <div class="fixes">
   <div class="fix"><b>Étiquettes en petites capitales</b><s>5 réglages différents (9 ou 10 px, espacement .5 / .6 / .8 px / .12 em)</s><br>→ une seule : <code>--nw-label</code></div>
@@ -262,7 +331,9 @@ const LABELS = { sunny: ['Ensoleillé', 'mdi:weather-sunny'], 'clear-night': ['N
   cloudy: ['Ciel couvert', 'mdi:weather-cloudy'], rainy: ['Pluie', 'mdi:weather-rainy'], pouring: ['Fortes pluies', 'mdi:weather-pouring'],
   'lightning-rainy': ['Orage et pluie', 'mdi:weather-lightning-rainy'], snowy: ['Neige', 'mdi:weather-snowy'], fog: ['Brouillard', 'mdi:weather-fog'], windy: ['Venteux', 'mdi:weather-windy'] };
 const nf = (v, d = 1) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: d }).format(v);
-const state = { open: false, variant: 'hours', tab: 'hours', index: 0 };
+// La tuile se souvient d'être dépliée, sur cet appareil (comme le fera la carte).
+const remembered = (() => { try { return localStorage.getItem('niak-maquette-open') === '1'; } catch { return false; } })();
+const state = { open: remembered, variant: 'both', tab: 'hours', index: 0 };
 
 /** Ce que la carte dirait pour ce scénario : alerte, bulles du brief, bulletin. */
 function story(s) {
@@ -313,6 +384,67 @@ function forecastBlock(f) {
   return `<div class="section-title"><span class="nw-label">Prévisions</span><span class="seg"><button data-tab="hours" aria-pressed="${state.tab === 'hours'}">Heures</button><button data-tab="days" aria-pressed="${state.tab === 'days'}">Jours</button></span></div>${state.tab === 'hours' ? hours : days}`;
 }
 
+/* ───────────── Cadres refaits ───────────── */
+const head = (icon, color, title, source) => `<header class="nw-panel-head"><span class="nw-panel-icon" style="--c:var(--nw-${color})"><ha-icon icon="${icon}"></ha-icon></span><h3>${title}</h3><span class="nw-badge">${source}</span></header>`;
+/** Couleur d'une température : du froid (5 °C) à la chaleur (30 °C), dans la palette. */
+const tempColor = t => `color-mix(in oklab,var(--nw-heat) ${Math.round(Math.min(100, Math.max(0, (t - 5) / 25 * 100)))}%,var(--nw-cold))`;
+const arrow = deg => `<svg viewBox="0 0 10 10" style="transform:rotate(${deg + 180}deg)"><path d="M5 0 9 10 5 7.5 1 10Z"/></svg>`;
+function newForecasts(f) {
+  const hours = f.hourly.slice(0, 18), temps = hours.map(h => h.temperature), lo = Math.min(...temps) - 1.5, hi = Math.max(...temps) + 1.5;
+  const X = i => i / (hours.length - 1) * 100, Y = t => (1 - (t - lo) / (hi - lo)) * 78 + 8;   // en % de la hauteur, marge pour les pastilles
+  const pts = hours.map((h, i) => [X(i), Y(h.temperature)]);
+  const path = pts.map(([x, y], i) => i ? `C${pts[i - 1][0] + (x - pts[i - 1][0]) / 2} ${pts[i - 1][1]} ${pts[i - 1][0] + (x - pts[i - 1][0]) / 2} ${y} ${x} ${y}` : `M${x} ${y}`).join(' ');
+  const iMax = temps.indexOf(Math.max(...temps)), iMin = temps.indexOf(Math.min(...temps));
+  const rainMax = Math.max(2, ...hours.map(h => h.precipitation));
+  const nights = [], night = h => { const hr = new Date(h.datetime).getHours(); return hr >= 20 || hr < 7; };
+  hours.forEach((h, i) => { if (night(h) && (i === 0 || !night(hours[i - 1]))) nights.push([i, i]); if (night(h)) nights.at(-1)[1] = i; });
+  const midnight = hours.findIndex(h => new Date(h.datetime).getHours() === 0);
+  const ticks = [1, 4, 7, 10, 13, 16].map(i => [i, hours[Math.min(i, hours.length - 1)]]);
+  const chart = `<section class="nw-panel">${head('mdi:chart-bell-curve-cumulative', 'wind', '18 prochaines heures', 'Météo-France')}
+    <div class="fc">
+      <div class="fc-marks"><span style="left:0">Maintenant</span>${midnight > 0 ? `<span style="left:${X(midnight)}%">Demain</span>` : ''}</div>
+      <div class="fc-plot">
+        ${nights.map(([a, b]) => `<i class="fc-night" style="left:${X(a)}%;width:${X(b) - X(a)}%"></i>`).join('')}
+        ${midnight > 0 ? `<i class="fc-divider" style="left:${X(midnight)}%"></i>` : ''}
+        ${hours.map((h, i) => h.precipitation ? `<i class="fc-bar" title="${nf(h.precipitation)} mm" style="left:calc(${X(i)}% - 5px);width:10px;height:${Math.max(6, h.precipitation / rainMax * 42)}%"></i>` : '').join('')}
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none"><defs>
+          <linearGradient id="fcStroke" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--nw-heat)"/><stop offset="1" stop-color="var(--nw-cold)"/></linearGradient>
+          <linearGradient id="fcArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--nw-heat)" stop-opacity=".28"/><stop offset="1" stop-color="var(--nw-cold)" stop-opacity="0"/></linearGradient></defs>
+          <path d="${path} L100 100 L0 100Z" fill="url(#fcArea)"/><path class="fc-line" d="${path}" stroke="url(#fcStroke)"/></svg>
+        <i class="fc-dot" style="left:${pts[0][0]}%;top:${pts[0][1]}%;--c:${tempColor(temps[0])}"></i>
+        <span class="fc-pill" style="left:${Math.min(94, Math.max(6, X(iMax)))}%;top:${Y(temps[iMax])}%">${Math.round(temps[iMax])}°</span>
+        <span class="fc-pill low" style="left:${Math.min(94, Math.max(6, X(iMin)))}%;top:${Y(temps[iMin])}%">${Math.round(temps[iMin])}°</span>
+      </div>
+      <div class="fc-hours">${ticks.map(([i, h]) => `<div style="left:${X(i)}%"><span class="nw-label">${new Date(h.datetime).getHours()} h</span><ha-icon icon="${ICON[h.condition] ?? 'mdi:weather-cloudy'}"></ha-icon><b>${Math.round(h.temperature)}°</b><span class="fc-wind">${arrow(h.wind_bearing ?? 200)}${Math.round(h.wind_speed)}</span></div>`).join('')}</div>
+    </div>
+    <footer class="nw-legend"><span><i style="--c:linear-gradient(90deg,var(--nw-cold),var(--nw-heat));background:linear-gradient(90deg,var(--nw-cold),var(--nw-heat))"></i>Température</span><span><i class="sq" style="--c:var(--nw-rain)"></i>Pluie</span><span><i class="sq" style="--c:color-mix(in oklab,var(--nw-wind) 30%,transparent)"></i>Nuit</span><span>${arrow(200).replace('<svg', '<svg style="width:10px;height:10px;fill:color-mix(in oklab,var(--nw-wind) 70%,var(--primary-text-color))"')} Vent km/h</span></footer>
+  </section>`;
+  const days = f.daily.slice(0, 7), wLo = Math.min(...days.map(d => d.templow)), wHi = Math.max(...days.map(d => d.temperature));
+  const P = t => (t - wLo) / (wHi - wLo) * 100;
+  const week = `<section class="nw-panel">${head('mdi:calendar-week', 'wind', '7 prochains jours', 'Météo-France')}
+    <div class="wk"><span class="head"></span><span class="head"></span><span class="head" style="text-align:right">Min</span><span class="head"></span><span class="head">Max</span><span class="head" style="text-align:right">Pluie</span><span class="head" style="text-align:right">Vent</span>
+    ${days.map((d, i) => `${i ? '<i class="rule"></i>' : ''}<span class="day${i ? '' : ' today'}">${i ? DAYS[new Date(d.datetime).getDay()].replace('.', '') : 'Auj.'}</span><ha-icon icon="${ICON[d.condition] ?? 'mdi:weather-cloudy'}"></ha-icon>
+      <span class="lo">${d.templow}°</span><span class="track"><i class="fill" style="left:${P(d.templow)}%;width:${P(d.temperature) - P(d.templow)}%;background:linear-gradient(90deg,${tempColor(d.templow)},${tempColor(d.temperature)})"></i></span>
+      <span class="hi">${d.temperature}°</span><span class="rain">${d.precipitation ? `${nf(d.precipitation)} mm` : ''}</span><span class="wind">${d.wind_speed ?? ''}</span>`).join('')}</div>
+  </section>`;
+  $('newForecasts').innerHTML = chart + week;
+}
+/** Disque Atmo : six crans, remplis jusqu'au niveau, dans les couleurs de la charte. */
+const AQ = ['calm', 'calm', 'level1', 'level2', 'level3', 'pressure'];
+function aqDisc(level) {
+  const seg = (i) => { const a0 = (i * 60 - 90 + 2) * Math.PI / 180, a1 = ((i + 1) * 60 - 90 - 2) * Math.PI / 180, r = 32, c = 38;
+    return `<path d="M${c + r * Math.cos(a0)} ${c + r * Math.sin(a0)} A${r} ${r} 0 0 1 ${c + r * Math.cos(a1)} ${c + r * Math.sin(a1)}" fill="none" stroke-width="9" stroke-linecap="round"
+      stroke="${i < level ? `var(--nw-${AQ[i]})` : 'color-mix(in oklab,var(--primary-text-color) 10%,transparent)'}"/>`; };
+  return `<svg viewBox="0 0 76 76" aria-hidden="true">${[0, 1, 2, 3, 4, 5].map(seg).join('')}<text x="38" y="44" text-anchor="middle" font-size="17" font-weight="700" fill="currentColor">${level}</text></svg>`;
+}
+function newAir() {
+  const panel = (icon, title, level, word, sub, items) => `<section class="nw-panel">${head(icon, 'calm', title, 'Atmo France')}<p class="nw-sub">${sub}</p>
+    <div class="aq">${aqDisc(level)}<div class="txt"><span class="nw-label">Indice du jour</span><strong>${word}</strong><small>Niveau ${level} sur 6</small></div></div>
+    <details class="nw-details"><summary><ha-icon icon="mdi:chevron-right"></ha-icon>${title === 'Air extérieur' ? 'Détail des polluants' : 'Détail des pollens'}</summary><ul>${items.map(([n, v]) => `<li><span>${n}</span><b>${v}</b></li>`).join('')}</ul></details></section>`;
+  $('newAir').innerHTML = panel('mdi:air-filter', 'Air extérieur', 2, 'Moyen', 'Aujourd’hui · Gardanne', [['Particules fines PM2,5', 'Moyen'], ['Particules PM10', 'Bon'], ['Ozone', 'Moyen'], ['Dioxyde d’azote', 'Bon']])
+    + panel('mdi:flower-pollen-outline', 'Pollens', 1, 'Très faible', 'Aujourd’hui · Gardanne', [['Graminées', 'Très faible'], ['Ambroisie', 'Faible'], ['Olivier', 'Très faible']]);
+}
+
 let scenario, ticker;
 function render() {
   const s = scenario, { w, alert, points } = story(s), f = demoForecasts(w.temp, w.rain), [label, icon] = LABELS[w.condition] ?? LABELS.cloudy;
@@ -358,6 +490,7 @@ function bindCard(card) {
 }
 function toggle() {
   state.open = !state.open;
+  try { localStorage.setItem('niak-maquette-open', state.open ? '1' : '0'); } catch {}
   const card = $('slot').querySelector('.card'), now = card.querySelector('.nw-now');
   card.classList.toggle('open', state.open); card.setAttribute('aria-expanded', state.open);
   if (state.open && !card.querySelector('.nw-badge')) now.insertAdjacentHTML('beforeend', '<span class="nw-badge">Station locale</span>');
@@ -458,6 +591,9 @@ function specimens() {
     spec('Bulle du brief', bubble({ label: 'Maintenant', text: 'Il pleut : 1,4 mm/h', icon: 'mdi:weather-rainy' }), ['--nw-glass-strong', '--nw-radius-bubble', '--nw-text'], 'Icône sur deux lignes, étiquette au-dessus du texte.'),
     spec('Bulle d’alerte', [1, 2, 3].map(l => bubble({ level: l, label: ['Vigilance jaune', 'Vigilance orange', 'Vigilance rouge'][l - 1], text: 'Orages', icon: 'mdi:alert-outline' }, true)).join(''), ['--nw-level1', '--nw-level2', '--nw-level3'], 'La même bulle, teintée par le niveau, avec son halo.'),
     spec('Tuile de moment', tile('Demain matin', 'mdi:weather-pouring', '14–20 °C', '<small>fortes pluies</small><span class="nw-rain">8,6 mm</span>'), ['--nw-glass', '--nw-pad-tile', '--nw-value'], 'Bulletin, heures et jours : la même tuile.'),
+    spec('Échelle de texte', `<div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--card-background-color);padding:10px 14px;border-radius:12px">
+      <span class="nw-label">Étiquette 10</span><span style="font-size:var(--nw-fs-small)">Secondaire 12</span><span style="font-size:var(--nw-fs-text)">Texte 13</span>
+      <b style="font-size:var(--nw-fs-title)">Titre 17</b><b style="font-size:var(--nw-fs-value);line-height:1">30</b><b style="font-size:var(--nw-fs-temp);line-height:1">42</b></div>`, ['--nw-fs-label', '--nw-fs-small', '--nw-fs-text', '--nw-fs-title', '--nw-fs-value', '--nw-fs-temp'], 'Six tailles pour toute la carte ; « Détail des polluants » passe en secondaire 12.'),
     spec('Étiquette', '<span class="nw-label">En ce moment</span><span class="nw-label">Bulletin du jour</span>', ['--nw-label', '--nw-label-spacing'], 'Petites capitales, une seule taille partout.'),
     spec('Contour et verre', '<span class="swatch nw-glass"></span><span class="swatch" style="background:var(--nw-glass-strong);border:1px solid var(--nw-line)"></span>', ['--nw-line', '--nw-glass', '--nw-blur'], 'Le contour de toutes les bulles et tuiles.'),
     spec('Pastille de source', '<span class="nw-badge">Station locale</span><span class="nw-badge">Météo-France</span>', ['--nw-radius-pill', '--nw-line'], 'D’où vient la valeur.'),
@@ -478,6 +614,7 @@ function refresh() {
   if ($('palette').value !== 'aube') document.documentElement.classList.add(`pal-${$('palette').value}`);
   document.body.classList.toggle('phone', $('screen').value === 'phone');
   render(); startTicker(); fullCard($('pageCard'));
+  const w = demoWeather(scenario); newForecasts(demoForecasts(w.temp, w.rain)); newAir();
 }
 for (const id of ['condition', 'phase', 'vigilance', 'variant', 'palette', 'theme', 'screen', 'foldToday', 'foldPredictions']) $(id).addEventListener('change', refresh);
 specimens(); refresh();
