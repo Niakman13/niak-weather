@@ -53,7 +53,7 @@ function week(days: DayForecast[], source: string, entity: string): TemplateResu
   const lows = days.flatMap(d => d.low ?? d.high ?? []), highs = days.flatMap(d => d.high ?? d.low ?? []);
   const lo = Math.min(...lows), hi = Math.max(...highs, lo + 1), P = (t: number) => (t - lo) / (hi - lo) * 100;
   return html`<section class="nw-panel" aria-label="7 prochains jours">${panelHead('mdi:calendar-week', 'wind', `${days.length} prochains jours`, source)}
-    <div class="wk" data-entity=${entity} role="table" aria-label="Températures minimales et maximales en °C, pluie en mm, vent maximal en km/h">
+    <div class="wk" data-entity=${entity} role="group" aria-label="Températures minimales et maximales en °C, pluie en mm, vent maximal en km/h">
       <span></span><span></span>${label('Min')}<span></span>${label('Max')}${label('Pluie')}${label('Vent')}
       ${days.map((d, i) => html`${i ? html`<i class="rule"></i>` : nothing}<span class=${`day${d.today ? ' today' : ''}`}>${d.label}</span>
         <ha-icon icon=${d.icon} title=${d.condition}></ha-icon>
@@ -100,7 +100,7 @@ export const forecastStyles = css`
   .wk > .nw-label { padding-bottom:4px; }
   .wk > .nw-label:nth-child(3), .wk > .nw-label:nth-child(6), .wk > .nw-label:nth-child(7) { text-align:right; }
   .wk .day { font-size:var(--nw-fs-text); font-weight:700; padding:7px 0; }
-  .wk .day.today { color:color-mix(in oklab, var(--nw-wind) 60%, var(--nw-fg)); }
+  .wk .day.today { color:color-mix(in oklab, var(--nw-wind) var(--nw-ink), var(--nw-fg)); }
   .wk ha-icon { --mdc-icon-size:20px; color:var(--nw-fg2); }
   .wk .lo, .wk .hi { font-size:var(--nw-fs-text); font-variant-numeric:tabular-nums; }
   .wk .lo { color:var(--nw-fg2); text-align:right; } .wk .hi { font-weight:700; }

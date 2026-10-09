@@ -49,8 +49,8 @@ export const tokens = css`
     --nw-level1: var(--niak-level1-color, oklch(.88 .1 96));
     --nw-level2: var(--niak-level2-color, oklch(.81 .105 64));
     --nw-level3: var(--niak-level3-color, oklch(.74 .115 18));
-    /* How much of the meaning colour goes into a coloured text. */
-    --nw-ink: 52%;
+    /* How much of the meaning colour goes into a coloured text: 34 % keeps even the light yellow readable (contrast 4.5:1) on its tinted pill. */
+    --nw-ink: 34%;
 
     /* Motion */
     --nw-ease: cubic-bezier(.2, .8, .2, 1);
@@ -100,7 +100,7 @@ export const pieces = css`
   .nw-now .cond { display:flex; align-items:center; gap:6px; font-weight:650; font-size:var(--nw-fs-text); }
   .nw-now .cond ha-icon { --mdc-icon-size:17px; }
   .nw-now .temp { font-size:var(--nw-fs-value); font-weight:700; letter-spacing:-1px; line-height:1.05; white-space:nowrap; }
-  .nw-now .temp small { font-size:.45em; font-weight:400; vertical-align:super; margin-left:2px; letter-spacing:0; }
+  .nw-now .temp small { font-size:var(--nw-fs-text); font-weight:400; vertical-align:super; margin-left:2px; letter-spacing:0; }
   /* Storm and downpour clouds stay dark whatever the theme: the text on them turns white, the pills keep the theme. */
   .dark-sky .nw-now { color:#fff; text-shadow:0 1px 5px #0b1a2b99; }
   .dark-sky .nw-now .nw-label { color:rgba(255,255,255,.88); }

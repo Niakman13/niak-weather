@@ -8,15 +8,16 @@ import { cleanConfig } from '../config';
 import {modelDevices,selectedStationModel,stationGroups,stationModelOptions,stationReport} from './station-profiles';
 import type { AtmoField, AtmoMetric } from '../types';
 const categoryOptions:Record<SourceCategory,string[]>={
-  general:['format','location','smart_brief','weather_animations','weather_animation_quality','weather_path','show_synthesis','show_bulletin','show_today','show_predictions'],
+  general:['format','location','smart_brief','weather_animations','weather_animation_quality','weather_path','show_synthesis','show_bulletin','show_today','show_predictions','collapse_today','collapse_predictions'],
   weather:['forecast_source'],station:['station_device_id','station_history','station_model'],
   atmo:['atmo_area','show_atmo_details','show_atmo_tomorrow'],
 };
-const defaults:Partial<WeatherCardConfig>={format:'full',show_synthesis:true,show_bulletin:true,show_today:true,show_predictions:true,smart_brief:true,weather_animations:true,weather_animation_quality:'standard',show_atmo_details:true,show_atmo_tomorrow:true,station_history:true};
+const defaults:Partial<WeatherCardConfig>={format:'full',show_synthesis:true,show_bulletin:true,show_today:true,show_predictions:true,collapse_today:false,collapse_predictions:false,smart_brief:true,weather_animations:true,weather_animation_quality:'standard',show_atmo_details:true,show_atmo_tomorrow:true,station_history:true};
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   weather_entity: 'Source météo', location: 'Lieu', format: 'Format de la carte', forecast_source: 'Fournisseur des prévisions',
   smart_brief: 'Activer le brief intelligent', vigilance_entity: 'Vigilance officielle Météo-France (département)',
   show_synthesis:'Afficher la section Synthèse / météo actuelle',show_bulletin:'Afficher le bulletin du jour (prévisions par période)',show_today:'Afficher la section Aujourd’hui',show_predictions:'Afficher la section Prévisions',
+  collapse_today:'Section Aujourd’hui repliée au départ',collapse_predictions:'Section Prévisions repliée au départ',
   weather_animations: 'Animer le ciel de la météo actuelle', weather_animation_quality: 'Qualité des animations météo',
   temperature_entity: 'Température extérieure', humidity_entity: 'Humidité extérieure',
   wind_speed_entity: 'Vitesse du vent (moyenne si disponible)', wind_gust_entity: 'Rafales', wind_bearing_entity: 'Direction du vent',
@@ -27,7 +28,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   pressure_entity: 'Pression (relative recommandée)', solar_radiation_entity: 'Rayonnement solaire', dew_point_entity: 'Point de rosée de la station',
   uv_index_entity: 'Indice UV', illuminance_entity: 'Luminosité', max_daily_gust_entity: 'Rafale maximale du jour', temperature_trend_entity: 'Tendance température (°C/h)',
   sun_entity: 'Soleil (lever, coucher, élévation)', season_entity: 'Saison (intégration Saison, facultatif : sinon d’après la date)', sun_elevation_entity: 'Élévation solaire (capteur complémentaire)',
-  station_device_id: 'Votre station dans Home Assistant', weather_path: 'Page météo (appui long)',
+  station_device_id: 'Votre station dans Home Assistant', weather_path: 'Appui long : ouvrir cette page plutôt que la carte complète (ex. /meteo, facultatif)',
   atmo_area: 'Commune / zone Atmo France', pollen_source: 'Source des pollens', show_atmo_details: 'Afficher les polluants, espèces et concentrations', show_atmo_tomorrow: 'Afficher les prévisions Atmo de demain',
 };
 for (const metric of Object.keys(atmoMetrics) as AtmoMetric[]) for (const next of [false, true])
@@ -52,8 +53,8 @@ export class NiakWeatherCardEditor extends LitElement {
   private stationDeviceData:Record<string,unknown>={};
   private catalog = '';
   private registryRequest = 0;
-  private readonly computeLabel = (item: { name: keyof WeatherCardConfig }) => item.name==='weather_path'&&this.small ? 'Page ouverte d’un appui (ex. /meteo)'
-    : item.name==='show_bulletin'&&this.small ? 'Afficher les prévisions du jour (matin, après-midi, soir, nuit)' : labels[item.name] ?? item.name;
+  private readonly computeLabel = (item: { name: keyof WeatherCardConfig }) =>
+    item.name==='show_bulletin'&&this.small ? 'Afficher le bulletin du jour une fois dépliée (matin, après-midi, soir, nuit)' : labels[item.name] ?? item.name;
   private get small():boolean { return !!this.config?.format&&this.config.format!=='full'; }
   public setConfig(config: WeatherCardConfig): void {
     const next=cleanConfig(config);
@@ -178,15 +179,13 @@ export class NiakWeatherCardEditor extends LitElement {
       general: ()=>{
         const format=this.config!.format??'full',animation=[{name:'weather_animations',selector:{boolean:{}}},
           {name:'weather_animation_quality',selector:{select:{options:[{value:'standard',label:'Standard'},{value:'low',label:'Allégée (tablette)'}]}}}];
-        const choice={name:'format',selector:{select:{mode:'list',options:[{value:'full',label:'Complète : Synthèse, Aujourd’hui et Prévisions'},
-          {value:'intermediate',label:'Intermédiaire : la Synthèse seule, pour une page d’accueil'},{value:'tile',label:'Tuile : une bande compacte, pleine ou demi-largeur'}]}}};
-        // The small formats show the brief and open the full card's page: their own options, the same sources.
-        if(format==='tile')return [choice,{name:'location',selector:{text:{}}},{name:'weather_path',selector:{text:{}}},...animation];
-        if(format==='intermediate')return [choice,{name:'location',selector:{text:{}}},{name:'weather_path',selector:{text:{}}},{name:'show_bulletin',selector:{boolean:{}}},...animation];
+        const choice={name:'format',selector:{select:{mode:'list',options:[{value:'full',label:'Complète : la page météo (Synthèse, Aujourd’hui, Prévisions)'},
+          {value:'tile',label:'Tuile : une bande qui se déplie d’un appui, pleine ou demi-largeur'},{value:'intermediate',label:'Tuile dépliée : la même tuile, ouverte au départ'}]}}};
+        // The tile unfolds on a tap and opens the full card on a long press: its own options, the same sources.
+        if(format!=='full')return [choice,{name:'location',selector:{text:{}}},{name:'show_bulletin',selector:{boolean:{}}},...animation,{name:'weather_path',selector:{text:{}}}];
         return [choice,{ name: 'location', selector: { text: {} } },
-      ...['show_synthesis','show_bulletin','show_today','show_predictions'].map(name=>({name,selector:{boolean:{}}})),
-      {name:'smart_brief',selector:{boolean:{}}},...animation,
-      {name:'weather_path',selector:{text:{}}}];},
+      ...['show_synthesis','show_bulletin','show_today','show_predictions','collapse_today','collapse_predictions'].map(name=>({name,selector:{boolean:{}}})),
+      {name:'smart_brief',selector:{boolean:{}}},...animation];},
       weather: ()=>{
         const vigilanceIds=vigilanceCandidates(this.hass!,registry);
         if(this.config!.vigilance_entity&&!vigilanceIds.includes(this.config!.vigilance_entity))vigilanceIds.push(this.config!.vigilance_entity);
@@ -219,7 +218,7 @@ export class NiakWeatherCardEditor extends LitElement {
   protected render() {
     if (!this.config || !this.hass) return html``;
     const sections: Array<{key:SourceCategory;title:string;description:string}> = [
-      {key:'general',title:'Général',description:this.small?'La tuile et l’intermédiaire résument la météo pour une page d’accueil. Un appui ouvre la page où vous avez placé la carte complète.':'Choisissez le format, puis personnalisez les sections, la synthèse et les animations.'},
+      {key:'general',title:'Général',description:this.small?'La tuile résume la météo sur une page d’accueil. Un appui la déplie avec le bulletin et les prévisions ; un appui long ouvre la carte complète.':'Choisissez le format, puis les sections affichées, leur état de départ, la synthèse et les animations.'},
       {key:'weather',title:'Sources météo, soleil et vigilance',description:'Indispensable : fournit la météo actuelle et les prévisions, idéalement avec Météo-France. Le soleil affine le ressenti et la vigilance ajoute les alertes officielles.'},
       {key:'station',title:'Capteurs locaux / station météo locale',description:'Conseillé : ajoute les mesures prises chez vous. Choisissez le modèle de votre station, puis vérifiez les capteurs préremplis. Avec l’humidité extérieure, la carte calcule elle-même l’humidex, le point de rosée et le point de gelée.'},
       {key:'atmo',title:'Sources Atmo France',description:'Conseillé : ajoute la qualité de l’air et les pollens de votre commune, aujourd’hui et demain. Ces informations enrichissent la synthèse.'},

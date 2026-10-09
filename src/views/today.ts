@@ -59,7 +59,7 @@ function windPanel(w: WindView): TemplateResult {
       ${w.status ? chip({ theme: 'wind', icon: 'mdi:weather-windy', label: w.status }) : nothing}
       ${w.bearing === undefined ? nothing : html`<svg class="compass" viewBox="0 0 72 72" role="img" aria-label=${w.compass} data-entity=${entity(w.bearingEntity)}>
         <circle cx="36" cy="36" r="30" fill="color-mix(in oklab,var(--nw-wind) 10%,transparent)" stroke="var(--nw-line)"/>
-        <text x="36" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="var(--nw-fg2)">N</text>
+        <text x="36" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="var(--nw-fg2)">N</text>
         <path d="M36 16 44 46 36 40 28 46Z" fill="color-mix(in oklab,var(--nw-wind) 75%,var(--nw-fg))" transform=${`rotate(${(w.bearing + 180) % 360} 36 36)`}/></svg>`}</div>
     <div class="mini"><div class="mini-top">6 dernières heures · km/h</div>
       ${w.mean.length || w.gust.length ? html`<div class="mini-plot"><svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label="Vent des 6 dernières heures, moyennes et rafales par dix minutes">

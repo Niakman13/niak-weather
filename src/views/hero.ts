@@ -58,6 +58,7 @@ export const heroStyles = css`
   .nw-hero .headline { margin:0; font-size:var(--nw-fs-text); font-weight:600; line-height:1.45; max-width:56ch; }
   .nw-hero > .nw-now { grid-area:now; align-self:start; gap:4px; }
   .nw-hero > .nw-now .temp { font-size:var(--nw-fs-temp); }
+  .nw-hero > .nw-now .temp small { font-size:var(--nw-fs-title); }
   .nw-hero > .moments { grid-area:tiles; margin-top:6px; gap:12px; }
   .brief-group { margin-top:10px; }
   .brief-group ul { list-style:none; margin:4px 0 0; padding:0; display:grid; gap:4px; }
