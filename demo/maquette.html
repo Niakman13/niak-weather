@@ -549,12 +549,17 @@ function aqDisc(level) {
       stroke="${i < level ? `var(--nw-${AQ[i]})` : 'color-mix(in oklab,var(--primary-text-color) 10%,transparent)'}"/>`; };
   return `<svg viewBox="0 0 76 76" aria-hidden="true">${[0, 1, 2, 3, 4, 5].map(seg).join('')}<text x="38" y="44" text-anchor="middle" font-size="17" font-weight="700" fill="currentColor">${level}</text></svg>`;
 }
-function newAir() {
-  const panel = (icon, title, level, word, sub, items) => `<section class="nw-panel">${head(icon, 'calm', title, 'Atmo France')}<p class="nw-sub">${sub}</p>
-    <div class="aq">${aqDisc(level)}<div class="txt"><span class="nw-label">Indice du jour</span><strong>${word}</strong><small>Niveau ${level} sur 6</small></div></div>
+/** Air et pollens, pour aujourd'hui (section Aujourd'hui) ou demain (section Prévisions) : le même cadre. */
+function newAir(day = 'today') {
+  const tomorrow = day === 'tomorrow', when = tomorrow ? 'Demain' : 'Aujourd’hui';
+  const panel = (icon, title, level, word, items) => `<section class="nw-panel">${head(icon, 'calm', title, 'Atmo France')}<p class="nw-sub">${when} · Gardanne</p>
+    <div class="aq">${aqDisc(level)}<div class="txt"><span class="nw-label">${tomorrow ? 'Indice de demain' : 'Indice du jour'}</span><strong>${word}</strong><small>Niveau ${level} sur 6</small></div></div>
     <details class="nw-details"><summary><ha-icon icon="mdi:chevron-right"></ha-icon>${title === 'Air extérieur' ? 'Détail des polluants' : 'Détail des pollens'}</summary><ul>${items.map(([n, v]) => `<li><span>${n}</span><b>${v}</b></li>`).join('')}</ul></details></section>`;
-  return panel('mdi:air-filter', 'Air extérieur', 2, 'Moyen', 'Aujourd’hui · Gardanne', [['Particules fines PM2,5', 'Moyen'], ['Particules PM10', 'Bon'], ['Ozone', 'Moyen'], ['Dioxyde d’azote', 'Bon']])
-    + panel('mdi:flower-pollen-outline', 'Pollens', 1, 'Très faible', 'Aujourd’hui · Gardanne', [['Graminées', 'Très faible'], ['Ambroisie', 'Faible'], ['Olivier', 'Très faible']]);
+  return tomorrow
+    ? panel('mdi:air-filter', 'Air extérieur', 2, 'Moyen', [['Particules fines PM2,5', 'Moyen'], ['Particules PM10', 'Moyen'], ['Ozone', 'Moyen'], ['Dioxyde d’azote', 'Bon']])
+      + panel('mdi:flower-pollen-outline', 'Pollens', 2, 'Faible', [['Graminées', 'Faible'], ['Ambroisie', 'Faible'], ['Olivier', 'Très faible']])
+    : panel('mdi:air-filter', 'Air extérieur', 2, 'Moyen', [['Particules fines PM2,5', 'Moyen'], ['Particules PM10', 'Bon'], ['Ozone', 'Moyen'], ['Dioxyde d’azote', 'Bon']])
+      + panel('mdi:flower-pollen-outline', 'Pollens', 1, 'Très faible', [['Graminées', 'Très faible'], ['Ambroisie', 'Faible'], ['Olivier', 'Très faible']]);
 }
 
 /** Valeur posée sur une courbe : au-dessus du point, sauf s'il touche le haut du graphique (jamais sur l'axe). */
@@ -656,7 +661,7 @@ function proposedFull(container) {
   container.replaceChildren();
   const box = document.createElement('div'); box.className = 'full-mock'; container.append(box);
   box.insertAdjacentHTML('beforeend', heroHTML(w, f) + fmSection('today', 'Aujourd’hui', 'Mesures et ressenti', `${comfortPanel(w)}${measurePanels(w)}<div class="nw-panels nw-panels--two">${newAir()}</div>`)
-    + fmSection('predictions', 'Prévisions', 'Météo-France', `<div class="nw-panels">${newForecasts(f)}</div>`));
+    + fmSection('predictions', 'Prévisions', 'Météo-France', `<div class="nw-panels">${newForecasts(f)}</div><div class="nw-panels nw-panels--two">${newAir('tomorrow')}</div>`));
   for (const section of box.querySelectorAll('.fm-section')) {
     const headEl = section.querySelector('.fm-head'), set = open => { section.classList.toggle('folded', !open); headEl.setAttribute('aria-expanded', open); };
     set(prefs[section.dataset.id] !== 'closed');
