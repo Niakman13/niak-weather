@@ -13,7 +13,7 @@ La version stable reste la v1.20.3 : rien ne change tant que vous ne choisissez 
 ## 1. Installer l’intégration
 
 1. Dans HACS, menu ⋮ → **Dépôts personnalisés** : ajoutez `https://github.com/Niakman13/niak-weather-integration`, type **Intégration**.
-2. Ouvrez **Niak Weather** (intégration) et téléchargez la version **2.0.0b1**.
+2. Ouvrez **Niak Weather** (intégration) et téléchargez la dernière version bêta (**2.0.0b2**).
 3. Redémarrez Home Assistant.
 
 ## 2. La configurer
