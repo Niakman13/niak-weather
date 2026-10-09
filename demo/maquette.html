@@ -16,15 +16,15 @@
   --nw-radius-bubble: 14px;
   --nw-radius-pill: 999px;
   /* Verre : léger pour les tuiles, plus blanc pour la bulle du brief */
-  --nw-glass: linear-gradient(rgba(128,128,128,.07), rgba(128,128,128,.07)), color-mix(in srgb, var(--card-background-color) 38%, transparent);
-  --nw-glass-strong: linear-gradient(rgba(255,255,255,.16), rgba(255,255,255,.16)), color-mix(in srgb, var(--card-background-color) 50%, transparent);
-  --nw-blur: blur(3px) saturate(1.15);
+  --nw-glass: color-mix(in srgb, var(--card-background-color) 72%, transparent);
+  --nw-glass-strong: color-mix(in srgb, var(--card-background-color) 84%, transparent);
+  --nw-blur: blur(6px) saturate(1.2);
   /* Espacements */
   --nw-gap: 10px; --nw-pad: 14px 16px; --nw-pad-bubble: 6px 14px 7px 10px; --nw-pad-tile: 11px 13px;
   /* Échelle de texte : 6 tailles pour toute la carte, rien d'autre.
      étiquette 10 (petites capitales) · secondaire 12 · texte 13 · titre 17 · valeur 30 · température 42 */
   --nw-fs-label: 10px; --nw-fs-small: 12px; --nw-fs-text: 13px; --nw-fs-title: 17px; --nw-fs-value: 30px; --nw-fs-temp: 42px;
-  --nw-radius-panel: 16px;
+  --nw-radius-panel: var(--nw-radius-bubble);   /* un seul arrondi pour tuiles, bulles et cadres */
   /* Typographie : 6 tailles seulement */
   --nw-label: 700 10px/13px Roboto, system-ui, sans-serif;  --nw-label-spacing: .6px;
   --nw-text: 500 13px/16px Roboto, system-ui, sans-serif;
@@ -212,6 +212,19 @@ select {font:inherit;font-size:14px;padding:7px 24px 7px 9px;border:1px solid va
 .fm-body {container-type:inline-size}
 
 /* ───────────── Carte complète proposée ───────────── */
+.fm-hero {position:relative;isolation:isolate;overflow:hidden;padding:20px 24px 24px;display:grid;grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"head now" "main now" "tiles tiles";column-gap:24px;row-gap:12px}
+.fm-hero .sky {--k:1}
+.fm-hero .veil {background:linear-gradient(90deg,var(--card-background-color) 0%,color-mix(in srgb,var(--card-background-color) 92%,transparent) 30%,
+  color-mix(in srgb,var(--card-background-color) 45%,transparent) 55%,transparent 78%),linear-gradient(0deg,var(--card-background-color) 0%,transparent 40%)}
+.fm-hero > .fm-head {grid-area:head;cursor:default}
+.hero-main {grid-area:main;display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0}
+.hero-main .headline {font-size:var(--nw-fs-text);font-weight:600;line-height:1.45}
+.fm-hero > .nw-now {grid-area:now;align-self:start;gap:4px}
+.fm-hero > .nw-now .temp {font-size:var(--nw-fs-temp)}
+.fm-hero > .nw-now .cond {font-size:var(--nw-fs-text)}
+.hero-tiles {grid-area:tiles;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:6px}
+@container (max-width:650px) {.fm-hero {grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "now" "main" "tiles"} .fm-hero > .nw-now {align-items:flex-end} .hero-tiles {grid-template-columns:repeat(2,minmax(0,1fr))}}
 .full-mock {border:1px solid var(--divider-color);border-radius:var(--nw-radius-card);background:var(--card-background-color);overflow:hidden;container-type:inline-size}
 .fm-section {padding:20px 24px 24px;border-top:1px solid color-mix(in oklab,var(--nw-line) 70%,transparent)}
 .fm-head {display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
@@ -355,7 +368,7 @@ Toutes les pièces viennent de la <b>charte</b> en bas de page, tirée du bandea
 <p class="lead">Écarts relevés dans le code actuel, que la refonte ramène à un seul réglage chacun.</p>
 <div class="fixes">
   <div class="fix"><b>Étiquettes en petites capitales</b><s>5 réglages différents (9 ou 10 px, espacement .5 / .6 / .8 px / .12 em)</s><br>→ une seule : <code>--nw-label</code></div>
-  <div class="fix"><b>Arrondis</b><s>8 rayons différents (2, 6, 8, 12, 14, 16 px…)</s><br>→ trois : carte (thème HA), bulle 14 px, pastille</div>
+  <div class="fix"><b>Arrondis</b><s>8 rayons différents (2, 6, 8, 12, 14, 16 px…)</s><br>→ deux : 14 px pour toutes les boîtes (tuiles, bulles, cadres) et la pastille ; le contour de la carte suit le thème HA</div>
   <div class="fix"><b>Tailles de texte</b><s>23 tailles différentes</s><br>→ six : étiquette, texte, titre, valeur, température moyenne et grande</div>
   <div class="fix"><b>Couleurs de la pluie et du vent</b><s>recopiées 14 fois dans 4 fichiers</s><br>→ <code>--nw-rain</code> et <code>--nw-wind</code></div>
   <div class="fix"><b>Verre</b><s>trois recettes écrites à la main</s><br>→ deux niveaux nommés : <code>--nw-glass</code> et <code>--nw-glass-strong</code></div>
@@ -549,15 +562,25 @@ function measurePanels(w) {
 }
 const fmSection = (id, title, sub, body) => `<section class="fm-section" data-id="${id}"><header class="fm-head" role="button" tabindex="0"><h2>${title}</h2><span>${sub}</span>
   <button class="fm-fold" type="button" tabindex="-1" aria-hidden="true"><ha-icon icon="mdi:chevron-down"></ha-icon></button></header><div class="fm-body">${body}</div></section>`;
-/** Carte complète proposée : le vrai bandeau animé, puis les sections construites avec la charte. */
+/** Bandeau de la carte complète, avec les pièces de la charte, sur le vrai ciel animé. */
+function heroHTML(w, f) {
+  const { alert, points } = story(scenario), [label, icon] = LABELS[w.condition] ?? LABELS.cloudy, m = moments(f.hourly);
+  const date = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+  const dark = ['lightning-rainy', 'pouring'].includes(w.condition);
+  return `<section class="fm-hero${dark ? ' dark-sky' : ''}"><div class="sky"><niak-weather-sky></niak-weather-sky></div><div class="veil"></div>
+    <header class="fm-head"><h2>Synthèse</h2><span>Gardanne · ${date[0].toUpperCase() + date.slice(1)}</span></header>
+    <div class="hero-main"><span class="nw-label">Bulletin du jour</span><p class="headline">${headline(m)}</p>${alert ? bubble(alert, true) : ''}${points.length ? bubble(points[0]) : ''}</div>
+    <div class="nw-now"><span class="nw-label">En ce moment</span><span class="cond"><ha-icon icon="${icon}"></ha-icon>${label}</span>
+      <span class="temp">${nf(w.temp)}<small>°C</small></span>${chip('cold', 'mdi:arrow-bottom-right', '−0,4 °C/h', '')}<span class="nw-badge">Station locale</span></div>
+    <div class="hero-tiles">${m.map(x => `<div class="nw-tile nw-glass"><span class="nw-label">${x.label}</span><ha-icon icon="${x.icon}"></ha-icon><strong>${x.temps}</strong><small>${x.phrase}</small>${x.rain >= 1 ? `<span class="nw-rain">${nf(x.rain)} mm</span>` : ''}</div>`).join('')}</div>
+  </section>`;
+}
+/** Carte complète proposée : bandeau et sections, tout construit avec la charte. */
 function proposedFull(container) {
   const w = demoWeather(scenario), f = demoForecasts(w.temp, w.rain), prefs = foldPrefs();
   container.replaceChildren();
   const box = document.createElement('div'); box.className = 'full-mock'; container.append(box);
-  const hero = document.createElement('niak-weather-card'); box.append(hero);
-  hero.setConfig({ ...scenarioConfig({ ...scenario, format: 'full' }), weather_animations: true, show_today: false, show_predictions: false }); hero.hass = scenarioHass(scenario);
-  preview(hero).then(() => { const card = hero.shadowRoot?.querySelector('ha-card')?.shadowRoot; if (card) { const st = document.createElement('style'); st.textContent = ':host{border:0!important;border-radius:0!important}'; card.append(st); } });
-  box.insertAdjacentHTML('beforeend', fmSection('today', 'Aujourd’hui', 'Mesures et ressenti', `${comfortPanel(w)}${measurePanels(w)}<div class="nw-panels nw-panels--two">${newAir()}</div>`)
+  box.insertAdjacentHTML('beforeend', heroHTML(w, f) + fmSection('today', 'Aujourd’hui', 'Mesures et ressenti', `${comfortPanel(w)}${measurePanels(w)}<div class="nw-panels nw-panels--two">${newAir()}</div>`)
     + fmSection('predictions', 'Prévisions', 'Météo-France', `<div class="nw-panels">${newForecasts(f)}</div>`));
   for (const section of box.querySelectorAll('.fm-section')) {
     const headEl = section.querySelector('.fm-head'), set = open => { section.classList.toggle('folded', !open); headEl.setAttribute('aria-expanded', open); };
@@ -565,6 +588,7 @@ function proposedFull(container) {
     headEl.addEventListener('click', () => set(section.classList.contains('folded')));
     headEl.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); set(section.classList.contains('folded')); } });
   }
+  Object.assign(box.querySelector('niak-weather-sky'), { condition: w.condition, phase: scenario.phase, animated: true, quality: 'standard', wind: w.wind, season: 'autumn' });
 }
 
 let scenario, ticker;
