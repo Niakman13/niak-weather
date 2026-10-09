@@ -2,7 +2,7 @@
 import { css, html, nothing, type TemplateResult } from 'lit';
 import type { WeatherView } from '../view';
 import { alertBubble, bubble, info, label, nf, tint } from '../ui/parts';
-import { firstSentence, moments, nowBlock } from './tile';
+import { moments, nowBlock } from './tile';
 import '../ui/ticker';
 
 const GROUPS = [
@@ -31,7 +31,7 @@ export function renderHero(v: WeatherView, sky: TemplateResult, uid: string): Te
   const trend = v.now.trend === undefined ? nothing : html`<span class="nw-chip" style=${tint(v.now.trend > 0 ? 'heat' : 'cold')}
     title=${v.now.trend > 0 ? 'La température monte' : 'La température baisse'}><ha-icon icon=${v.now.trend > 0 ? 'mdi:arrow-top-right' : 'mdi:arrow-bottom-right'}></ha-icon>${v.now.trend > 0 ? '+' : '−'}${nf(Math.abs(v.now.trend))} °C/h</span>`;
   const season = v.season.news ? html`<span class="nw-chip" style=${tint('calm')} title=${v.season.tip}><ha-icon icon=${v.season.info.icon}></ha-icon>${v.season.news}</span>` : nothing;
-  const headline = v.bulletin ? firstSentence(v.bulletin.summary) : v.alerts.length ? undefined : v.points[0]?.text;
+  const headline = v.bulletin ? v.bulletin.summary : v.alerts.length ? undefined : v.points[0]?.text;
   const points = v.bulletin || v.alerts.length ? v.points : v.points.slice(1);
   return html`<section class=${`nw-hero${v.now.darkSky ? ' dark-sky' : ''}`} aria-label="Synthèse">
     <div class="sky" aria-hidden="true">${sky}</div><div class="veil" aria-hidden="true"></div>

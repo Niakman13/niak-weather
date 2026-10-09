@@ -11,7 +11,6 @@ export interface TileState {
   onTab: (tab: 'hours' | 'days') => void;
 }
 
-export const firstSentence = (text: string) => text.split(/(?<=\.)\s/)[0];
 const temps = (p: Bulletin['periods'][number]) => p.tmin === undefined ? '—' : p.tmin === p.tmax ? `${p.tmin} °C` : `${p.tmin}–${p.tmax} °C`;
 
 /** « En ce moment »: condition, temperature, then the source. Shared by the tile and the banner. */
@@ -49,7 +48,7 @@ export function renderTile(v: WeatherView, sky: TemplateResult, s: TileState): T
   // Folded, the tile has room for one alert; the others lead the scrolling bubble, keeping their alert style.
   const [first, ...more] = v.alerts;
   const points = s.open ? v.points : [...more.map(a => ({ ...a, alert: true as const })), ...v.points];
-  const headline = v.bulletin ? firstSentence(v.bulletin.summary) : undefined;
+  const headline = v.bulletin?.summary;
   return html`<div class=${`nw-tilecard${s.open ? ' open' : ''}${v.now.darkSky ? ' dark-sky' : ''}${points.length ? '' : ' quiet'}`}
       role="button" tabindex="0" aria-expanded=${s.open}
       aria-label=${`Météo${v.location ? ` à ${v.location}` : ''} : appui pour ${s.open ? 'replier' : 'déplier'}, appui long pour ${s.holdTarget === 'page' ? 'la page météo' : 'la carte complète'}`}>
