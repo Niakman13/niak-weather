@@ -1,6 +1,6 @@
 {
   "name": "niak-weather",
-  "version": "1.20.2",
+  "version": "1.20.3",
   "private": true,
   "description": "A configurable weather dashboard card for Home Assistant",
   "type": "module",

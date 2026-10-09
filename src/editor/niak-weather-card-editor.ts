@@ -18,7 +18,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   smart_brief: 'Activer le brief intelligent', vigilance_entity: 'Vigilance officielle Météo-France (département)',
   show_synthesis:'Afficher la section Synthèse / météo actuelle',show_bulletin:'Afficher le bulletin du jour (prévisions par période)',show_today:'Afficher la section Aujourd’hui',show_predictions:'Afficher la section Prévisions',
   collapse_today:'Section Aujourd’hui repliée au départ',collapse_predictions:'Section Prévisions repliée au départ',
-  weather_animations: 'Animer le ciel de la météo actuelle', weather_animation_quality: 'Qualité des animations météo',
+  weather_animations: 'Animations (ciel animé et halo des alertes)', weather_animation_quality: 'Qualité des animations météo',
   temperature_entity: 'Température extérieure', humidity_entity: 'Humidité extérieure',
   wind_speed_entity: 'Vitesse du vent (moyenne si disponible)', wind_gust_entity: 'Rafales', wind_bearing_entity: 'Direction du vent',
   rain_rate_entity: 'Intensité de pluie', daily_rain_entity: 'Pluie depuis minuit', rain_24h_entity: 'Pluie sur 24 h',

@@ -112,6 +112,7 @@ export class NiakWeatherCard extends LitElement {
     return changed.size !== 1 || !changed.has('hass') || different;
   }
   protected updated(): void {
+    this.toggleAttribute('still', this.config?.weather_animations === false);
     if (this.isConnected) { void this.loadForecasts(); void this.loadHistory(); void this.loadRainHistory(); void this.loadStationArchive(); }
     const dialog = this.renderRoot.querySelector<HTMLDialogElement>('dialog');
     if (dialog && this.dialogOpen && !dialog.open) dialog.showModal();
@@ -290,6 +291,8 @@ export class NiakWeatherCard extends LitElement {
 
   static styles = [tokens, pieces, bubbles, tileStyles, heroStyles, fullStyles, todayStyles, forecastStyles, airStyles, css`
     :host { display:block; }
+    /* Animations switched off: the alert halo stays still too, in the tile, the window and the scrolling bubble. */
+    :host([still]) { --nw-motion:paused; }
     ha-card { padding:0; overflow:hidden; container-type:inline-size; }
     dialog.nw-dialog { border:0; padding:0; width:min(1180px, 96vw); max-height:92vh; border-radius:16px; overflow:auto; overscroll-behavior:contain;
       background:var(--nw-bg); color:var(--nw-fg); box-shadow:0 24px 80px #0005; }
