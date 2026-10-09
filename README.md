@@ -1,5 +1,14 @@
 # Niak Weather
 
+[![release](https://img.shields.io/github/v/release/Niakman13/niak-weather)](https://github.com/Niakman13/niak-weather/releases)
+[![Validate](https://github.com/Niakman13/niak-weather/actions/workflows/validate.yml/badge.svg)](https://github.com/Niakman13/niak-weather/actions/workflows/validate.yml)
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)
+[![License](https://img.shields.io/github/license/Niakman13/niak-weather)](LICENSE)
+
+[![Sponsor](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Niakman13)
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-frankblemont-FFDD00?logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/frankblemont)
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-00457C?logo=paypal&logoColor=white)](https://paypal.me/frankblemont)
+
 **La météo chez vous, expliquée et mise en perspective.** Niak Weather rassemble les prévisions de votre commune et, si vous le souhaitez, les mesures d’une station locale, le ressenti, la qualité de l’air et les pollens. La carte lit les intégrations déjà configurées dans Home Assistant : elle ne nécessite pas que vous ajoutiez toutes ces sources.
 
 Pour commencer, il faut seulement Home Assistant **2025.1 ou plus récent** et une entité météo `weather.*`. **Météo-France est la source recommandée**, mais une autre intégration météo peut convenir si elle fournit les prévisions utilisées par la carte. Les autres sources sont des enrichissements, pas des prérequis.
