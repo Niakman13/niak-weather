@@ -73,4 +73,13 @@ describe('View model', () => {
     expect(v.days.map(d => d.label)).toEqual(['Auj.', 'Ven', 'Sam']);
     expect(v.days[0]).toMatchObject({ today: true, icon: 'mdi:weather-rainy', high: 20, low: 12, rain: 3 });
   });
+
+  it('says the pressure is stable rather than « 0 hPa »', () => {
+    const config = { ...base, pressure_entity: 'sensor.pressure' };
+    const h = hass([sensor('sensor.pressure', 1014, 'hPa')]), model = buildLocalModel(h, config, [], {}, now);
+    model.attributes.baro = { d: 0, f: 180, s: 'stable', tx: 'temps installé' };
+    const v = buildView({ hass: h, config, model, hourly: [], daily: [], history: {}, rainHistory: {}, now });
+    expect(v.pressure?.trend).toMatchObject({ label: 'stable sur 3 h' });
+    expect(v.pressure?.trend?.value).toBeUndefined();
+  });
 });

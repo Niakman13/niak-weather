@@ -222,8 +222,7 @@ function measures(input: ViewInput): Pick<WeatherView, 'rain' | 'wind' | 'pressu
     result.pressure = {
       source: sourceOf(pressureMetric), value, entity,
       description: local || !pressureMetric ? baro.tx || 'Mesurée chez vous' : 'Pression du bulletin',
-      trend: change === undefined || !local ? undefined : { theme: 'pressure', icon: change > 0 ? 'mdi:trending-up' : change < 0 ? 'mdi:trending-down' : 'mdi:trending-neutral',
-        value: `${change === 0 ? '' : signed(change)} hPa`.trim(), label: `en ${baro.f && baro.f < 150 ? `${baro.f} min` : '3 h'}` },
+      trend: change === undefined || !local ? undefined : pressureTrend(change, baro.f && baro.f < 150 ? `${baro.f} min` : '3 h'),
       series: curvePaths(series, top, now, low), pills: extremePills(series, now, v => chartY(v, top, low), v => fr(v, 0)),
       empty: 'Historique de pression indisponible ou insuffisant',
       stats: values.length > 1 ? [
@@ -232,6 +231,12 @@ function measures(input: ViewInput): Pick<WeatherView, 'rain' | 'wind' | 'pressu
     };
   }
   return result;
+}
+
+/** « +1,3 hPa en 3 h », or « stable sur 3 h » when the pressure does not move. */
+function pressureTrend(change: number, span: string): Chip {
+  if (Math.abs(change) < .05) return { theme: 'pressure', icon: 'mdi:trending-neutral', label: `stable sur ${span}` };
+  return { theme: 'pressure', icon: change > 0 ? 'mdi:trending-up' : 'mdi:trending-down', value: `${signed(change)} hPa`, label: `en ${span}` };
 }
 
 /** The highest and lowest points of a curve, as pills on the chart; one pill when the curve is flat. */
