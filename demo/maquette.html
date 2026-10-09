@@ -27,12 +27,26 @@
   --nw-title: 700 17px/1.3 Roboto, system-ui, sans-serif;
   --nw-value: 750 17px/1.2 Roboto, system-ui, sans-serif;
   --nw-temp-l: 42px; --nw-temp-m: 30px;
-  /* Couleurs de sens */
-  --nw-rain: 27,171,175; --nw-wind: 40,130,240;
-  --nw-level1: 232,184,20; --nw-level2: 238,124,30; --nw-level3: 214,52,58;
+  /* Couleurs de sens : propres à la carte (leur sens ne doit pas changer d'un thème à l'autre),
+     mais un thème Home Assistant peut les remplacer avec --niak-rain-color, --niak-level1-color…
+     Chaque couleur est un ton pastel pour les surfaces ; l'encre des textes en est tirée automatiquement :
+     plus foncée en thème clair, plus claire en thème sombre, toujours lisible. */
+  --nw-rain: var(--niak-rain-color, var(--p-rain)); --nw-wind: var(--niak-wind-color, var(--p-wind));
+  --nw-heat: var(--niak-heat-color, var(--p-heat)); --nw-cold: var(--niak-cold-color, var(--p-cold));
+  --nw-level1: var(--niak-level1-color, var(--p-l1)); --nw-level2: var(--niak-level2-color, var(--p-l2)); --nw-level3: var(--niak-level3-color, var(--p-l3));
+  --nw-ink: 52%;
   /* Mouvement */
   --nw-ease: cubic-bezier(.2,.8,.2,1); --nw-expand: .45s;
 }
+
+/* Palettes proposées. OKLCH : même clarté et même saturation pour toutes les couleurs d'une palette, seule la teinte change → elles s'accordent. */
+:root {--p-rain:oklch(.76 .085 205);--p-wind:oklch(.74 .09 262);--p-heat:oklch(.8 .095 55);--p-cold:oklch(.82 .06 232);
+  --p-l1:oklch(.85 .115 92);--p-l2:oklch(.77 .125 58);--p-l3:oklch(.69 .135 24)}
+:root.pal-aube {--p-rain:oklch(.8 .07 190);--p-wind:oklch(.79 .075 280);--p-heat:oklch(.83 .085 42);--p-cold:oklch(.85 .05 220);
+  --p-l1:oklch(.88 .1 96);--p-l2:oklch(.81 .105 64);--p-l3:oklch(.74 .115 18)}
+:root.pal-actuelle {--p-rain:rgb(27,171,175);--p-wind:rgb(40,130,240);--p-heat:#f4a259;--p-cold:#4a7fd0;--p-l1:rgb(232,184,20);--p-l2:rgb(238,124,30);--p-l3:rgb(214,52,58)}
+.ink-rain {color:color-mix(in oklab,var(--nw-rain) var(--nw-ink),var(--primary-text-color))}
+.ink-wind {color:color-mix(in oklab,var(--nw-wind) var(--nw-ink),var(--primary-text-color))}
 
 /* ───────────────────────── Les pièces, construites uniquement avec la charte ───────────────────────── */
 .nw-label {font:var(--nw-label);letter-spacing:var(--nw-label-spacing);text-transform:uppercase;color:var(--secondary-text-color);white-space:nowrap}
@@ -45,20 +59,23 @@
 .nw-bubble .nw-label {grid-column:2} .nw-bubble b {grid-column:2;font:var(--nw-text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nw-bubble.out {opacity:0;transform:translateY(-5px)}
 /* Alerte : la même bulle, teintée par son niveau, avec son halo qui respire. */
-.nw-bubble--alert {--al:var(--nw-level1);position:relative;border-color:rgba(var(--al),.38);
-  background:linear-gradient(100deg,color-mix(in srgb,var(--card-background-color) 80%,rgb(var(--al)) 20%),color-mix(in srgb,var(--card-background-color) 92%,rgb(var(--al)) 8%));
-  box-shadow:0 0 6px 0 rgba(var(--al),.22),0 4px 18px -10px rgba(var(--al),.5)}
-.nw-bubble--alert::after {content:'';position:absolute;inset:-1px;border-radius:inherit;box-shadow:0 0 16px 2px rgba(var(--al),.42);opacity:0;animation:glow 5.2s ease-in-out infinite;pointer-events:none}
-.nw-bubble--alert ha-icon {color:color-mix(in srgb,rgb(var(--al)) 85%,var(--primary-text-color))}
-.nw-bubble--alert .nw-label {color:color-mix(in srgb,rgb(var(--al)) 62%,var(--primary-text-color))} .nw-bubble--alert b {font-weight:600}
+.nw-bubble--alert {--al:var(--nw-level1);position:relative;border-color:color-mix(in oklab,var(--al) 60%,transparent);
+  background:linear-gradient(100deg,color-mix(in oklab,var(--card-background-color) 72%,var(--al)),color-mix(in oklab,var(--card-background-color) 90%,var(--al)));
+  box-shadow:0 0 6px 0 color-mix(in oklab,var(--al) 32%,transparent),0 4px 18px -10px color-mix(in oklab,var(--al) 65%,transparent)}
+.nw-bubble--alert::after {content:'';position:absolute;inset:-1px;border-radius:inherit;box-shadow:0 0 16px 2px color-mix(in oklab,var(--al) 55%,transparent);opacity:0;animation:glow 5.2s ease-in-out infinite;pointer-events:none}
+.nw-bubble--alert ha-icon {color:color-mix(in oklab,var(--al) 70%,var(--primary-text-color))}
+.nw-bubble--alert .nw-label {color:color-mix(in oklab,var(--al) var(--nw-ink),var(--primary-text-color))}
 .nw-level2 {--al:var(--nw-level2)} .nw-level3 {--al:var(--nw-level3)}
 @keyframes glow {50% {opacity:1}}
 /* Tuile de moment : la même pour le bulletin, les heures et les jours. */
 .nw-tile {display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;align-content:start;column-gap:8px;row-gap:3px;padding:var(--nw-pad-tile);border-radius:var(--nw-radius-bubble);min-width:0}
 .nw-tile > .nw-label, .nw-tile > small {grid-column:1/-1}
 .nw-tile ha-icon {--mdc-icon-size:24px;display:flex} .nw-tile strong {font:var(--nw-value);letter-spacing:-.3px;white-space:nowrap}
-.nw-tile small {font-size:12px;opacity:.85} .nw-rain {color:rgb(var(--nw-rain));font-weight:600;font-size:11px} .nw-wind {color:rgb(var(--nw-wind));font-weight:600;font-size:11px}
-.nw-badge {font:600 10px/1.5 Roboto,system-ui,sans-serif;padding:2px 9px;border-radius:var(--nw-radius-pill);border:1px solid var(--nw-line);background:color-mix(in srgb,var(--card-background-color) 70%,transparent)}
+.nw-tile small {font-size:12px;opacity:.85} .nw-rain {color:color-mix(in oklab,var(--nw-rain) var(--nw-ink),var(--primary-text-color));font-weight:600;font-size:11px}
+.nw-wind {color:color-mix(in oklab,var(--nw-wind) var(--nw-ink),var(--primary-text-color));font-weight:600;font-size:11px}
+/* Pastille de source : UNE seule règle pour toute la carte (bandeau, mesures, prévisions, air, pollens). */
+.nw-badge {font:600 10px/1.5 Roboto,system-ui,sans-serif;letter-spacing:0;text-transform:none;white-space:nowrap;padding:2px 9px;border-radius:var(--nw-radius-pill);
+  border:1px solid var(--nw-line);background:color-mix(in srgb,var(--card-background-color) 70%,transparent);color:var(--primary-text-color)}
 /* « En ce moment » : condition, température, source. */
 .nw-now {display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:2px;text-shadow:0 0 10px var(--card-background-color),0 0 3px var(--card-background-color)}
 .nw-now .cond {display:flex;align-items:center;gap:6px;font-weight:650;font-size:13px} .nw-now .cond ha-icon {--mdc-icon-size:17px;display:flex}
@@ -130,8 +147,21 @@ select {font:inherit;font-size:14px;padding:7px 24px 7px 9px;border:1px solid va
 .notes {background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:12px;padding:16px 18px}
 .notes h3 {margin:0 0 8px;font-size:15px} .notes ol, .notes ul {margin:0;padding-left:20px} .notes li {margin:5px 0}
 .kbd {font:600 11px/1 Roboto,system-ui;border:1px solid var(--divider-color);border-radius:5px;padding:2px 6px;background:var(--page)}
+/* Page météo complète */
+.page-grid {display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:22px;align-items:start}
+.phone .page-grid {grid-template-columns:375px minmax(0,1fr)}
+.settings {background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;position:sticky;top:120px}
+.settings h3 {margin:0;font-size:14px} .settings label {display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--secondary-text-color)}
+.settings p {margin:0;font-size:12px;color:var(--secondary-text-color)}
+/* Écran étroit : tout s'empile, sans défilement horizontal. */
+@media (max-width:900px) {.stage,.phone .stage,.page-grid,.phone .page-grid {grid-template-columns:minmax(0,1fr)} .settings {position:static} .controls {position:static}}
+/* Palette */
+.palette {display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;width:100%}
+.chip-color {display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:12px;background:var(--card-background-color);border:1px solid var(--nw-line);font-size:12px}
+.chip-color i {width:26px;height:26px;border-radius:8px;flex:none} .chip-color b {display:block;font-size:12px} .chip-color span {font-weight:700}
 /* Charte */
 .specimens {display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.spec.wide {grid-column:1/-1}
 .spec {background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:12px;overflow:hidden}
 .spec .show {position:relative;isolation:isolate;min-height:96px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:16px;
   background:linear-gradient(120deg,#c7dcef,#9fc3e3 55%,#6f9fc9)}
@@ -153,6 +183,7 @@ Toutes les pièces viennent de la <b>charte</b> en bas de page, tirée du bandea
   <label>Moment<select id="phase"><option value="day">Journée</option><option value="twilight">Crépuscule</option><option value="night">Nuit</option></select></label>
   <label>Vigilance<select id="vigilance"><option value="">Aucune</option><option>Jaune</option><option>Orange</option><option>Rouge</option></select></label>
   <label>Prévisions dépliées<select id="variant"><option value="hours">A · les heures</option><option value="days">B · les jours</option><option value="both">C · heures et jours</option></select></label>
+  <label>Couleurs<select id="palette"><option value="brume">Brume (proposée)</option><option value="aube">Aube (plus pastel)</option><option value="actuelle">Actuelle</option></select></label>
   <label>Thème<select id="theme"><option value="light">Clair</option><option value="dark">Sombre</option></select></label>
   <label>Écran<select id="screen"><option value="desktop">Ordinateur</option><option value="phone">Téléphone</option></select></label>
 </div>
@@ -183,10 +214,23 @@ Toutes les pièces viennent de la <b>charte</b> en bas de page, tirée du bandea
 
 <dialog id="full"><header><b>Météo · Gardanne</b><button id="close" type="button">Fermer</button></header><div class="body" id="fullBody"></div></dialog>
 
-<h2>2 · La charte</h2>
+<h2>2 · La page météo complète</h2>
+<p class="lead">Pour ceux qui veulent une page météo dédiée : la carte complète reste un format à part entière. Les panneaux <b>Aujourd'hui</b> et <b>Prévisions</b> se plient et se déplient d'un appui sur leur titre ; leur état de départ se choisit dans les réglages. Les pastilles de source y ont toutes le même style.</p>
+<div class="page-grid">
+  <div id="pageCard"></div>
+  <aside class="settings">
+    <h3>Réglages · Affichage</h3>
+    <p>Aperçu de l'éditeur de la carte, format « Complète ».</p>
+    <label>Panneau « Aujourd'hui »<select id="foldToday"><option value="open">Déplié au départ</option><option value="closed">Replié au départ</option></select></label>
+    <label>Panneau « Prévisions »<select id="foldPredictions"><option value="open">Déplié au départ</option><option value="closed">Replié au départ</option></select></label>
+    <p>Le même réglage s'applique quand la carte complète s'ouvre par un appui long.</p>
+  </aside>
+</div>
+
+<h2>3 · La charte</h2>
 <p class="lead">Les pièces de base de toute la carte, avec leur nom. Modifier un réglage (par exemple le contour <code>--nw-line</code>) le change partout : tuile, tuile dépliée et carte complète. Les valeurs sont celles du bandeau actuel.</p>
 <div class="specimens" id="specimens"></div>
-<h2>3 · Ce que la charte unifie</h2>
+<h2>4 · Ce que la charte unifie</h2>
 <p class="lead">Écarts relevés dans le code actuel, que la refonte ramène à un seul réglage chacun.</p>
 <div class="fixes">
   <div class="fix"><b>Étiquettes en petites capitales</b><s>5 réglages différents (9 ou 10 px, espacement .5 / .6 / .8 px / .12 em)</s><br>→ une seule : <code>--nw-label</code></div>
@@ -194,6 +238,7 @@ Toutes les pièces viennent de la <b>charte</b> en bas de page, tirée du bandea
   <div class="fix"><b>Tailles de texte</b><s>23 tailles différentes</s><br>→ six : étiquette, texte, titre, valeur, température moyenne et grande</div>
   <div class="fix"><b>Couleurs de la pluie et du vent</b><s>recopiées 14 fois dans 4 fichiers</s><br>→ <code>--nw-rain</code> et <code>--nw-wind</code></div>
   <div class="fix"><b>Verre</b><s>trois recettes écrites à la main</s><br>→ deux niveaux nommés : <code>--nw-glass</code> et <code>--nw-glass-strong</code></div>
+  <div class="fix"><b>Pastilles de source</b><s>6 styles différents (bandeau, mesures, ressenti, graphiques, air et pollens, tuile)</s><br>→ une seule : <code>.nw-badge</code></div>
   <div class="fix"><b>Texte des bulles</b><s>13 px normal dans le brief, 13 px gras dans l'alerte</s><br>→ <code>--nw-text</code> partout, l'alerte ne diffère que par sa couleur</div>
 </div>
 
@@ -317,13 +362,44 @@ function toggle() {
   if (!state.open) card.querySelector('.nw-badge')?.remove();
 }
 
-/** La vraie carte complète, avec le même scénario, dans une fenêtre par-dessus la page. */
-function openFull() {
-  const body = $('fullBody'); body.replaceChildren();
-  const card = document.createElement('niak-weather-card'); body.append(card);
-  card.setConfig({ ...scenarioConfig({ ...scenario, format: 'full' }), weather_animations: true }); card.hass = scenarioHass(scenario);
-  $('full').showModal();
+/** Aperçu de la refonte sur la vraie carte complète : une seule pastille de source, Aujourd'hui et Prévisions repliables. */
+const BADGES = '.nw-history-source,.nw-metric-source,.nw-current-temperature-source,.nw-comfort-source,.nw-c-source,.nw-atmo-badge';
+const PREVIEW_CSS = `
+  :is(${BADGES}) {font:600 10px/1.5 Roboto,system-ui,sans-serif !important;letter-spacing:0 !important;text-transform:none !important;white-space:nowrap !important;
+    padding:2px 9px !important;border-radius:999px !important;border:1px solid color-mix(in srgb,var(--primary-text-color) 13%,transparent) !important;
+    background:color-mix(in srgb,var(--card-background-color) 70%,transparent) !important;color:var(--primary-text-color) !important;box-shadow:none !important;text-shadow:none !important;opacity:1 !important}
+  .nw-section-heading.nw-foldable {cursor:pointer}
+  .nw-fold {margin-left:auto;display:flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border-radius:999px;cursor:pointer;
+    border:1px solid color-mix(in srgb,var(--primary-text-color) 13%,transparent);background:color-mix(in srgb,var(--card-background-color) 70%,transparent);color:var(--secondary-text-color)}
+  .nw-fold:focus-visible {outline:2px solid var(--primary-color);outline-offset:2px}
+  .nw-fold ha-icon {--mdc-icon-size:20px;display:flex;transition:transform .3s}
+  section.nw-folded .nw-fold ha-icon {transform:rotate(-90deg)}
+  section.nw-folded > :not(.nw-section-heading) {display:none !important}
+  section.nw-folded > .nw-section-heading {margin-bottom:0}`;
+const foldPrefs = () => ({ today: $('foldToday').value, predictions: $('foldPredictions').value });
+async function preview(card) {
+  await card.updateComplete; await new Promise(r => setTimeout(r, 250));
+  const root = card.shadowRoot; if (!root) return;
+  if (!root.getElementById('nw-preview')) { const st = document.createElement('style'); st.id = 'nw-preview'; st.textContent = PREVIEW_CSS; root.append(st); }
+  const prefs = foldPrefs();
+  for (const id of ['today', 'predictions']) {
+    const section = root.getElementById(id), head = section?.querySelector(':scope > .nw-section-heading');
+    if (!head || head.querySelector('.nw-fold')) continue;
+    const title = head.querySelector('h2')?.textContent ?? '', button = document.createElement('button');
+    button.type = 'button'; button.className = 'nw-fold'; button.innerHTML = '<ha-icon icon="mdi:chevron-down"></ha-icon>';
+    const set = open => { section.classList.toggle('nw-folded', !open); button.setAttribute('aria-expanded', open); button.setAttribute('aria-label', `${open ? 'Replier' : 'Déplier'} ${title}`); };
+    set(prefs[id] !== 'closed'); head.classList.add('nw-foldable'); head.append(button);
+    head.addEventListener('click', e => { e.stopPropagation(); set(section.classList.contains('nw-folded')); });
+  }
 }
+function fullCard(container) {
+  container.replaceChildren();
+  const card = document.createElement('niak-weather-card'); container.append(card);
+  card.setConfig({ ...scenarioConfig({ ...scenario, format: 'full' }), weather_animations: true }); card.hass = scenarioHass(scenario);
+  preview(card);
+}
+/** La carte complète, avec le même scénario, dans une fenêtre par-dessus la page. */
+function openFull() { fullCard($('fullBody')); $('full').showModal(); }
 $('close').addEventListener('click', () => $('full').close());
 
 /** La bulle du brief défile toutes les 5 s, comme sur la carte. */
@@ -338,7 +414,7 @@ function startTicker() {
 }
 
 function specimens() {
-  const spec = (title, show, tokens, text) => `<div class="spec"><div class="show">${show}</div><div class="info"><b>${title}</b>${text}<br>${tokens.map(t => `<code>${t}</code>`).join(' ')}</div></div>`;
+  const spec = (title, show, tokens, text) => `<div class="spec${title === 'Couleurs de sens' ? ' wide' : ''}"><div class="show">${show}</div><div class="info"><b>${title}</b>${text}<br>${tokens.map(t => `<code>${t}</code>`).join(' ')}</div></div>`;
   $('specimens').innerHTML = [
     spec('Bulle du brief', bubble({ label: 'Maintenant', text: 'Il pleut : 1,4 mm/h', icon: 'mdi:weather-rainy' }), ['--nw-glass-strong', '--nw-radius-bubble', '--nw-text'], 'Icône sur deux lignes, étiquette au-dessus du texte.'),
     spec('Bulle d’alerte', [1, 2, 3].map(l => bubble({ level: l, label: ['Vigilance jaune', 'Vigilance orange', 'Vigilance rouge'][l - 1], text: 'Orages', icon: 'mdi:alert-outline' }, true)).join(''), ['--nw-level1', '--nw-level2', '--nw-level3'], 'La même bulle, teintée par le niveau, avec son halo.'),
@@ -346,7 +422,10 @@ function specimens() {
     spec('Étiquette', '<span class="nw-label">En ce moment</span><span class="nw-label">Bulletin du jour</span>', ['--nw-label', '--nw-label-spacing'], 'Petites capitales, une seule taille partout.'),
     spec('Contour et verre', '<span class="swatch nw-glass"></span><span class="swatch" style="background:var(--nw-glass-strong);border:1px solid var(--nw-line)"></span>', ['--nw-line', '--nw-glass', '--nw-blur'], 'Le contour de toutes les bulles et tuiles.'),
     spec('Pastille de source', '<span class="nw-badge">Station locale</span><span class="nw-badge">Météo-France</span>', ['--nw-radius-pill', '--nw-line'], 'D’où vient la valeur.'),
-    spec('Couleurs de sens', `<span class="swatch" style="background:rgb(var(--nw-rain))"></span><span class="swatch" style="background:rgb(var(--nw-wind))"></span>${[1, 2, 3].map(l => `<span class="swatch" style="background:rgb(var(--nw-level${l}))"></span>`).join('')}`, ['--nw-rain', '--nw-wind', '--nw-level1…3'], 'Pluie, vent, puis les trois niveaux d’alerte.'),
+    spec('Couleurs de sens', `<div class="palette">${[['Pluie', 'rain', '8,6 mm'], ['Vent', 'wind', '22 km/h'], ['Chaleur', 'heat', '34 °C'], ['Froid', 'cold', '−3 °C'],
+      ['Vigilance jaune', 'level1', 'Orages'], ['Vigilance orange', 'level2', 'Vent violent'], ['Vigilance rouge', 'level3', 'Crues']].map(([n, k, v]) =>
+      `<div class="chip-color"><i style="background:var(--nw-${k})"></i><div><b>${n}</b><span style="color:color-mix(in oklab,var(--nw-${k}) var(--nw-ink),var(--primary-text-color))">${v}</span></div></div>`).join('')}</div>`,
+      ['--nw-rain', '--nw-wind', '--nw-heat', '--nw-cold', '--nw-level1…3'], 'Pastel pour les surfaces ; le texte coloré (encre) est tiré de la même couleur, lisible en clair comme en sombre. Les couleurs de base (fond, textes, accent) suivent le thème Home Assistant.'),
     spec('En ce moment', `<div class="nw-now"><span class="cond"><ha-icon icon="mdi:weather-partly-cloudy"></ha-icon>Éclaircies</span><span class="temp" style="font-size:var(--nw-temp-l)">22,4<small>°C</small></span><span class="nw-badge">Station locale</span></div>`, ['--nw-temp-l', '--nw-temp-m'], 'Condition, température, source.'),
   ].join('');
 }
@@ -356,10 +435,12 @@ function refresh() {
   scenario = { condition, phase, vigilance: $('vigilance').value || undefined, season: 'autumn', animated: true };
   state.variant = $('variant').value; state.index = 0;
   document.documentElement.classList.toggle('dark', $('theme').value === 'dark');
+  document.documentElement.classList.remove('pal-aube', 'pal-actuelle');
+  if ($('palette').value !== 'brume') document.documentElement.classList.add(`pal-${$('palette').value}`);
   document.body.classList.toggle('phone', $('screen').value === 'phone');
-  render(); startTicker();
+  render(); startTicker(); fullCard($('pageCard'));
 }
-for (const id of ['condition', 'phase', 'vigilance', 'variant', 'theme', 'screen']) $(id).addEventListener('change', refresh);
+for (const id of ['condition', 'phase', 'vigilance', 'variant', 'palette', 'theme', 'screen', 'foldToday', 'foldPredictions']) $(id).addEventListener('change', refresh);
 specimens(); refresh();
 </script>
 </body></html>
