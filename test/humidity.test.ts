@@ -67,4 +67,13 @@ describe('Tonight in the brief: frost and fog', () => {
     expect(brief({ rosee: 9 }, night(8, { precipitation: 2 })).some(s => s.key === 'fog-later')).toBe(false);
     expect(brief({ rosee: 5 }, night(8)).some(s => s.key === 'fog-later')).toBe(false);
   });
+  it('judges the night on its own forecast, so the line does not blink with the afternoon wind', () => {
+    // Gardanne, 9 October: 7 °C forecast at the coldest hour, 95 % humidity, wind 3,6 km/h; at 14 h the station wind swings between 0 and 18 km/h.
+    const tonight = night(7, { wind: 3.6, humidity: 95 });
+    for (const vent of [2, 9, 15]) expect(brief({ rosee: 9, vent }, tonight).some(s => s.key === 'fog-later')).toBe(true);
+    for (const rosee of [6.3, 9.5]) expect(brief({ rosee }, tonight).some(s => s.key === 'fog-later')).toBe(true);
+    // A windy or less humid night: no fog, whatever the afternoon says.
+    expect(brief({ rosee: 9, vent: 2 }, night(7, { wind: 14, humidity: 95 })).some(s => s.key === 'fog-later')).toBe(false);
+    expect(brief({ rosee: 9, vent: 2 }, night(7, { wind: 3.6, humidity: 85 })).some(s => s.key === 'fog-later')).toBe(false);
+  });
 });

@@ -3,7 +3,7 @@ import { finite } from './local-model';
 import type { HassEntity, HomeAssistant, WeatherCardConfig,WeatherForecast } from '../types';
 import { dateFormat, numberFormat } from '../intl-cache';
 
-export interface BriefPoint { hours: number; temperature?: number; precipitation?: number; condition?: string; }
+export interface BriefPoint { hours: number; temperature?: number; precipitation?: number; condition?: string; wind?: number; humidity?: number; }
 export interface BriefSignal {
   key: string; group: 'now' | 'future' | 'environment' | 'official'; severity: 0 | 1 | 2 | 3;
   text: string; explanation: string; entity?: string; icon: string;
@@ -86,9 +86,13 @@ export function buildWeatherBrief(hass: HomeAssistant, config: WeatherCardConfig
   // The night's minimum says more than the first freezing hour: keep one frost line.
   if (signals.some(s => s.key === 'frost-night')) signals.splice(signals.findIndex(s => s.key === 'freeze-future'), signals.some(s => s.key === 'freeze-future') ? 1 : 0);
   const calm = (wind ?? 0) < 8, dryAt = (p: BriefPoint) => (finite(p.precipitation) ?? 0) < .3;
-  if (low && dewPoint !== undefined && a.condition !== 'fog' && calm && dryAt(low) && low.temperature! <= dewPoint && low.temperature! > 0)
+  // The night is judged on its own forecast: the afternoon's wind and dew point change every minute and would make the line blink.
+  // Calm: the wind forecast at the coldest hour, else the wind now. Saturated air: the forecast humidity, else the dew point measured now.
+  const nightCalm = finite(low?.wind) !== undefined ? low!.wind! < 8 : calm;
+  const saturated = finite(low?.humidity) !== undefined ? low!.humidity! >= 95 : dewPoint !== undefined && !!low && low.temperature! <= dewPoint;
+  if (low && a.condition !== 'fog' && nightCalm && dryAt(low) && saturated && low.temperature! > 0)
     add({ key: 'fog-later', group: 'future', severity: 0, text: `Brouillard possible ${at(low.hours)}`,
-      explanation: 'La température va descendre jusqu’au point de rosée, sans vent ni pluie.', entity: config.weather_entity, icon: 'mdi:weather-fog' });
+      explanation: 'Au plus froid de la nuit, l’air prévu est saturé d’humidité, sans vent ni pluie. C’est une estimation de la carte, pas une prévision de brouillard du fournisseur.', entity: config.weather_entity, icon: 'mdi:weather-fog' });
   const validTemps = upcoming.filter(p => finite(p.temperature) !== undefined);
   if (temp !== undefined && validTemps.length && !cold) {
     const maximum=Math.max(...validTemps.map(p=>p.temperature!)),minimum=Math.min(...validTemps.map(p=>p.temperature!));

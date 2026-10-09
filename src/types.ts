@@ -35,6 +35,8 @@ export interface WeatherForecast {
   precipitation?: number;
   wind_speed?: number;
   wind_gust_speed?: number;
+  /** Relative humidity, in %. */
+  humidity?: number;
   /** Direction the wind comes from, in degrees (0 = north). */
   wind_bearing?: number;
 }

@@ -200,7 +200,9 @@ export class NiakWeatherCard extends LitElement {
     if (derived?.temperatureTrend !== undefined && config.temperature_trend_entity === undefined) {
       model.attributes.tend_temp = derived.temperatureTrend; (model.attributes.sources as Record<string, string>).tend_temp = config.temperature_entity!;
     }
-    const points: BriefPoint[] = this.hourly.map(p => ({ hours: (Date.parse(p.datetime) - now.getTime()) / 3600_000, temperature: p.temperature, precipitation: p.precipitation, condition: p.condition }));
+    const windUnit = String(hass.states[config.weather_entity]?.attributes.wind_speed_unit ?? 'km/h');
+    const points: BriefPoint[] = this.hourly.map(p => ({ hours: (Date.parse(p.datetime) - now.getTime()) / 3600_000, temperature: p.temperature, precipitation: p.precipitation,
+      condition: p.condition, wind: measurement(p.wind_speed, windUnit, 'wind'), humidity: finite(p.humidity) }));
     // The tile is the brief: it is always built for it. On the full card it can be switched off.
     const brief = !this.tile && (config.smart_brief === false || config.show_synthesis === false) ? undefined : buildWeatherBrief(hass, config, model, points, now, this.daily);
     return buildView({ hass, config, model, brief, hourly: this.hourly, daily: this.daily, history: this.history, rainHistory: this.rainHistory, derived, now });

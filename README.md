@@ -20,7 +20,7 @@ Illustration de présentation avec des données d’exemple ; le rendu réel du 
 
 **En pratique :** l’entité météo seule suffit pour afficher la carte et ses prévisions. Ajoutez une station pour suivre les observations chez vous, et Atmo France si vous souhaitez les informations sur l’air et les pollens. La carte indique la source de chaque valeur et distingue toujours une prévision d’une mesure réelle. [Détails des sources et de leurs limites](docs/sources.md).
 
-**Version stable : v1.20.0.** Une carte redessinée de bout en bout : une tuile qui se déplie d’un appui, la carte complète d’un appui long, un seul style partout. [Nouveautés de la version 1.20.0](docs/release-1.20.0.md) · [plus fluide 1.16.3](docs/release-1.16.3.md) · [1.16.1](docs/release-1.16.1.md) · [Installation et mise à jour](docs/installation.md).
+**Version stable : v1.20.1.** Une carte redessinée de bout en bout : une tuile qui se déplie d’un appui, la carte complète d’un appui long, un seul style partout. [Nouveautés de la version 1.20.0](docs/release-1.20.0.md) · [brouillard plus fiable 1.20.1](docs/release-1.20.1.md) · [plus fluide 1.16.3](docs/release-1.16.3.md) · [1.16.1](docs/release-1.16.1.md) · [Installation et mise à jour](docs/installation.md).
 
 [![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
@@ -113,7 +113,7 @@ L’historique Home Assistant permet de qualifier l’évolution de la pression 
 
 1. Ouvrez le bouton HACS en haut de cette page. Il ouvre le dépôt, sans installer automatiquement la carte.
 2. Si le dépôt n’est pas trouvé, ajoutez `https://github.com/Niakman13/niak-weather` dans **HACS → ⋮ → Dépôts personnalisés**, catégorie **Tableau de bord / Dashboard**. Il s’agit d’un dépôt personnalisé, pas d’un référencement dans le catalogue HACS par défaut.
-3. Téléchargez **Niak Weather v1.20.0**, puis rechargez le navigateur.
+3. Téléchargez **Niak Weather v1.20.1**, puis rechargez le navigateur.
 4. Dans votre tableau de bord, choisissez **Ajouter une carte → Niak Weather** et sélectionnez votre entité météo.
 5. Ajoutez si souhaité les sources **Station météo locale** et **Atmo France**. Utilisez **Remplir automatiquement** dans chaque catégorie, puis vérifiez les propositions avant d’enregistrer. Sans station, les cadres utilisent les attributs du bulletin disponibles, avec une bulle de source ; la pluie prévue reste distinguée de la pluie mesurée.
 
@@ -138,9 +138,9 @@ daily_rain_entity: sensor.station_daily_rain
 
 Ces identifiants sont des **exemples**, pas des noms imposés. Privilégiez vos entités réelles dans l’éditeur. Le [tutoriel d’installation](docs/installation.md) détaille les ressources, les réglages et le dépannage.
 
-## Mettre à jour vers v1.20.0
+## Mettre à jour vers v1.20.1
 
-Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.20.0**. Il n’est pas nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
+Dans **HACS → Niak Weather**, utilisez **Mettre à jour** ou **⋮ → Retélécharger** et sélectionnez **v1.20.1**. Il n’est pas nécessaire d’activer les préversions. Rechargez ensuite le navigateur avec **Ctrl+F5** ; sur mobile, videz le cache frontend si l’ancienne version reste affichée.
 
 Les mises à jour utilisent la même ressource et conservent vos entités. Les anciens modes sont convertis en réglages de sections : les prévisions d’une ancienne configuration compacte restent masquées sauf choix explicite contraire. Vous pouvez enrichir la configuration progressivement, sans recommencer l’installation. [Notes de version](docs/release-1.4.0.md).
 
