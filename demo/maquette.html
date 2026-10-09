@@ -82,20 +82,21 @@
 .nw-tile small {font-size:12px;opacity:.85} .nw-rain {color:color-mix(in oklab,var(--nw-rain) var(--nw-ink),var(--primary-text-color));font-weight:600;font-size:11px}
 .nw-wind {color:color-mix(in oklab,var(--nw-wind) var(--nw-ink),var(--primary-text-color));font-weight:600;font-size:11px}
 /* Pastille de source : UNE seule règle pour toute la carte (bandeau, mesures, prévisions, air, pollens). */
-.nw-badge {font:600 10px/1.5 Roboto,system-ui,sans-serif;letter-spacing:0;text-transform:none;white-space:nowrap;padding:2px 9px;border-radius:var(--nw-radius-pill);
-  border:1px solid var(--nw-line);background:color-mix(in srgb,var(--card-background-color) 70%,transparent);color:var(--primary-text-color)}
+/* Même forme que la pastille d'info (.nw-chip) : seule la teinte change. */
+.nw-badge {display:inline-flex;align-items:center;font:600 var(--nw-fs-small)/18px Roboto,system-ui,sans-serif;letter-spacing:0;text-transform:none;white-space:nowrap;
+  padding:3px 10px;border-radius:var(--nw-radius-pill);border:1px solid var(--nw-line);background:color-mix(in srgb,var(--card-background-color) 70%,transparent);color:var(--primary-text-color)}
 /* « En ce moment » : condition, température, source. */
 .nw-now {display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:2px;
   text-shadow:0 0 14px var(--card-background-color),0 0 5px var(--card-background-color),0 0 2px var(--card-background-color)}
 .nw-now .nw-label {color:color-mix(in srgb,var(--primary-text-color) 75%,transparent)}
 /* Pastilles posées sur le ciel : fond de carte presque opaque, teinté du thème, lisible sur tous les ciels. */
-.nw-now :is(.nw-chip,.nw-badge) {text-shadow:none;background:color-mix(in oklab,var(--card-background-color) 82%,var(--c,transparent));border:1px solid var(--nw-line);backdrop-filter:var(--nw-blur)}
+.nw-now :is(.nw-chip,.nw-badge) {text-shadow:none;color:var(--primary-text-color);background:color-mix(in srgb,var(--card-background-color) 86%,transparent);border-color:var(--nw-line);backdrop-filter:var(--nw-blur)}
+.nw-now .nw-chip ha-icon {color:color-mix(in oklab,var(--c) 70%,var(--primary-text-color))}
 .nw-now .cond {display:flex;align-items:center;gap:6px;font-weight:650;font-size:13px} .nw-now .cond ha-icon {--mdc-icon-size:17px;display:flex}
 .nw-now .temp {font-weight:700;letter-spacing:-1px;line-height:1.05;font-size:var(--nw-temp-m)} .nw-now .temp small {font-size:.45em;font-weight:400;vertical-align:super;margin-left:2px}
 .dark-sky .nw-now {color:#fff;text-shadow:0 1px 5px #0b1a2b99}
-/* Ciel sombre (orage, fortes pluies) : tout le bloc « En ce moment » passe en blanc, ses pastilles sur fond sombre translucide. */
+/* Ciel sombre (orage, fortes pluies) : les textes posés sur le ciel passent en blanc ; les pastilles, elles, suivent le thème. */
 .dark-sky .nw-now .nw-label {color:rgba(255,255,255,.88)}
-.dark-sky .nw-now :is(.nw-badge,.nw-chip) {color:#fff;text-shadow:none;background:rgba(15,40,65,.32);border:1px solid rgba(255,255,255,.28)}
 
 /* ───────────────────────── La carte : tuile qui se déplie ───────────────────────── */
 .card {position:relative;isolation:isolate;overflow:hidden;border-radius:var(--nw-radius-card);background:var(--card-background-color);border:1px solid var(--divider-color);
@@ -260,7 +261,7 @@ select {font:inherit;font-size:14px;padding:7px 24px 7px 9px;border:1px solid va
 .stats {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding-top:12px;border-top:1px solid color-mix(in oklab,var(--nw-line) 60%,transparent);margin-top:auto}
 .stats div {display:flex;flex-direction:column;gap:2px;min-width:0} .stats b {font-size:var(--nw-fs-text);font-weight:700;font-variant-numeric:tabular-nums}
 /* Pastille d'état teintée (tendance, intensité) */
-.nw-chip {display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:var(--nw-radius-pill);font-size:var(--nw-fs-small);font-weight:600;white-space:nowrap;
+.nw-chip {display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:var(--nw-radius-pill);font:600 var(--nw-fs-small)/18px Roboto,system-ui,sans-serif;white-space:nowrap;border:1px solid transparent;
   background:color-mix(in oklab,var(--c) 24%,transparent);color:color-mix(in oklab,var(--c) var(--nw-ink),var(--primary-text-color))}
 .nw-chip ha-icon {--mdc-icon-size:14px;display:flex} .nw-chip b {font-weight:700}
 .compass {width:72px;height:72px;flex:none}
