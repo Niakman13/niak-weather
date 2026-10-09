@@ -152,8 +152,8 @@
 /* ───────────────────────── Fenêtre de la carte complète ───────────────────────── */
 dialog {border:0;padding:0;border-radius:16px;width:min(1180px,96vw);max-height:92vh;background:var(--page);color:inherit;box-shadow:0 24px 80px #0005}
 dialog::backdrop {background:#0b1520aa;backdrop-filter:blur(2px)}
-dialog header {position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--page);border-bottom:1px solid var(--divider-color)}
-dialog header button {font:inherit;border:1px solid var(--divider-color);background:var(--card-background-color);color:inherit;border-radius:999px;padding:5px 14px;cursor:pointer}
+dialog > header {position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--page);border-bottom:1px solid var(--divider-color)}
+dialog > header button {font:inherit;border:1px solid var(--divider-color);background:var(--card-background-color);color:inherit;border-radius:999px;padding:5px 14px;cursor:pointer}
 dialog .body {padding:12px} .phone dialog {width:100vw;max-width:100vw;height:100vh;max-height:100vh;border-radius:0;margin:0}
 
 /* ───────────────────────── Page de la maquette ───────────────────────── */
@@ -510,6 +510,8 @@ function newForecasts(f) {
   hours.forEach((h, i) => { if (night(h) && (i === 0 || !night(hours[i - 1]))) nights.push([i, i]); if (night(h)) nights.at(-1)[1] = i; });
   const midnight = hours.findIndex(h => new Date(h.datetime).getHours() === 0);
   const ticks = [1, 4, 7, 10, 13, 16].map(i => [i, hours[Math.min(i, hours.length - 1)]]);
+  // Noms uniques : la carte peut être affichée deux fois (page et fenêtre), une courbe ne doit jamais viser les dégradés de l'autre.
+  const uid = `fc${++infoCount}`;
   const chart = `<section class="nw-panel">${head('mdi:chart-bell-curve-cumulative', 'wind', '18 prochaines heures', 'Météo-France')}
     <div class="fc">
       <div class="fc-marks"><span style="left:0">Maintenant</span>${midnight > 0 ? `<span style="left:${X(midnight)}%">Demain</span>` : ''}</div>
@@ -518,9 +520,9 @@ function newForecasts(f) {
         ${midnight > 0 ? `<i class="fc-divider" style="left:${X(midnight)}%"></i>` : ''}
         ${hours.map((h, i) => h.precipitation ? `<i class="fc-bar" title="${nf(h.precipitation)} mm" style="left:calc(${X(i)}% - 5px);width:10px;height:${Math.max(6, h.precipitation / rainMax * 42)}%"></i>` : '').join('')}
         <svg viewBox="0 0 100 100" preserveAspectRatio="none"><defs>
-          <linearGradient id="fcStroke" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--nw-heat)"/><stop offset="1" stop-color="var(--nw-cold)"/></linearGradient>
-          <linearGradient id="fcArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--nw-heat)" stop-opacity=".28"/><stop offset="1" stop-color="var(--nw-cold)" stop-opacity="0"/></linearGradient></defs>
-          <path d="${path} L100 100 L0 100Z" fill="url(#fcArea)"/><path class="fc-line" d="${path}" stroke="url(#fcStroke)"/></svg>
+          <linearGradient id="${uid}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--nw-heat)"/><stop offset="1" stop-color="var(--nw-cold)"/></linearGradient>
+          <linearGradient id="${uid}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--nw-heat)" stop-opacity=".28"/><stop offset="1" stop-color="var(--nw-cold)" stop-opacity="0"/></linearGradient></defs>
+          <path d="${path} L100 100 L0 100Z" fill="url(#${uid}a)"/><path class="fc-line" d="${path}" stroke="url(#${uid}s)"/></svg>
         <i class="fc-dot" style="left:${pts[0][0]}%;top:${pts[0][1]}%;--c:${tempColor(temps[0])}"></i>
         <span class="fc-pill" style="left:${Math.min(94, Math.max(6, X(iMax)))}%;top:${Y(temps[iMax])}%">${Math.round(temps[iMax])}°</span>
         <span class="fc-pill low" style="left:${Math.min(94, Math.max(6, X(iMin)))}%;top:${Y(temps[iMin])}%">${Math.round(temps[iMin])}°</span>
