@@ -102,8 +102,9 @@ export const tileStyles = css`
   .reveal > div { min-height:0; overflow:clip; overflow-clip-margin:18px; }
   .open .reveal { grid-template-rows:1fr; margin-top:0; opacity:1; }
   /* The unfolding part: the height animates with grid-template-rows, no measuring in script. */
-  .more { display:grid; grid-template-rows:0fr; transition:grid-template-rows var(--nw-expand) var(--nw-ease); }
-  .open .more { grid-template-rows:1fr; }
+  /* Folded, the hidden part is not drawn at all (visibility waits for the end of the folding): its glass costs nothing on a phone. */
+  .more { display:grid; grid-template-rows:0fr; visibility:hidden; transition:grid-template-rows var(--nw-expand) var(--nw-ease), visibility 0s linear var(--nw-expand); }
+  .open .more { grid-template-rows:1fr; visibility:visible; transition:grid-template-rows var(--nw-expand) var(--nw-ease), visibility 0s; }
   .more > div { overflow:hidden; min-height:0; }
   .more-in { padding:0 16px 14px; display:flex; flex-direction:column; gap:12px; opacity:0; transform:translateY(-6px); transition:opacity .3s .1s, transform .3s .1s; }
   .open .more-in { opacity:1; transform:none; }

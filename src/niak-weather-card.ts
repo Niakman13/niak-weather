@@ -20,6 +20,8 @@ import './editor/niak-weather-card-editor';
 import type { ForecastResponse, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
 
 const HOLD_MS = 500;
+/** Phones and tablets: unless set otherwise, the tile's sky is lightened (fewer drops, clouds and leaves); its drawing is scaled down there anyway. */
+const LIGHT_SKY = matchMedia('(pointer: coarse)');
 let instances = 0;
 
 @customElement('niak-weather-card')
@@ -212,7 +214,7 @@ export class NiakWeatherCard extends LitElement {
     if (!this.hass || !this.config) return nothing;
     const config = this.config, hass = this.hass, now = new Date(), view = this.view(now);
     const sky = html`<niak-weather-sky .condition=${view.now.condition} .phase=${view.now.phase} .animated=${config.weather_animations !== false}
-      .quality=${config.weather_animation_quality ?? 'standard'} .wind=${view.now.wind ?? 0} .season=${currentSeason(hass, config, now).season}></niak-weather-sky>`;
+      .quality=${config.weather_animation_quality ?? (this.tile && LIGHT_SKY.matches ? 'low' : 'standard')} .wind=${view.now.wind ?? 0} .season=${currentSeason(hass, config, now).season}></niak-weather-sky>`;
     const full = () => renderFull(view, { sky, uid: this.uid, entity: config.weather_entity, station: !!config.temperature_entity,
       show: { synthesis: config.show_synthesis !== false, today: config.show_today !== false, predictions: config.show_predictions !== false },
       folded: this.folded, onFold: id => { this.folded = { ...this.folded, [id]: !this.folded[id] }; } });

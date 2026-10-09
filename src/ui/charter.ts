@@ -73,6 +73,8 @@ export const pieces = css`
   /* Tile: a moment of the day, an hour or a day. */
   .nw-tile { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; align-content:start; column-gap:8px; row-gap:3px;
     padding:var(--nw-pad-tile); border-radius:var(--nw-radius); min-width:0; box-sizing:border-box; }
+  /* Tiles sit on the veil, where a blur would hardly show but would be recomputed at every frame of the sky: glass without blur. */
+  .nw-tile.nw-glass { backdrop-filter:none; }
   .nw-tile > .nw-label, .nw-tile > small, .nw-tile > .nw-ink { grid-column:1/-1; }
   .nw-tile ha-icon { --mdc-icon-size:24px; }
   .nw-tile strong { font-size:var(--nw-fs-title); line-height:1.2; font-weight:750; letter-spacing:-.3px; white-space:nowrap; }

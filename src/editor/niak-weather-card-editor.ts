@@ -178,7 +178,7 @@ export class NiakWeatherCardEditor extends LitElement {
     const schemas: Record<SourceCategory, ()=>unknown[]> = {
       general: ()=>{
         const format=this.config!.format??'full',animation=[{name:'weather_animations',selector:{boolean:{}}},
-          {name:'weather_animation_quality',selector:{select:{options:[{value:'standard',label:'Standard'},{value:'low',label:'Allégée (tablette)'}]}}}];
+          {name:'weather_animation_quality',selector:{select:{options:[{value:'standard',label:'Standard'},{value:'low',label:'Allégée (tablette, vieux téléphone)'}]}}}];
         const choice={name:'format',selector:{select:{mode:'list',options:[{value:'full',label:'Complète : la page météo (Synthèse, Aujourd’hui, Prévisions)'},
           {value:'tile',label:'Tuile : une bande qui se déplie d’un appui, pleine ou demi-largeur'},{value:'intermediate',label:'Tuile dépliée : la même tuile, ouverte au départ'}]}}};
         // The tile unfolds on a tap and opens the full card on a long press: its own options, the same sources.
