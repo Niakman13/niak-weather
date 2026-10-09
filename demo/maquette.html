@@ -231,6 +231,22 @@ select {font:inherit;font-size:14px;padding:7px 24px 7px 9px;border:1px solid va
 .nw-details ul {margin:8px 0 0;padding:0;list-style:none;display:grid;gap:6px} .nw-details li {display:flex;justify-content:space-between;font-size:var(--nw-fs-text);color:var(--primary-text-color)}
 .fm-body {container-type:inline-size}
 
+/* ───────────── Bouton « i » et bulle d'explication ───────────── */
+.nw-info {display:inline-grid;place-items:center;width:22px;height:22px;padding:0;flex:none;border-radius:50%;border:1px solid var(--nw-line);
+  background:var(--card-background-color);color:var(--secondary-text-color);cursor:pointer}
+.nw-info:hover {color:var(--primary-text-color);border-color:color-mix(in srgb,var(--primary-text-color) 30%,transparent)}
+.nw-info:focus-visible {outline:2px solid var(--primary-color);outline-offset:2px}
+.nw-info ha-icon {--mdc-icon-size:15px;display:flex}
+.nw-pop {inset:auto;margin:0;width:min(300px,calc(100vw - 24px));padding:12px 14px;border-radius:var(--nw-radius-bubble);border:1px solid var(--nw-line);
+  background:var(--card-background-color);color:var(--primary-text-color);box-shadow:0 12px 32px #0b1a2b26;font:400 var(--nw-fs-text)/1.45 Roboto,system-ui,sans-serif;
+  /* Indépendante du titre qui la contient : retour à la ligne, pas de coupure. */
+  white-space:normal;overflow:visible;text-overflow:clip;text-align:left;letter-spacing:0;text-transform:none}
+.nw-pop b {display:block;font-size:var(--nw-fs-text);margin-bottom:4px}
+.nw-pop .ex {margin-top:8px;padding-top:8px;border-top:1px solid var(--nw-line);font-size:var(--nw-fs-small);color:var(--secondary-text-color)}
+.nw-pop .ex::before {content:'Exemple';display:block;font:var(--nw-label);letter-spacing:var(--nw-label-spacing);text-transform:uppercase;margin-bottom:2px}
+.nw-panel-head h3 {display:flex;align-items:center;gap:8px}
+.fm-head .nw-info {margin-left:-2px}
+
 /* ───────────── Carte complète proposée ───────────── */
 .fm-hero {position:relative;isolation:isolate;overflow:hidden;padding:20px 24px 24px;display:grid;grid-template-columns:minmax(0,1fr) auto;
   grid-template-areas:"head now" "main now" "tiles tiles";column-gap:24px;row-gap:12px}
@@ -479,7 +495,7 @@ function forecastBlock(f) {
 }
 
 /* ───────────── Cadres refaits ───────────── */
-const head = (icon, color, title, source) => `<header class="nw-panel-head"><span class="nw-panel-icon" style="--c:var(--nw-${color})"><ha-icon icon="${icon}"></ha-icon></span><h3>${title}</h3><span class="nw-badge">${source}</span></header>`;
+const head = (icon, color, title, source, explain) => `<header class="nw-panel-head"><span class="nw-panel-icon" style="--c:var(--nw-${color})"><ha-icon icon="${icon}"></ha-icon></span><h3>${title}${explain ? info(...explain) : ''}</h3><span class="nw-badge">${source}</span></header>`;
 /** Couleur d'une température : du froid (5 °C) à la chaleur (30 °C), dans la palette. */
 const tempColor = t => `color-mix(in oklab,var(--nw-heat) ${Math.round(Math.min(100, Math.max(0, (t - 5) / 25 * 100)))}%,var(--nw-cold))`;
 const arrow = deg => `<svg viewBox="0 0 10 10" style="transform:rotate(${deg + 180}deg)"><path d="M5 0 9 10 5 7.5 1 10Z"/></svg>`;
@@ -541,13 +557,31 @@ function newAir() {
 
 /** Valeur posée sur une courbe : au-dessus du point, sauf s'il touche le haut du graphique (jamais sur l'axe). */
 const pill = (x, y, text) => `<span class="fc-pill${y < 30 ? ' low' : ''}" style="left:${x}%;top:${y}%">${text}</span>`;
+/** Bouton « i » et sa bulle d'explication : une phrase, puis un exemple. */
+let infoCount = 0;
+const info = (title, text, example) => { const id = `nw-info-${++infoCount}`;
+  return `<button class="nw-info" type="button" popovertarget="${id}" aria-label="Qu’est-ce que : ${title} ?"><ha-icon icon="mdi:information-variant"></ha-icon></button>
+    <div class="nw-pop" id="${id}" popover><b>${title}</b>${text}<div class="ex">${example}</div></div>`; };
+/** Place chaque bulle d'explication sous son bouton, sans sortir de l'écran. */
+function bindInfos(root) {
+  for (const pop of root.querySelectorAll('.nw-pop')) pop.addEventListener('toggle', e => {
+    if (e.newState !== 'open') return;
+    const r = root.querySelector(`[popovertarget="${pop.id}"]`).getBoundingClientRect();
+    pop.style.top = `${Math.min(r.bottom + 8, innerHeight - pop.offsetHeight - 8)}px`;
+    pop.style.left = `${Math.max(8, Math.min(r.left - 12, innerWidth - pop.offsetWidth - 8))}px`;
+  });
+}
+const INFO = {
+  ressenti: ['Ressenti', 'C’est la température que ton corps perçoit. L’humidité et le soleil la font monter, le vent la fait baisser.', '25 °C au thermomètre dans un air très humide se ressentent comme 30 °C.'],
+  synthese: ['Synthèse', 'La météo du jour en une phrase, avec ce qui compte maintenant et ce qui arrive.', '« Pluie ce soir, puis éclaircies demain matin. »'],
+};
 /** Pastille d'info, la même partout : fond teinté, icône et texte de la couleur, valeur en gras. */
 const chip = (color, icon, value, label) => `<span class="nw-chip" style="--c:var(--nw-${color})"><ha-icon icon="${icon}"></ha-icon>${value ? `<b>${value}</b>` : ''}${label}</span>`;
 function comfortPanel(w) {
   const feel = Math.round((w.temp + 6.5) * 10) / 10, gap = feel - w.temp, P = t => Math.min(100, Math.max(0, (t + 5) / 50 * 100));
   const word = feel >= 26 ? 'Chaud' : feel >= 18 ? 'Agréable' : feel >= 8 ? 'Frais' : 'Froid';
   // Même modèle que Pluie, Vent et Pression : valeur à gauche, explication à droite, puis la jauge sur une ligne.
-  return `<section class="nw-panel">${head('mdi:thermometer', 'heat', 'Ressenti', 'Station locale')}
+  return `<section class="nw-panel">${head('mdi:thermometer', 'heat', 'Ressenti', 'Station locale', INFO.ressenti)}
     <div class="metric-row"><div class="metric"><div class="metric-main"><b>${nf(feel)}</b><span>°C</span></div>
       <small><b class="word">${word}</b> · air lourd · ${gap > 0 ? '+' : ''}${nf(gap)} °C par rapport au thermomètre</small></div>
       <div class="factors">${chip('rain', 'mdi:water-percent', '+6,3 °C', 'humidité')}${chip('wind', 'mdi:weather-windy', '−1,0 °C', 'vent')}${chip('level1', 'mdi:white-balance-sunny', '+1,2 °C', 'soleil')}</div></div>
@@ -607,7 +641,7 @@ function heroHTML(w, f) {
   const date = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
   const dark = DARK_SKIES.includes(w.condition);
   return `<section class="fm-hero${dark ? ' dark-sky' : ''}"><div class="sky"><niak-weather-sky></niak-weather-sky></div><div class="veil"></div>
-    <header class="fm-head"><h2>Synthèse</h2><span>Gardanne · ${date[0].toUpperCase() + date.slice(1)}</span></header>
+    <header class="fm-head"><h2>Synthèse</h2>${info(...INFO.synthese)}<span>Gardanne · ${date[0].toUpperCase() + date.slice(1)}</span></header>
     <div class="hero-main"><span class="nw-label">Bulletin du jour</span><p class="headline">${headline(m)}</p>${alerts.map(a => bubble(a, true)).join('')}${points.length ? bubble(points[0]) : ''}</div>
     <div class="nw-now"><span class="nw-label">En ce moment</span><span class="cond"><ha-icon icon="${icon}"></ha-icon>${label}</span>
       <span class="temp">${nf(w.temp)}<small>°C</small></span>${chip('cold', 'mdi:arrow-bottom-right', '−0,4 °C/h', '')}<span class="nw-badge">Station locale</span></div>
@@ -627,6 +661,7 @@ function proposedFull(container) {
     headEl.addEventListener('click', () => set(section.classList.contains('folded')));
     headEl.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); set(section.classList.contains('folded')); } });
   }
+  bindInfos(box);
   Object.assign(box.querySelector('niak-weather-sky'), { condition: w.condition, phase: scenario.phase, animated: true, quality: 'standard', wind: w.wind, season: 'autumn' });
 }
 
