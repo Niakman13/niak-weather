@@ -1,7 +1,6 @@
 // Air and pollens from Atmo France: the same panel for today (in « Aujourd'hui ») and tomorrow (in « Prévisions »).
 import { css, html, nothing, svg, type TemplateResult } from 'lit';
-import type { AtmoReading } from '../engine/atmo';
-import type { AirItem, AirPanel } from '../engine/view-model';
+import type { AirItem, AirPanel, AtmoReading } from '../view';
 import { chip, label, nf, panelHead } from '../ui/parts';
 
 /** The six Atmo steps, in the charter's colours: good, fair, then the three alert levels, then the worst. */
@@ -34,13 +33,13 @@ function panel(p: AirPanel): TemplateResult {
   return html`<section class="nw-panel" aria-label=${`${air ? 'Air extérieur' : 'Pollens'} ${p.tomorrow ? 'demain' : 'aujourd’hui'}`}>
     ${panelHead(air ? 'mdi:air-filter' : 'mdi:flower-pollen-outline', 'calm', air ? 'Air extérieur' : 'Pollens', 'Atmo France')}
     <p class="nw-sub">${p.tomorrow ? 'Demain' : 'Aujourd’hui'}${p.zone ? ` · ${p.zone}` : ''}</p>
-    <div class="aq" data-entity=${r?.id ?? nothing} role=${r ? 'button' : nothing} tabindex=${r ? 0 : nothing}>${disc(r)}
+    <div class="aq" data-entity=${r?.entityId ?? nothing} role=${r ? 'button' : nothing} tabindex=${r ? 0 : nothing}>${disc(r)}
       <div class="txt">${label(p.tomorrow ? 'Indice de demain' : 'Indice du jour')}<strong>${word}</strong>
         <small>${value ? `Niveau ${value} sur 6` : r?.value === 7 ? 'Code 7 · hors échelle' : 'Niveau indisponible'}</small></div></div>
     ${p.worse ? html`<div class="nw-chips">${chip({ theme: `level${Math.min(3, Math.max(1, level(p.worse.reading) - 2))}` as 'level1', icon: 'mdi:alert-circle-outline',
-      value: p.worse.label, label: p.worse.reading.label.toLowerCase(), entity: p.worse.reading.id })}</div>` : nothing}
+      value: p.worse.label, label: p.worse.reading.label.toLowerCase(), entity: p.worse.reading.entityId })}</div>` : nothing}
     ${p.details.length || p.updated ? html`<details class="nw-details"><summary><ha-icon icon="mdi:chevron-right"></ha-icon>${air ? 'Détail des polluants' : 'Détail des pollens'}</summary>
-      ${p.details.length ? html`<ul>${p.details.map(d => html`<li data-entity=${d.reading.id}><span>${d.label}</span><b>${detail(d)}</b></li>`)}</ul>` : nothing}
+      ${p.details.length ? html`<ul>${p.details.map(d => html`<li data-entity=${d.reading.entityId}><span>${d.label}</span><b>${detail(d)}</b></li>`)}</ul>` : nothing}
       ${p.updated ? html`<p>Publication Atmo : ${p.updated}.${p.stale ? ' Certaines données sont anciennes : à vérifier dans l’intégration.' : ''}</p>` : nothing}</details>` : nothing}
   </section>`;
 }

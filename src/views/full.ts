@@ -1,6 +1,6 @@
 // The full card: the banner, then « Aujourd'hui » and « Prévisions », each folded or unfolded with a tap on its title.
 import { css, html, nothing, type TemplateResult } from 'lit';
-import type { WeatherView } from '../engine/view-model';
+import type { WeatherView } from '../view';
 import { renderAir } from './air';
 import { renderForecasts } from './forecasts';
 import { renderHero } from './hero';

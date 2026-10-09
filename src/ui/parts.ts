@@ -1,7 +1,6 @@
 // The charter's pieces as templates. Views assemble these; they never write a pill or a bubble by hand.
 import { html, nothing, svg, type TemplateResult } from 'lit';
-import type { AlertPoint, TickerPoint } from '../engine/alerts';
-import type { Chip } from '../engine/view-model';
+import type { AlertPoint, Chip, TickerPoint } from '../view';
 import { numberFormat } from '../intl-cache';
 
 /** French number, at most `digits` decimals (exactly `digits` when `fixed`). */
@@ -40,6 +39,10 @@ export function tile(title: string, icon: string, value: string, extra: unknown 
 
 /** Rain amount in the rain colour, or an empty line so tiles keep the same height. */
 export const rainLine = (mm: number, min = .1) => mm >= min ? html`<span class="nw-ink" style=${tint('rain')}>${nf(mm)} mm</span>` : html`<span class="nw-ink">&nbsp;</span>`;
+
+const ROSE = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSO', 'SO', 'OSO', 'O', 'ONO', 'NO', 'NNO'];
+/** Where the wind comes from, as a point of the compass (« SO »). */
+export const rose = (deg: number) => ROSE[Math.round(((deg % 360 + 360) % 360) / 22.5) % 16];
 
 /** An arrow pointing where the wind goes (the bearing is where it comes from). */
 export const windArrow = (bearing: number) => svg`<svg viewBox="0 0 10 10" aria-hidden="true" style=${`transform:rotate(${Math.round(bearing + 180)}deg)`}><path d="M5 0 9 10 5 7.5 1 10Z"/></svg>`;

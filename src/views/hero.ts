@@ -1,6 +1,6 @@
 // The banner of the full card: the same pieces as the tile, at full size, over the animated sky.
 import { css, html, nothing, type TemplateResult } from 'lit';
-import type { WeatherView } from '../engine/view-model';
+import type { WeatherView } from '../view';
 import { alertBubble, bubble, info, label, nf, tint } from '../ui/parts';
 import { firstSentence, moments, nowBlock } from './tile';
 import '../ui/ticker';

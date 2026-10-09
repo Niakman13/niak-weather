@@ -55,9 +55,9 @@ export function demoHistory(ids, s, now = new Date()) {
   return rows;
 }
 
-/** Construit l'état Home Assistant d'un scénario : météo, station, vigilance, Atmo et prévisions. */
-export function scenarioHass(s) {
-  const now = new Date(), { condition, night, temp, rain, wind, gust } = demoWeather(s);
+/** Les états Home Assistant d'un scénario : météo, station, vigilance et Atmo. */
+export function scenarioStates(s, now = new Date()) {
+  const { condition, night, temp, rain, wind, gust } = demoWeather(s);
   const states = {
     'weather.demo': s.unavailable ? { entity_id: 'weather.demo', state: 'unavailable', attributes: { friendly_name: 'Gardanne' } }
       : { entity_id: 'weather.demo', state: condition, attributes: { friendly_name: 'Gardanne', temperature: temp, temperature_unit: '°C', humidity: 74, pressure: 1013,
@@ -85,26 +85,48 @@ export function scenarioHass(s) {
     Object.assign(states, { 'sensor.atmo_air': atmo('sensor.atmo_air', 2), 'sensor.atmo_air_j1': atmo('sensor.atmo_air_j1', 2),
       'sensor.atmo_pollen': atmo('sensor.atmo_pollen', 1), 'sensor.atmo_pollen_j1': atmo('sensor.atmo_pollen_j1', 2) });
   }
-  const { hourly, daily } = demoForecasts(temp, rain, now);
-  const callWS = async m => {
-    if (m.type === 'history/history_during_period') return s.station === false ? {} : demoHistory(m.entity_ids, s, now);
-    if (m.type !== 'call_service') return m.type === 'recorder/get_statistics_metadata' ? [] : {};
-    if (s.forecasts === false) throw new Error('Prévisions indisponibles');
-    return { response: { 'weather.demo': { forecast: m.service_data.type === 'hourly' ? hourly : daily } } };
-  };
-  return { states, language: 'fr', locale: { language: 'fr' }, config: { time_zone: 'Europe/Paris', latitude: 43.45, longitude: 5.47 }, callWS, entities: {} };
+  return states;
 }
 
-/** Configuration de la carte pour un scénario (les champs absents imitent une installation minimale). */
-export function scenarioConfig(s) {
-  const station = s.station !== false;
-  return { type: 'custom:niak-weather-card', format: s.format ?? 'full', weather_entity: 'weather.demo', location: 'Gardanne', weather_path: '/meteo',
-    season_entity: 'sensor.season', forecast_source: 'Météo-France', weather_animations: s.animated ?? false,
+/** Les réglages de l'intégration pour un scénario (les champs absents imitent une installation minimale). */
+export function scenarioSources(s) {
+  return { weather_entity: 'weather.demo', location: 'Gardanne', season_entity: 'sensor.season', forecast_source: 'Météo-France',
     ...(s.vigilance ? { vigilance_entity: 'sensor.vigilance' } : {}),
-    ...(station ? { temperature_entity: 'sensor.temperature', humidity_entity: 'sensor.humidity', wind_speed_entity: 'sensor.wind', wind_gust_entity: 'sensor.gust',
+    ...(s.station !== false ? { temperature_entity: 'sensor.temperature', humidity_entity: 'sensor.humidity', wind_speed_entity: 'sensor.wind', wind_gust_entity: 'sensor.gust',
       rain_rate_entity: 'sensor.rain', daily_rain_entity: 'sensor.rain_day', weekly_rain_entity: 'sensor.rain_week', monthly_rain_entity: 'sensor.rain_month',
       yearly_rain_entity: 'sensor.rain_year', pressure_entity: 'sensor.pressure', temperature_trend_entity: 'sensor.trend',
       solar_radiation_entity: 'sensor.solar' } : {}),
     ...(s.atmo !== false ? { atmo_air_entity: 'sensor.atmo_air', atmo_air_tomorrow_entity: 'sensor.atmo_air_j1', atmo_pollen_entity: 'sensor.atmo_pollen',
-      atmo_pollen_tomorrow_entity: 'sensor.atmo_pollen_j1', pollen_source: 'atmo', show_atmo_tomorrow: true } : { pollen_source: 'none' }) };
+      atmo_pollen_tomorrow_entity: 'sensor.atmo_pollen_j1', pollen_source: 'atmo' } : { pollen_source: 'none' }) };
+}
+
+/** Tout ce que l'intégration lirait dans Home Assistant pour ce scénario : ce que son moteur reçoit (scripts/view_cli.py). */
+export function scenarioData(s, now = new Date()) {
+  const { temp, rain } = demoWeather(s), { hourly, daily } = s.forecasts === false ? { hourly: [], daily: [] } : demoForecasts(temp, rain, now);
+  return { options: scenarioSources(s), states: scenarioStates(s, now), hourly, daily,
+    history: s.station === false ? {} : demoHistory(['sensor.wind', 'sensor.gust', 'sensor.pressure', 'sensor.rain_day'], s, now),
+    now: now.toISOString(), time_zone: 'Europe/Paris', latitude: 43.45, elevation: 0 };
+}
+
+/** Un faux Home Assistant : la vue de l'intégration arrive par la connexion, calculée par son moteur sur le serveur du banc (POST /demo/view). */
+export function scenarioHass(s) {
+  let ready;
+  const first = new Promise(resolve => { ready = resolve; });
+  const connection = {
+    subscribeMessage: async (callback) => {
+      try {
+        const response = await fetch('/demo/view', { method: 'POST', body: JSON.stringify({ scenario: s, now: new Date().toISOString() }) });
+        if (!response.ok) throw new Error(await response.text());
+        callback(await response.json());
+        return async () => {};
+      } finally { ready(); }
+    },
+  };
+  const callWS = async m => m.type === 'niak_weather/entries' ? [{ entry_id: 'demo', title: 'Gardanne' }] : {};
+  return { states: scenarioStates(s), language: 'fr', locale: { language: 'fr' }, connection, callWS, ready: first };
+}
+
+/** Les réglages d'affichage de la carte pour un scénario. */
+export function scenarioConfig(s) {
+  return { type: 'custom:niak-weather-card', format: s.format ?? 'full', weather_path: '/meteo', weather_animations: s.animated ?? false };
 }

@@ -1,6 +1,6 @@
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import type { AlertPoint, TickerPoint } from '../engine/alerts';
+import type { AlertPoint, TickerPoint } from '../view';
 import { bubbles } from './charter';
 import { alertBubble, bubble } from './parts';
 

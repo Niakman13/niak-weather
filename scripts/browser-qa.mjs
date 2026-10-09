@@ -7,12 +7,14 @@ import assert from 'node:assert/strict';
 import * as mdi from '@mdi/js';
 import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
+import { serveDemoView } from './demo-view.mjs';
 
 const out = 'test-results'; mkdirSync(out, { recursive: true });
 const files = { '/': ['text/html; charset=utf-8', 'scripts/visual/harness.html'], '/card.js': ['text/javascript', 'dist/niak-weather-card.js'], '/demo-hass.js': ['text/javascript', 'demo/demo-hass.js'] };
 const icons = JSON.stringify(mdi);
 const server = createServer((req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname, file = files[path];
+  if (path === '/demo/view') return serveDemoView(req, res);
   if (path === '/icons.json') { res.setHeader('Content-Type', 'application/json'); res.end(icons); }
   else if (file) { res.setHeader('Content-Type', file[0]); res.end(readFileSync(file[1])); }
   else { res.writeHead(404); res.end(); }
@@ -180,6 +182,25 @@ try {
   for (const name of ['collapse_today', 'collapse_predictions']) assert.ok(editor.full.includes(name), `Full card setting ${name}`);
   assert.ok(editor.tile.includes('weather_path') && !editor.tile.includes('collapse_today'), 'Tile settings');
   report.editor = editor;
+
+  // 10. Without the integration, or before it is set up, the card says what to do instead of staying empty.
+  const problems = await page.evaluate(async () => {
+    const stage = document.getElementById('stage'), result = {};
+    for (const code of ['unknown_command', 'not_configured', 'choose_entry']) {
+      const card = document.createElement('niak-weather-card'); stage.replaceChildren(card);
+      card.setConfig({ type: 'custom:niak-weather-card' });
+      card.hass = { states: {}, language: 'fr', locale: { language: 'fr' }, callWS: async () => ({}), connection: { subscribeMessage: () => Promise.reject({ code }) } };
+      await new Promise(r => setTimeout(r, 50)); await card.updateComplete;
+      const root = card.shadowRoot;
+      result[code] = [root.querySelector('.nw-problem b')?.textContent, root.querySelector('.nw-problem a')?.getAttribute('href') ?? null];
+    }
+    stage.replaceChildren(); return result;
+  });
+  assert.deepEqual(problems, {
+    unknown_command: ['Niak Weather a besoin de son intégration', 'https://github.com/Niakman13/niak-weather-integration#installation'],
+    not_configured: ['Ajoutez l’intégration Niak Weather', '/config/integrations/dashboard/add?domain=niak_weather'],
+    choose_entry: ['Choisissez un lieu', null] }, 'Messages without the integration');
+  report.problems = problems;
 
   assert.deepEqual(errors, [], 'Browser errors');
   writeFileSync(`${out}/browser-report.json`, JSON.stringify(report, null, 2));

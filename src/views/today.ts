@@ -1,6 +1,7 @@
 // « Aujourd'hui »: the feel, then rain, wind and pressure measured at home, each in the same panel model.
 import { css, html, nothing, svg, type TemplateResult } from 'lit';
-import type { ChartPaths, ChartPill, ComfortView, PressureView, RainView, Stat, WeatherView, WindView } from '../engine/view-model';
+import type { ComfortView, PressureView, RainView, Stat, WeatherView, WindView } from '../view';
+import { chartEnd, chartY, curvePaths, extremePills, type ChartPaths, type ChartPill } from '../ui/charts';
 import { chip, entity, info, label, legend, nf, panelHead, tempColor } from '../ui/parts';
 
 const pills = (list: ChartPill[]) => list.map(p => html`<span class=${`pill${p.y < 30 ? ' low' : ''}`} style=${`left:${p.x}%;top:${p.y}%`}>${p.text}</span>`);
@@ -52,7 +53,8 @@ function rainPanel(r: RainView): TemplateResult {
 }
 
 function windPanel(w: WindView): TemplateResult {
-  const color = 'var(--nw-wind)';
+  const color = 'var(--nw-wind)', end = chartEnd(w.mean, w.gust);
+  const mean = curvePaths(w.mean, w.top, end), gust = curvePaths(w.gust, w.top, end);
   return html`<section class="nw-panel" aria-label="Vent">${panelHead('mdi:weather-windy', 'wind', 'Vent', w.source)}
     <div class="metric-row"><div class="metric" data-entity=${w.entity}><div class="metric-main"><b>${w.value === undefined ? '—' : nf(w.value, 0)}</b><span>km/h</span></div>
       <small>${w.label}${w.description ? ` · ${w.description}` : ''}</small></div>
@@ -62,21 +64,22 @@ function windPanel(w: WindView): TemplateResult {
         <text x="36" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="var(--nw-fg2)">N</text>
         <path d="M36 16 44 46 36 40 28 46Z" fill="color-mix(in oklab,var(--nw-wind) 75%,var(--nw-fg))" transform=${`rotate(${(w.bearing + 180) % 360} 36 36)`}/></svg>`}</div>
     <div class="mini"><div class="mini-top">6 dernières heures · km/h</div>
-      ${w.mean.length || w.gust.length ? html`<div class="mini-plot"><svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label="Vent des 6 dernières heures, moyennes et rafales par dix minutes">
-          ${w.gust.map(p => svg`<path d=${p.line} fill="none" stroke="color-mix(in oklab,var(--nw-wind) 55%,transparent)" stroke-width="2" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>`)}
-          ${curve(w.mean, color)}</svg>${pills(w.pills)}</div>${sixHours}
-        <div class="nw-legend">${legend(w.meanLabel, color)}${w.gust.length ? legend('Rafales', color, 'dash') : nothing}</div>`
+      ${mean.length || gust.length ? html`<div class="mini-plot"><svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label="Vent des 6 dernières heures, moyennes et rafales par dix minutes">
+          ${gust.map(p => svg`<path d=${p.line} fill="none" stroke="color-mix(in oklab,var(--nw-wind) 55%,transparent)" stroke-width="2" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>`)}
+          ${curve(mean, color)}</svg>${pills(extremePills(w.mean, end, v => chartY(v, w.top), v => nf(v, 0)))}</div>${sixHours}
+        <div class="nw-legend">${legend(w.meanLabel, color)}${gust.length ? legend('Rafales', color, 'dash') : nothing}</div>`
       : html`<p class="nw-empty">${w.empty}</p>`}</div>
     ${stats(w.stats)}
   </section>`;
 }
 
 function pressurePanel(p: PressureView): TemplateResult {
+  const end = chartEnd(p.series), series = curvePaths(p.series, p.top, end, p.low);
   return html`<section class="nw-panel" aria-label="Pression">${panelHead('mdi:gauge', 'pressure', 'Pression', p.source)}
     <div class="metric-row"><div class="metric" data-entity=${entity(p.entity)}><div class="metric-main"><b>${p.value === undefined ? '—' : nf(p.value, 0)}</b><span>hPa</span></div>
       <small>${p.description}</small></div>${p.trend ? chip(p.trend) : nothing}</div>
     <div class="mini"><div class="mini-top">6 dernières heures · hPa</div>
-      ${p.series.length ? html`<div class="mini-plot"><svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label="Pression des 6 dernières heures">${curve(p.series, 'var(--nw-pressure)')}</svg>${pills(p.pills)}</div>${sixHours}`
+      ${series.length ? html`<div class="mini-plot"><svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label="Pression des 6 dernières heures">${curve(series, 'var(--nw-pressure)')}</svg>${pills(extremePills(p.series, end, v => chartY(v, p.top, p.low), v => nf(v, 0)))}</div>${sixHours}`
         : html`<p class="nw-empty">${p.empty}</p>`}</div>
     ${stats(p.stats)}
   </section>`;

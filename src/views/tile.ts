@@ -1,8 +1,6 @@
 // The tile: on the dashboard it is one band; a tap unfolds it in place (bulletin, moments, forecasts), a long press opens the full card.
 import { css, html, nothing, type TemplateResult } from 'lit';
-import { conditionIcon } from '../engine/current-weather';
-import type { WeatherView } from '../engine/view-model';
-import type { Bulletin } from '../engine/bulletin';
+import type { Bulletin, WeatherView } from '../view';
 import { alertBubble, label, nf, rainLine, tile } from '../ui/parts';
 import '../ui/ticker';
 
@@ -31,7 +29,7 @@ export const moments = (b: Bulletin) => html`<div class="moments">${b.periods.ma
   html`<small>${p.phrase}</small>${p.rain >= 1 ? rainLine(p.rain) : nothing}`, p.text))}</div>`;
 
 function forecasts(v: WeatherView, s: TileState): TemplateResult | typeof nothing {
-  const hours = v.hours.slice(0, 12).filter(h => h.t !== undefined), days = v.days.slice(0, 5);
+  const hours = v.hours.slice(0, 12).filter(h => h.temperature !== undefined), days = v.days.slice(0, 5);
   if (!hours.length && !days.length) return nothing;
   const tab = !hours.length ? 'days' : !days.length ? 'hours' : s.tab;
   const select = (t: 'hours' | 'days') => (e: Event) => { e.stopPropagation(); s.onTab(t); };
@@ -40,9 +38,9 @@ function forecasts(v: WeatherView, s: TileState): TemplateResult | typeof nothin
         <button type="button" aria-pressed=${tab === 'hours'} @click=${select('hours')} @pointerdown=${stopPress}>Heures</button>
         <button type="button" aria-pressed=${tab === 'days'} @click=${select('days')} @pointerdown=${stopPress}>Jours</button></span>` : nothing}</div>
     ${tab === 'hours'
-      ? html`<div class="hours">${hours.map(h => tile(`${h.hour} h`, conditionIcon(h.c, h.night), `${nf(h.t!, 0)}°`, rainLine(h.p)))}</div>`
+      ? html`<div class="hours">${hours.map(h => tile(`${h.hour} h`, h.icon, `${nf(h.temperature!, 0)}°`, rainLine(h.precipitation)))}</div>`
       : html`<div class="days">${days.map(d => tile(d.label, d.icon, d.high === undefined ? '—' : `${d.high}°`,
-          html`<span class="lo">${d.low === undefined ? '' : `${d.low}°`}</span>${rainLine(d.rain)}`, d.condition))}</div>`}`;
+          html`<span class="lo">${d.low === undefined ? '' : `${d.low}°`}</span>${rainLine(d.rain)}`, d.conditionLabel))}</div>`}`;
 }
 /** The day/hour switch must not start a long press on the card. */
 const stopPress = (e: Event) => e.stopPropagation();

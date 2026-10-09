@@ -13,6 +13,7 @@ import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
 import { SCENES, GROUPS } from './scenarios.mjs';
+import { serveDemoView } from '../demo-view.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url)), root = resolve(here, '../..');
 const RESULTS = join(root, 'test-results/visual');
@@ -26,6 +27,7 @@ function serve(cardPath) {
   const server = createServer((req, res) => {
     const path = new URL(req.url, 'http://localhost').pathname;
     const send = (type, body) => { res.setHeader('Content-Type', type); res.end(body); };
+    if (path === '/demo/view') return serveDemoView(req, res);
     if (path === '/') send('text/html; charset=utf-8', harness);
     else if (path === '/card.js') send('text/javascript', readFileSync(cardPath));
     else if (path === '/icons.json') send('application/json', icons);
