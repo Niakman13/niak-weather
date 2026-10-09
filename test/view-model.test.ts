@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildView, type ViewInput } from '../src/engine/view-model';
+import { buildView, placeName, type ViewInput } from '../src/engine/view-model';
 import { buildLocalModel } from '../src/engine/local-model';
 import { buildWeatherBrief } from '../src/engine/weather-brief';
 import type { HassEntity, HomeAssistant, WeatherCardConfig } from '../src/types';
@@ -16,6 +16,14 @@ function view(config: WeatherCardConfig, states: HassEntity[], extra: Partial<Vi
   const h = hass(states), model = buildLocalModel(h, config, [], {}, now);
   return buildView({ hass: h, config, model, brief: buildWeatherBrief(h, config, model, [], now), hourly: [], daily: [], history: {}, rainHistory: {}, now, ...extra });
 }
+
+describe('Place name', () => {
+  it('keeps the town of a Météo-France entity, and short names as they are', () => {
+    expect(placeName('Météo-France forecast for city Auriol - Provence-Alpes-Côte d\'Azur (13) - FR Auriol')).toBe('Auriol');
+    expect(placeName('Gardanne')).toBe('Gardanne');
+    expect(placeName('Maison')).toBe('Maison');
+  });
+});
 
 describe('View model', () => {
   it('hides station measurements that are not configured, but keeps a configured sensor that is unavailable', () => {

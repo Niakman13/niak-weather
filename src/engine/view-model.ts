@@ -80,6 +80,13 @@ const ROSE = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSO', 'SO'
 export const rose = (deg: number) => ROSE[Math.round(((deg % 360 + 360) % 360) / 22.5) % 16];
 const DARK_SKIES = ['lightning', 'lightning-rainy', 'pouring'];
 
+/** The town from a weather entity's name: « Météo-France forecast for city Auriol - Provence-Alpes-Côte d'Azur (13) - FR Auriol » → « Auriol ». */
+export function placeName(name: string): string {
+  const city = name.match(/for city\s+(.+?)\s+-\s/i)?.[1];
+  if (city) return city;
+  return name.length > 30 && name.includes(' - ') ? name.split(' - ')[0] : name;
+}
+
 export function buildView(input: ViewInput): WeatherView {
   const { hass, config, model, brief, now } = input;
   const weather = hass.states[config.weather_entity], a = available(model) ? model.attributes : {};
@@ -89,7 +96,7 @@ export function buildView(input: ViewInput): WeatherView {
   const alerts = alertPoints(brief), shown = new Set(alerts.map(x => x.source));
   const trend = finite(a.tend_temp);
   return {
-    location: config.location ?? String(weather?.attributes.friendly_name ?? ''),
+    location: config.location ?? placeName(String(weather?.attributes.friendly_name ?? '')),
     dateLabel: cap(date), provider: weatherSourceLabel(hass, config),
     forecastSource: config.forecast_source ?? (/france/i.test(String(weather?.attributes.attribution)) ? 'Météo-France' : 'Prévisions météo'),
     now: { ...current, trend: trend !== undefined && Math.abs(trend) >= .1 ? trend : undefined, darkSky: DARK_SKIES.includes(current.condition) },
