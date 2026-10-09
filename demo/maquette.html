@@ -85,11 +85,17 @@
 .nw-badge {font:600 10px/1.5 Roboto,system-ui,sans-serif;letter-spacing:0;text-transform:none;white-space:nowrap;padding:2px 9px;border-radius:var(--nw-radius-pill);
   border:1px solid var(--nw-line);background:color-mix(in srgb,var(--card-background-color) 70%,transparent);color:var(--primary-text-color)}
 /* « En ce moment » : condition, température, source. */
-.nw-now {display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:2px;text-shadow:0 0 10px var(--card-background-color),0 0 3px var(--card-background-color)}
+.nw-now {display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:2px;
+  text-shadow:0 0 14px var(--card-background-color),0 0 5px var(--card-background-color),0 0 2px var(--card-background-color)}
+.nw-now .nw-label {color:color-mix(in srgb,var(--primary-text-color) 75%,transparent)}
+/* Pastilles posées sur le ciel : fond de carte presque opaque, teinté du thème, lisible sur tous les ciels. */
+.nw-now :is(.nw-chip,.nw-badge) {text-shadow:none;background:color-mix(in oklab,var(--card-background-color) 82%,var(--c,transparent));border:1px solid var(--nw-line);backdrop-filter:var(--nw-blur)}
 .nw-now .cond {display:flex;align-items:center;gap:6px;font-weight:650;font-size:13px} .nw-now .cond ha-icon {--mdc-icon-size:17px;display:flex}
 .nw-now .temp {font-weight:700;letter-spacing:-1px;line-height:1.05;font-size:var(--nw-temp-m)} .nw-now .temp small {font-size:.45em;font-weight:400;vertical-align:super;margin-left:2px}
 .dark-sky .nw-now {color:#fff;text-shadow:0 1px 5px #0b1a2b99}
-.dark-sky .nw-now .nw-badge {color:#fff;text-shadow:none;background:rgba(15,40,65,.25);border-color:rgba(255,255,255,.28)}
+/* Ciel sombre (orage, fortes pluies) : tout le bloc « En ce moment » passe en blanc, ses pastilles sur fond sombre translucide. */
+.dark-sky .nw-now .nw-label {color:rgba(255,255,255,.88)}
+.dark-sky .nw-now :is(.nw-badge,.nw-chip) {color:#fff;text-shadow:none;background:rgba(15,40,65,.32);border:1px solid rgba(255,255,255,.28)}
 
 /* ───────────────────────── La carte : tuile qui se déplie ───────────────────────── */
 .card {position:relative;isolation:isolate;overflow:hidden;border-radius:var(--nw-radius-card);background:var(--card-background-color);border:1px solid var(--divider-color);
@@ -395,6 +401,8 @@ await import('/card.js');
 const { scenarioHass, scenarioConfig, demoForecasts, demoWeather } = await import('/demo-hass.js');
 
 const $ = id => document.getElementById(id);
+/** Ciels sombres quel que soit le thème : le texte posé dessus passe en blanc. */
+const DARK_SKIES = ['lightning', 'lightning-rainy', 'pouring'];
 const LABELS = { sunny: ['Ensoleillé', 'mdi:weather-sunny'], 'clear-night': ['Nuit claire', 'mdi:weather-night'], partlycloudy: ['Éclaircies', 'mdi:weather-partly-cloudy'],
   cloudy: ['Ciel couvert', 'mdi:weather-cloudy'], rainy: ['Pluie', 'mdi:weather-rainy'], pouring: ['Fortes pluies', 'mdi:weather-pouring'],
   'lightning-rainy': ['Orage et pluie', 'mdi:weather-lightning-rainy'], snowy: ['Neige', 'mdi:weather-snowy'], fog: ['Brouillard', 'mdi:weather-fog'], windy: ['Venteux', 'mdi:weather-windy'] };
@@ -581,7 +589,7 @@ const fmSection = (id, title, sub, body) => `<section class="fm-section" data-id
 function heroHTML(w, f) {
   const { alert, points } = story(scenario), [label, icon] = LABELS[w.condition] ?? LABELS.cloudy, m = moments(f.hourly);
   const date = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
-  const dark = ['lightning-rainy', 'pouring'].includes(w.condition);
+  const dark = DARK_SKIES.includes(w.condition);
   return `<section class="fm-hero${dark ? ' dark-sky' : ''}"><div class="sky"><niak-weather-sky></niak-weather-sky></div><div class="veil"></div>
     <header class="fm-head"><h2>Synthèse</h2><span>Gardanne · ${date[0].toUpperCase() + date.slice(1)}</span></header>
     <div class="hero-main"><span class="nw-label">Bulletin du jour</span><p class="headline">${headline(m)}</p>${alert ? bubble(alert, true) : ''}${points.length ? bubble(points[0]) : ''}</div>
@@ -609,7 +617,7 @@ function proposedFull(container) {
 let scenario, ticker;
 function render() {
   const s = scenario, { w, alert, points } = story(s), f = demoForecasts(w.temp, w.rain), [label, icon] = LABELS[w.condition] ?? LABELS.cloudy;
-  const dark = ['lightning-rainy', 'pouring'].includes(w.condition);
+  const dark = DARK_SKIES.includes(w.condition);
   $('slot').innerHTML = `<div class="card${state.open ? ' open' : ''}${dark ? ' dark-sky' : ''}" tabindex="0" role="button" aria-expanded="${state.open}" aria-label="Météo à Gardanne : appui pour ${state.open ? 'replier' : 'déplier'}, appui long pour la carte complète">
     <div class="sky"><niak-weather-sky></niak-weather-sky></div><div class="veil"></div><i class="press-ring"></i>
     <div class="top">
