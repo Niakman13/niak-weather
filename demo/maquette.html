@@ -209,12 +209,55 @@ select {font:inherit;font-size:14px;padding:7px 24px 7px 9px;border:1px solid va
 .nw-details summary {cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;font-weight:600} .nw-details summary::-webkit-details-marker {display:none}
 .nw-details summary ha-icon {--mdc-icon-size:16px;display:flex;transition:transform .2s} .nw-details[open] summary ha-icon {transform:rotate(90deg)}
 .nw-details ul {margin:8px 0 0;padding:0;list-style:none;display:grid;gap:6px} .nw-details li {display:flex;justify-content:space-between;font-size:var(--nw-fs-text);color:var(--primary-text-color)}
-.compare {display:grid;gap:16px;container-type:inline-size}
+.fm-body {container-type:inline-size}
+
+/* ───────────── Carte complète proposée ───────────── */
+.full-mock {border:1px solid var(--divider-color);border-radius:var(--nw-radius-card);background:var(--card-background-color);overflow:hidden;container-type:inline-size}
+.fm-section {padding:20px 24px 24px;border-top:1px solid color-mix(in oklab,var(--nw-line) 70%,transparent)}
+.fm-head {display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.fm-head h2 {margin:0;font-size:var(--nw-fs-title);font-weight:750;letter-spacing:-.2px}
+.fm-head span {font-size:var(--nw-fs-small);color:var(--secondary-text-color);flex:1}
+.fm-fold {display:grid;place-items:center;width:30px;height:30px;padding:0;border-radius:var(--nw-radius-pill);border:1px solid var(--nw-line);background:var(--card-background-color);color:var(--secondary-text-color);cursor:pointer}
+.fm-fold ha-icon {--mdc-icon-size:20px;display:flex;transition:transform .3s}
+.fm-section.folded .fm-fold ha-icon {transform:rotate(-90deg)}
+.fm-body {display:grid;gap:16px;margin-top:16px} .fm-section.folded .fm-body {display:none}
+@container (max-width:560px) {.fm-section {padding:16px 14px 18px}}
+.fm-grid3 {display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+/* Valeur principale d'un cadre : grand chiffre, unité, légende */
+.metric {display:flex;flex-direction:column;gap:4px}
+.metric-main {display:flex;align-items:baseline;gap:5px} .metric-main b {font-size:var(--nw-fs-value);font-weight:700;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums}
+.metric-main span {font-size:var(--nw-fs-text);color:var(--secondary-text-color);font-weight:600}
+.metric small {font-size:var(--nw-fs-small);color:var(--secondary-text-color)}
+.metric-row {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 14px}
+.stats b {white-space:nowrap}
+/* Trois petites valeurs alignées sous un trait */
+.stats {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding-top:12px;border-top:1px solid color-mix(in oklab,var(--nw-line) 60%,transparent);margin-top:auto}
+.stats div {display:flex;flex-direction:column;gap:2px;min-width:0} .stats b {font-size:var(--nw-fs-text);font-weight:700;font-variant-numeric:tabular-nums}
+/* Pastille d'état teintée (tendance, intensité) */
+.nw-chip {display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:var(--nw-radius-pill);font-size:var(--nw-fs-small);font-weight:600;white-space:nowrap;
+  background:color-mix(in oklab,var(--c) 24%,transparent);color:color-mix(in oklab,var(--c) var(--nw-ink),var(--primary-text-color))}
+.nw-chip ha-icon {--mdc-icon-size:14px;display:flex}
+.compass {width:72px;height:72px;flex:none}
+.spark {width:100%;height:46px;display:block}
+/* Petites infos en plus (rayonnement, humidité, rosée) */
+.fm-extras {display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
+.fm-extras span {display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:var(--nw-radius-pill);border:1px solid var(--nw-line);background:var(--nw-glass);font-size:var(--nw-fs-small);color:var(--secondary-text-color)}
+.fm-extras b {color:var(--primary-text-color);font-size:var(--nw-fs-text)} .fm-extras ha-icon {--mdc-icon-size:16px;display:flex;color:var(--c)}
+/* Ressenti */
+.rail {position:relative;height:8px;border-radius:var(--nw-radius-pill);margin:22px 0 6px;
+  background:linear-gradient(90deg,var(--nw-cold),var(--nw-rain) 28%,var(--nw-calm) 45%,var(--nw-level1) 62%,var(--nw-heat) 78%,var(--nw-level3))}
+.rail .thermo {position:absolute;top:-5px;width:3px;height:18px;margin-left:-1.5px;border-radius:2px;background:var(--card-background-color);box-shadow:0 0 0 1px var(--nw-line)}
+.rail .feel {position:absolute;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--card-background-color);border:4px solid var(--c);box-shadow:0 1px 4px #0002}
+.rail-scale {display:flex;justify-content:space-between;font-size:var(--nw-fs-small);color:var(--secondary-text-color)}
+.rail-scale em {font-style:normal;text-align:center}
+.factors {display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
 
 /* Page météo complète */
-.page-grid {display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:22px;align-items:start}
-.phone .page-grid {grid-template-columns:375px minmax(0,1fr)}
-.settings {background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;position:sticky;top:120px}
+.page-grid {display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.phone .page-grid {grid-template-columns:375px}
+/* Réglages en barre au-dessus de la carte : la carte garde toute la largeur. */
+.settings {order:-1;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:12px;padding:12px 16px;display:flex;flex-wrap:wrap;align-items:end;gap:10px 18px}
+.settings h3, .settings p {flex-basis:100%}
 .settings h3 {margin:0;font-size:14px} .settings label {display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--secondary-text-color)}
 .settings p {margin:0;font-size:12px;color:var(--secondary-text-color)}
 /* Écran étroit : tout s'empile, sans défilement horizontal. */
@@ -279,10 +322,11 @@ Toutes les pièces viennent de la <b>charte</b> en bas de page, tirée du bandea
 <dialog id="full"><header><b>Météo · Gardanne</b><button id="close" type="button">Fermer</button></header><div class="body" id="fullBody"></div></dialog>
 
 <h2>2 · La page météo complète</h2>
-<p class="lead">Pour ceux qui veulent une page météo dédiée : la carte complète reste un format à part entière. Les panneaux <b>Aujourd'hui</b> et <b>Prévisions</b> se plient et se déplient d'un appui sur leur titre ; leur état de départ se choisit dans les réglages. Les pastilles de source y ont toutes le même style.</p>
+<p class="lead">La carte complète proposée, construite entièrement avec la charte : le bandeau animé, puis Aujourd'hui (ressenti, pluie, vent, pression, air, pollens) et Prévisions. Pour ceux qui veulent une page météo dédiée : la carte complète reste un format à part entière. Les panneaux <b>Aujourd'hui</b> et <b>Prévisions</b> se plient et se déplient d'un appui sur leur titre ; leur état de départ se choisit dans les réglages. Les pastilles de source y ont toutes le même style.</p>
 <div class="page-grid">
   <div id="pageCard"></div>
   <aside class="settings">
+    <label>Version affichée<select id="fullMode"><option value="new">Proposée</option><option value="old">Actuelle (pour comparer)</option></select></label>
     <h3>Réglages · Affichage</h3>
     <p>Aperçu de l'éditeur de la carte, format « Complète ».</p>
     <label>Panneau « Aujourd'hui »<select id="foldToday"><option value="open">Déplié au départ</option><option value="closed">Replié au départ</option></select></label>
@@ -291,17 +335,10 @@ Toutes les pièces viennent de la <b>charte</b> en bas de page, tirée du bandea
   </aside>
 </div>
 
-<h2>3 · Prévisions, air et pollens, refaits</h2>
-<p class="lead">Proposition pour la carte complète, à comparer avec la carte actuelle juste au-dessus. Même charte partout : cadre, en-tête avec icône teintée, pastille de source, légende centrée, six tailles de texte. Plus de « Pluie dans… » : le brief le dit déjà.</p>
-<div class="compare">
-  <div class="nw-panels" id="newForecasts"></div>
-  <div class="nw-panels nw-panels--two" id="newAir"></div>
-</div>
-
-<h2>4 · La charte</h2>
+<h2>3 · La charte</h2>
 <p class="lead">Les pièces de base de toute la carte, avec leur nom. Modifier un réglage (par exemple le contour <code>--nw-line</code>) le change partout : tuile, tuile dépliée et carte complète. Les valeurs sont celles du bandeau actuel.</p>
 <div class="specimens" id="specimens"></div>
-<h2>5 · Ce que la charte unifie</h2>
+<h2>4 · Ce que la charte unifie</h2>
 <p class="lead">Écarts relevés dans le code actuel, que la refonte ramène à un seul réglage chacun.</p>
 <div class="fixes">
   <div class="fix"><b>Étiquettes en petites capitales</b><s>5 réglages différents (9 ou 10 px, espacement .5 / .6 / .8 px / .12 em)</s><br>→ une seule : <code>--nw-label</code></div>
@@ -427,7 +464,7 @@ function newForecasts(f) {
       <span class="lo">${d.templow}°</span><span class="track"><i class="fill" style="left:${P(d.templow)}%;width:${P(d.temperature) - P(d.templow)}%;background:linear-gradient(90deg,${tempColor(d.templow)},${tempColor(d.temperature)})"></i></span>
       <span class="hi">${d.temperature}°</span><span class="rain">${d.precipitation ? `${nf(d.precipitation)} mm` : ''}</span><span class="wind">${d.wind_speed ?? ''}</span>`).join('')}</div>
   </section>`;
-  $('newForecasts').innerHTML = chart + week;
+  return chart + week;
 }
 /** Disque Atmo : six crans, remplis jusqu'au niveau, dans les couleurs de la charte. */
 const AQ = ['calm', 'calm', 'level1', 'level2', 'level3', 'pressure'];
@@ -441,8 +478,68 @@ function newAir() {
   const panel = (icon, title, level, word, sub, items) => `<section class="nw-panel">${head(icon, 'calm', title, 'Atmo France')}<p class="nw-sub">${sub}</p>
     <div class="aq">${aqDisc(level)}<div class="txt"><span class="nw-label">Indice du jour</span><strong>${word}</strong><small>Niveau ${level} sur 6</small></div></div>
     <details class="nw-details"><summary><ha-icon icon="mdi:chevron-right"></ha-icon>${title === 'Air extérieur' ? 'Détail des polluants' : 'Détail des pollens'}</summary><ul>${items.map(([n, v]) => `<li><span>${n}</span><b>${v}</b></li>`).join('')}</ul></details></section>`;
-  $('newAir').innerHTML = panel('mdi:air-filter', 'Air extérieur', 2, 'Moyen', 'Aujourd’hui · Gardanne', [['Particules fines PM2,5', 'Moyen'], ['Particules PM10', 'Bon'], ['Ozone', 'Moyen'], ['Dioxyde d’azote', 'Bon']])
+  return panel('mdi:air-filter', 'Air extérieur', 2, 'Moyen', 'Aujourd’hui · Gardanne', [['Particules fines PM2,5', 'Moyen'], ['Particules PM10', 'Bon'], ['Ozone', 'Moyen'], ['Dioxyde d’azote', 'Bon']])
     + panel('mdi:flower-pollen-outline', 'Pollens', 1, 'Très faible', 'Aujourd’hui · Gardanne', [['Graminées', 'Très faible'], ['Ambroisie', 'Faible'], ['Olivier', 'Très faible']]);
+}
+
+function comfortPanel(w) {
+  const feel = Math.round((w.temp + 6.5) * 10) / 10, P = t => Math.min(100, Math.max(0, (t + 5) / 50 * 100));
+  const word = feel >= 26 ? 'Chaud' : feel >= 18 ? 'Agréable' : feel >= 8 ? 'Frais' : 'Froid';
+  return `<section class="nw-panel">${head('mdi:thermometer', 'heat', 'Ressenti', 'Station locale')}
+    <div class="metric-row"><div class="metric"><span style="font-size:var(--nw-fs-title);font-weight:700">${word}</span><small>air lourd</small></div>
+      <div class="metric-main"><b style="color:color-mix(in oklab,${tempColor(feel)} var(--nw-ink),var(--primary-text-color))">${nf(feel)}</b><span>°C</span></div></div>
+    <div><div class="rail"><i class="thermo" style="left:${P(w.temp)}%" title="Thermomètre ${nf(w.temp)} °C"></i><i class="feel" style="left:${P(feel)}%;--c:${tempColor(feel)}"></i></div>
+      <div class="rail-scale"><span>−5 °C</span><em>${nf(feel - w.temp)} °C de plus qu’au thermomètre, à cause de l’humidité</em><span>45 °C</span></div></div>
+    <div class="factors"><span class="nw-chip" style="--c:var(--nw-rain)"><ha-icon icon="mdi:water-percent"></ha-icon>+6,3 °C humidité</span>
+      <span class="nw-chip" style="--c:var(--nw-wind)"><ha-icon icon="mdi:weather-windy"></ha-icon>−1,0 °C vent</span>
+      <span class="nw-chip" style="--c:var(--nw-level1)"><ha-icon icon="mdi:white-balance-sunny"></ha-icon>+1,2 °C soleil</span></div>
+  </section>`;
+}
+function measurePanels(w) {
+  const today = Math.round(w.rain * 2 * 10) / 10;
+  const rain = `<section class="nw-panel">${head('mdi:weather-rainy', 'rain', 'Pluie', 'Station locale')}
+    <div class="metric-row"><div class="metric"><div class="metric-main"><b>${today.toLocaleString("fr-FR",{minimumFractionDigits:1,maximumFractionDigits:1})}</b><span>mm</span></div><small>Depuis minuit</small></div>
+      <span class="nw-chip" style="--c:var(--nw-rain)">${w.rain ? `${nf(w.rain)} mm/h en ce moment` : 'Pas de pluie'}</span></div>
+    <div class="stats"><div><span class="nw-label">Semaine</span><b>${nf(today + 9.6)} mm</b></div><div><span class="nw-label">Mois</span><b>${nf(today + 45.4)} mm</b></div><div><span class="nw-label">Année</span><b>${nf(today + 534.1)} mm</b></div></div>
+  </section>`;
+  const dir = 200, rot = dir + 180;
+  const wind = `<section class="nw-panel">${head('mdi:weather-windy', 'wind', 'Vent', 'Station locale')}
+    <div class="metric-row"><div class="metric"><div class="metric-main"><b>${w.wind}</b><span>km/h</span></div><small>Vent moyen · ${w.wind < 12 ? 'brise légère' : w.wind < 30 ? 'vent modéré' : 'vent fort'}</small></div>
+      <svg class="compass" viewBox="0 0 72 72" aria-label="Vent du sud-sud-ouest"><circle cx="36" cy="36" r="30" fill="color-mix(in oklab,var(--nw-wind) 10%,transparent)" stroke="var(--nw-line)"/>
+        <text x="36" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="var(--secondary-text-color)">N</text>
+        <path d="M36 16 44 46 36 40 28 46Z" fill="color-mix(in oklab,var(--nw-wind) 75%,var(--primary-text-color))" transform="rotate(${rot} 36 36)"/></svg></div>
+    <div class="stats"><div><span class="nw-label">Rafales</span><b>${w.gust} km/h</b></div><div><span class="nw-label">Direction</span><b>SSO · ${dir}°</b></div><div><span class="nw-label">Max. 24 h</span><b>${w.gust + 9} km/h</b></div></div>
+  </section>`;
+  const series = [1011.2, 1011.6, 1012.1, 1012.4, 1012.9, 1013.1, 1013.4, 1013.7, 1013.9, 1014.0], lo = 1010.5, hi = 1014.5;
+  const pts = series.map((v, i) => `${i / (series.length - 1) * 100} ${(1 - (v - lo) / (hi - lo)) * 40 + 3}`).join(' L');
+  const pressure = `<section class="nw-panel">${head('mdi:gauge', 'pressure', 'Pression', 'Station locale')}
+    <div class="metric-row"><div class="metric"><div class="metric-main"><b>1014</b><span>hPa</span></div><small>Temps stable</small></div>
+      <span class="nw-chip" style="--c:var(--nw-pressure)"><ha-icon icon="mdi:trending-up"></ha-icon>+2,8 hPa en 3 h</span></div>
+    <svg class="spark" viewBox="0 0 100 46" preserveAspectRatio="none" aria-label="Pression sur 24 heures"><path d="M${pts} L100 46 L0 46Z" fill="color-mix(in oklab,var(--nw-pressure) 18%,transparent)"/>
+      <path d="M${pts}" fill="none" stroke="var(--nw-pressure)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>
+    <div class="stats"><div><span class="nw-label">Il y a 24 h</span><b>1011 hPa</b></div><div><span class="nw-label">Min.</span><b>1011 hPa</b></div><div><span class="nw-label">Max.</span><b>1014 hPa</b></div></div>
+  </section>`;
+  return `<div class="fm-grid3">${rain}${wind}${pressure}</div>
+    <div class="fm-extras"><span style="--c:var(--nw-level1)"><ha-icon icon="mdi:solar-power-variant"></ha-icon><b>350</b> W/m²</span><span style="--c:var(--nw-rain)"><ha-icon icon="mdi:water-percent"></ha-icon><b>78 %</b> humidité</span><span style="--c:var(--nw-cold)"><ha-icon icon="mdi:thermometer-water"></ha-icon><b>18,4 °C</b> rosée</span></div>`;
+}
+const fmSection = (id, title, sub, body) => `<section class="fm-section" data-id="${id}"><header class="fm-head" role="button" tabindex="0"><h2>${title}</h2><span>${sub}</span>
+  <button class="fm-fold" type="button" tabindex="-1" aria-hidden="true"><ha-icon icon="mdi:chevron-down"></ha-icon></button></header><div class="fm-body">${body}</div></section>`;
+/** Carte complète proposée : le vrai bandeau animé, puis les sections construites avec la charte. */
+function proposedFull(container) {
+  const w = demoWeather(scenario), f = demoForecasts(w.temp, w.rain), prefs = foldPrefs();
+  container.replaceChildren();
+  const box = document.createElement('div'); box.className = 'full-mock'; container.append(box);
+  const hero = document.createElement('niak-weather-card'); box.append(hero);
+  hero.setConfig({ ...scenarioConfig({ ...scenario, format: 'full' }), weather_animations: true, show_today: false, show_predictions: false }); hero.hass = scenarioHass(scenario);
+  preview(hero).then(() => { const card = hero.shadowRoot?.querySelector('ha-card')?.shadowRoot; if (card) { const st = document.createElement('style'); st.textContent = ':host{border:0!important;border-radius:0!important}'; card.append(st); } });
+  box.insertAdjacentHTML('beforeend', fmSection('today', 'Aujourd’hui', 'Mesures et ressenti', `${comfortPanel(w)}${measurePanels(w)}<div class="nw-panels nw-panels--two">${newAir()}</div>`)
+    + fmSection('predictions', 'Prévisions', 'Météo-France', `<div class="nw-panels">${newForecasts(f)}</div>`));
+  for (const section of box.querySelectorAll('.fm-section')) {
+    const headEl = section.querySelector('.fm-head'), set = open => { section.classList.toggle('folded', !open); headEl.setAttribute('aria-expanded', open); };
+    set(prefs[section.dataset.id] !== 'closed');
+    headEl.addEventListener('click', () => set(section.classList.contains('folded')));
+    headEl.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); set(section.classList.contains('folded')); } });
+  }
 }
 
 let scenario, ticker;
@@ -565,6 +662,7 @@ async function preview(card) {
   }
 }
 function fullCard(container) {
+  if ($('fullMode').value === 'new') { proposedFull(container); return; }
   container.replaceChildren();
   const card = document.createElement('niak-weather-card'); container.append(card);
   card.setConfig({ ...scenarioConfig({ ...scenario, format: 'full' }), weather_animations: true }); card.hass = scenarioHass(scenario);
@@ -614,9 +712,9 @@ function refresh() {
   if ($('palette').value !== 'aube') document.documentElement.classList.add(`pal-${$('palette').value}`);
   document.body.classList.toggle('phone', $('screen').value === 'phone');
   render(); startTicker(); fullCard($('pageCard'));
-  const w = demoWeather(scenario); newForecasts(demoForecasts(w.temp, w.rain)); newAir();
+
 }
-for (const id of ['condition', 'phase', 'vigilance', 'variant', 'palette', 'theme', 'screen', 'foldToday', 'foldPredictions']) $(id).addEventListener('change', refresh);
+for (const id of ['condition', 'phase', 'vigilance', 'variant', 'palette', 'theme', 'screen', 'foldToday', 'foldPredictions', 'fullMode']) $(id).addEventListener('change', refresh);
 specimens(); refresh();
 </script>
 </body></html>
