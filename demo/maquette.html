@@ -222,7 +222,10 @@ select {font:inherit;font-size:14px;padding:7px 24px 7px 9px;border:1px solid va
 .fm-section.folded .fm-fold ha-icon {transform:rotate(-90deg)}
 .fm-body {display:grid;gap:16px;margin-top:16px} .fm-section.folded .fm-body {display:none}
 @container (max-width:560px) {.fm-section {padding:16px 14px 18px}}
-.fm-grid3 {display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.fm-grid3 {display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+/* Deux colonnes : le troisième cadre prend toute la largeur, sans trou à côté. Trois colonnes sur grand écran. */
+@container (min-width:560px) {.fm-grid3 {grid-template-columns:repeat(2,minmax(0,1fr))} .fm-grid3 > :last-child {grid-column:1/-1}}
+@container (min-width:860px) {.fm-grid3 {grid-template-columns:repeat(3,minmax(0,1fr))} .fm-grid3 > :last-child {grid-column:auto}}
 /* Valeur principale d'un cadre : grand chiffre, unité, légende */
 .metric {display:flex;flex-direction:column;gap:4px}
 .metric-main {display:flex;align-items:baseline;gap:5px} .metric-main b {font-size:var(--nw-fs-value);font-weight:700;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums}
@@ -239,6 +242,17 @@ select {font:inherit;font-size:14px;padding:7px 24px 7px 9px;border:1px solid va
 .nw-chip ha-icon {--mdc-icon-size:14px;display:flex}
 .compass {width:72px;height:72px;flex:none}
 .spark {width:100%;height:46px;display:block}
+/* Petit graphique d'historique, le même gabarit pour pluie, vent et pression */
+.mini {display:flex;flex-direction:column;gap:4px}
+.mini-top {display:flex;justify-content:space-between;align-items:baseline;font-size:var(--nw-fs-small);color:var(--secondary-text-color)}
+.mini-plot {position:relative;height:52px}
+.mini-plot svg {position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.mini-bars {display:grid;grid-template-columns:repeat(7,1fr);align-items:end;gap:6px;height:52px}
+.mini-bars i {display:block;border-radius:5px 5px 2px 2px;background:color-mix(in oklab,var(--nw-rain) 80%,transparent);min-height:3px}
+.mini-bars i.zero {background:color-mix(in oklab,var(--nw-line) 80%,transparent)}
+.mini-axis {display:flex;justify-content:space-between;font:var(--nw-label);letter-spacing:var(--nw-label-spacing);text-transform:uppercase;color:var(--secondary-text-color)}
+.mini-axis.days {display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+.mini-key {display:inline-flex;align-items:center;gap:5px} .mini-key i {width:10px;height:3px;border-radius:2px;background:var(--c)}
 /* Petites infos en plus (rayonnement, humidité, rosée) */
 .fm-extras {display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
 .fm-extras span {display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:var(--nw-radius-pill);border:1px solid var(--nw-line);background:var(--nw-glass);font-size:var(--nw-fs-small);color:var(--secondary-text-color)}
@@ -500,6 +514,9 @@ function measurePanels(w) {
   const rain = `<section class="nw-panel">${head('mdi:weather-rainy', 'rain', 'Pluie', 'Station locale')}
     <div class="metric-row"><div class="metric"><div class="metric-main"><b>${today.toLocaleString("fr-FR",{minimumFractionDigits:1,maximumFractionDigits:1})}</b><span>mm</span></div><small>Depuis minuit</small></div>
       <span class="nw-chip" style="--c:var(--nw-rain)">${w.rain ? `${nf(w.rain)} mm/h en ce moment` : 'Pas de pluie'}</span></div>
+    <div class="mini"><div class="mini-top"><span>7 derniers jours</span><span>${nf(today + 9.6)} mm</span></div>
+      <div class="mini-bars">${[0, 2.1, 0, 0, 5.4, 2.1, today].map(v => `<i class="${v ? '' : 'zero'}" title="${nf(v)} mm" style="height:${v ? Math.max(10, v / 6 * 100) : 6}%"></i>`).join('')}</div>
+      <div class="mini-axis days">${[6, 5, 4, 3, 2, 1, 0].map(n => `<span>${n ? DAYS[(new Date().getDay() - n + 7) % 7].replace('.', '') : 'auj'}</span>`).join('')}</div></div>
     <div class="stats"><div><span class="nw-label">Semaine</span><b>${nf(today + 9.6)} mm</b></div><div><span class="nw-label">Mois</span><b>${nf(today + 45.4)} mm</b></div><div><span class="nw-label">Année</span><b>${nf(today + 534.1)} mm</b></div></div>
   </section>`;
   const dir = 200, rot = dir + 180;
@@ -508,6 +525,13 @@ function measurePanels(w) {
       <svg class="compass" viewBox="0 0 72 72" aria-label="Vent du sud-sud-ouest"><circle cx="36" cy="36" r="30" fill="color-mix(in oklab,var(--nw-wind) 10%,transparent)" stroke="var(--nw-line)"/>
         <text x="36" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="var(--secondary-text-color)">N</text>
         <path d="M36 16 44 46 36 40 28 46Z" fill="color-mix(in oklab,var(--nw-wind) 75%,var(--primary-text-color))" transform="rotate(${rot} 36 36)"/></svg></div>
+    ${(() => { const n = 37, mean = Array.from({ length: n }, (_, i) => w.wind * (0.7 + 0.35 * Math.sin(i / 5) + 0.12 * Math.sin(i * 1.7))),
+        gust = mean.map((v, i) => v * 1.6 + 3 + 2 * Math.sin(i * 2.3)), top = Math.max(...gust) * 1.1;
+      const line = arr => arr.map((v, i) => `${i ? 'L' : 'M'}${i / (n - 1) * 100} ${(1 - v / top) * 50 + 1}`).join(' ');
+      return `<div class="mini"><div class="mini-top"><span>6 dernières heures</span><span><span class="mini-key" style="--c:var(--nw-wind)"><i></i>moyen</span> &nbsp;<span class="mini-key" style="--c:color-mix(in oklab,var(--nw-wind) 45%,transparent)"><i></i>rafales</span></span></div>
+        <div class="mini-plot"><svg viewBox="0 0 100 52" preserveAspectRatio="none"><path d="${line(gust)}" fill="none" stroke="color-mix(in oklab,var(--nw-wind) 45%,transparent)" stroke-width="2" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>
+          <path d="${line(mean)} L100 52 L0 52Z" fill="color-mix(in oklab,var(--nw-wind) 16%,transparent)"/><path d="${line(mean)}" fill="none" stroke="var(--nw-wind)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg></div>
+        <div class="mini-axis"><span>−6 h</span><span>−3 h</span><span>maintenant</span></div></div>`; })()}
     <div class="stats"><div><span class="nw-label">Rafales</span><b>${w.gust} km/h</b></div><div><span class="nw-label">Direction</span><b>SSO · ${dir}°</b></div><div><span class="nw-label">Max. 24 h</span><b>${w.gust + 9} km/h</b></div></div>
   </section>`;
   const series = [1011.2, 1011.6, 1012.1, 1012.4, 1012.9, 1013.1, 1013.4, 1013.7, 1013.9, 1014.0], lo = 1010.5, hi = 1014.5;
@@ -515,8 +539,10 @@ function measurePanels(w) {
   const pressure = `<section class="nw-panel">${head('mdi:gauge', 'pressure', 'Pression', 'Station locale')}
     <div class="metric-row"><div class="metric"><div class="metric-main"><b>1014</b><span>hPa</span></div><small>Temps stable</small></div>
       <span class="nw-chip" style="--c:var(--nw-pressure)"><ha-icon icon="mdi:trending-up"></ha-icon>+2,8 hPa en 3 h</span></div>
-    <svg class="spark" viewBox="0 0 100 46" preserveAspectRatio="none" aria-label="Pression sur 24 heures"><path d="M${pts} L100 46 L0 46Z" fill="color-mix(in oklab,var(--nw-pressure) 18%,transparent)"/>
-      <path d="M${pts}" fill="none" stroke="var(--nw-pressure)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>
+    <div class="mini"><div class="mini-top"><span>24 dernières heures</span><span>+3 hPa</span></div>
+      <div class="mini-plot"><svg viewBox="0 0 100 46" preserveAspectRatio="none" aria-label="Pression sur 24 heures"><path d="M${pts} L100 46 L0 46Z" fill="color-mix(in oklab,var(--nw-pressure) 18%,transparent)"/>
+      <path d="M${pts}" fill="none" stroke="var(--nw-pressure)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg></div>
+      <div class="mini-axis"><span>−24 h</span><span>−12 h</span><span>maintenant</span></div></div>
     <div class="stats"><div><span class="nw-label">Il y a 24 h</span><b>1011 hPa</b></div><div><span class="nw-label">Min.</span><b>1011 hPa</b></div><div><span class="nw-label">Max.</span><b>1014 hPa</b></div></div>
   </section>`;
   return `<div class="fm-grid3">${rain}${wind}${pressure}</div>
