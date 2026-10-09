@@ -165,8 +165,10 @@ select {font:inherit;font-size:14px;padding:7px 24px 7px 9px;border:1px solid va
 .nw-panel-icon ha-icon {--mdc-icon-size:18px;display:flex}
 .nw-sub {margin:-8px 0 0;font-size:var(--nw-fs-small);color:var(--secondary-text-color)}
 .nw-legend {display:flex;justify-content:center;flex-wrap:wrap;gap:6px 16px;font-size:var(--nw-fs-small);color:var(--secondary-text-color);margin-top:auto}
-.nw-legend span {display:inline-flex;align-items:center;gap:6px} .nw-legend i {width:12px;height:4px;border-radius:2px;background:var(--c)}
+.nw-legend span {display:inline-flex;align-items:center;gap:6px} .nw-legend i {width:14px;height:4px;border-radius:2px;background:var(--c)}
 .nw-legend i.sq {height:10px;width:10px;border-radius:3px}
+.nw-legend i.dash {background:repeating-linear-gradient(90deg,color-mix(in oklab,var(--c) 55%,transparent) 0 3px,transparent 3px 5px)}
+.mini .nw-legend {margin-top:4px}
 /* 18 prochaines heures */
 .fc {display:grid;grid-template-rows:auto 168px auto;gap:6px}
 .fc-marks {position:relative;height:14px}
@@ -265,7 +267,6 @@ select {font:inherit;font-size:14px;padding:7px 24px 7px 9px;border:1px solid va
 .mini-bars i.zero {background:color-mix(in oklab,var(--nw-line) 80%,transparent)}
 .mini-axis {display:flex;justify-content:space-between;font:var(--nw-label);letter-spacing:var(--nw-label-spacing);text-transform:uppercase;color:var(--secondary-text-color)}
 .mini-axis.days {display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
-.mini-key {display:inline-flex;align-items:center;gap:5px} .mini-key i {width:10px;height:3px;border-radius:2px;background:var(--c)}
 /* Petites infos en plus (rayonnement, humidité, rosée) */
 .fm-extras {display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
 
@@ -540,10 +541,11 @@ function measurePanels(w) {
     ${(() => { const n = 37, mean = Array.from({ length: n }, (_, i) => w.wind * (0.7 + 0.35 * Math.sin(i / 5) + 0.12 * Math.sin(i * 1.7))),
         gust = mean.map((v, i) => v * 1.6 + 3 + 2 * Math.sin(i * 2.3)), top = Math.max(...gust) * 1.1;
       const line = arr => arr.map((v, i) => `${i ? 'L' : 'M'}${i / (n - 1) * 100} ${(1 - v / top) * 50 + 1}`).join(' ');
-      return `<div class="mini"><div class="mini-top"><span>6 dernières heures</span><span><span class="mini-key" style="--c:var(--nw-wind)"><i></i>moyen</span> &nbsp;<span class="mini-key" style="--c:color-mix(in oklab,var(--nw-wind) 45%,transparent)"><i></i>rafales</span></span></div>
+      return `<div class="mini"><div class="mini-top"><span>6 dernières heures</span><span>max. ${Math.round(Math.max(...gust))} km/h</span></div>
         <div class="mini-plot"><svg viewBox="0 0 100 52" preserveAspectRatio="none"><path d="${line(gust)}" fill="none" stroke="color-mix(in oklab,var(--nw-wind) 45%,transparent)" stroke-width="2" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>
           <path d="${line(mean)} L100 52 L0 52Z" fill="color-mix(in oklab,var(--nw-wind) 16%,transparent)"/><path d="${line(mean)}" fill="none" stroke="var(--nw-wind)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg></div>
-        <div class="mini-axis"><span>−6 h</span><span>−3 h</span><span>maintenant</span></div></div>`; })()}
+        <div class="mini-axis"><span>−6 h</span><span>−3 h</span><span>maintenant</span></div>
+        <footer class="nw-legend"><span><i style="background:var(--nw-wind)"></i>Vent moyen</span><span><i class="dash" style="--c:var(--nw-wind)"></i>Rafales</span></footer></div>`; })()}
     <div class="stats"><div><span class="nw-label">Rafales</span><b>${w.gust} km/h</b></div><div><span class="nw-label">Direction</span><b>SSO · ${dir}°</b></div><div><span class="nw-label">Max. 24 h</span><b>${w.gust + 9} km/h</b></div></div>
   </section>`;
   const series = [1011.2, 1011.6, 1012.1, 1012.4, 1012.9, 1013.1, 1013.4, 1013.7, 1013.9, 1014.0], lo = 1010.5, hi = 1014.5;
