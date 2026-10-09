@@ -133,6 +133,8 @@
 .foot {display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;color:var(--secondary-text-color)}
 .grabber {display:flex;justify-content:center;padding:0 0 8px} .grabber i {width:34px;height:4px;border-radius:4px;background:var(--nw-line);transition:transform .3s}
 .card.open .grabber {display:none}
+/* Tuile repliée : une seule alerte sous le lieu (les suivantes défilent dans la bulle du brief). */
+.card:not(.open) .extra-alert {display:none}
 /* Appui long : un anneau se remplit pendant l'appui. */
 .card.pressing {box-shadow:0 0 0 3px color-mix(in srgb,var(--primary-color) 45%,transparent)}
 .press-ring {position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;pointer-events:none;opacity:0;
@@ -415,17 +417,20 @@ const state = { open: remembered, variant: 'both', tab: 'hours', index: 0 };
 /** Ce que la carte dirait pour ce scénario : alerte, bulles du brief, bulletin. */
 function story(s) {
   const w = demoWeather(s), points = [];
-  let alert;
-  if (s.vigilance) alert = { level: { Jaune: 1, Orange: 2, Rouge: 3 }[s.vigilance], label: `Vigilance ${s.vigilance.toLowerCase()}`, text: 'Orages', icon: 'mdi:alert-outline' };
-  else if (w.condition === 'windy') alert = { level: 2, label: 'Maintenant', text: `Vent très fort, rafales à ${w.gust} km/h`, icon: 'mdi:weather-windy' };
-  else if (w.condition === 'pouring') alert = { level: 2, label: 'Maintenant', text: `Forte pluie : ${nf(w.rain)} mm/h`, icon: 'mdi:weather-pouring' };
+  // Deux alertes peuvent coexister : la vigilance officielle (département) et ce que la station mesure chez soi. Aucune n'efface l'autre.
+  const alerts = [];
+  if (s.vigilance) alerts.push({ level: { Jaune: 1, Orange: 2, Rouge: 3 }[s.vigilance], label: `Vigilance ${s.vigilance.toLowerCase()}`, text: 'Orages', icon: 'mdi:alert-outline' });
+  if (w.condition === 'windy') alerts.push({ level: 2, label: 'Maintenant', text: `Vent très fort, rafales à ${w.gust} km/h`, icon: 'mdi:weather-windy' });
+  if (w.condition === 'pouring') alerts.push({ level: 2, label: 'Maintenant', text: `Forte pluie : ${nf(w.rain)} mm/h`, icon: 'mdi:weather-pouring' });
+  const alert = alerts[0];
   // Chaque point a un thème : il donne la couleur de son icône.
   if (w.rain && w.condition !== 'pouring') points.push({ label: 'Maintenant', text: `Il pleut : ${nf(w.rain)} mm/h`, icon: 'mdi:weather-rainy', theme: 'rain' });
   if (w.temp > 10 && !w.rain) points.push({ label: 'Maintenant', text: 'Ressenti : 5,3 °C de plus qu’au thermomètre', icon: 'mdi:thermometer', theme: 'heat' });
   if (w.temp < 3) points.push({ label: 'Maintenant', text: `Froid : ${nf(w.temp - 0.4)} °C ressentis`, icon: 'mdi:thermometer-low', theme: 'cold' });
   if (w.condition.startsWith('windy') && !alert) points.push({ label: 'Maintenant', text: `Vent soutenu : ${w.wind} km/h`, icon: 'mdi:weather-windy', theme: 'wind' });
   points.push({ label: 'À venir', text: 'Forte pluie demain : 18 mm', icon: 'mdi:weather-pouring', theme: 'rain' });
-  return { w, alert, points };
+  // La tuile n'a qu'une place d'alerte : les suivantes passent en tête de la bulle qui défile, en gardant leur style d'alerte.
+  return { w, alert, alerts, points, ticker: [...alerts.slice(1).map(a => ({ ...a, alert: true })), ...points] };
 }
 
 /** Les quatre moments à partir des prévisions horaires (comme le bulletin de la carte). */
@@ -451,7 +456,7 @@ function headline(m) {
 const ICON = { 'clear-night': 'mdi:weather-night', partlycloudy: 'mdi:weather-partly-cloudy', rainy: 'mdi:weather-rainy', pouring: 'mdi:weather-pouring', cloudy: 'mdi:weather-cloudy', sunny: 'mdi:weather-sunny' };
 const DAYS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
 
-const bubble = (p, alert) => `<div class="nw-bubble${alert ? ` nw-bubble--alert nw-level${p.level}` : ''}" ${alert ? 'role="status"' : ''}${!alert && p.theme ? ` style="--c:var(--nw-${p.theme})"` : ''}><ha-icon icon="${p.icon}"></ha-icon><span class="nw-label">${p.label}</span><b>${p.text}</b></div>`;
+const bubble = (p, alert = p.alert) => `<div class="nw-bubble${alert ? ` nw-bubble--alert nw-level${p.level}` : ''}" ${alert ? 'role="status"' : ''}${!alert && p.theme ? ` style="--c:var(--nw-${p.theme})"` : ''}><ha-icon icon="${p.icon}"></ha-icon><span class="nw-label">${p.label}</span><b>${p.text}</b></div>`;
 const tile = (label, icon, value, extra = '') => `<div class="nw-tile nw-glass"><span class="nw-label">${label}</span><ha-icon icon="${icon}"></ha-icon><strong>${value}</strong>${extra}</div>`;
 
 function forecastBlock(f) {
@@ -588,12 +593,12 @@ const fmSection = (id, title, sub, body) => `<section class="fm-section" data-id
   <button class="fm-fold" type="button" tabindex="-1" aria-hidden="true"><ha-icon icon="mdi:chevron-down"></ha-icon></button></header><div class="fm-body">${body}</div></section>`;
 /** Bandeau de la carte complète, avec les pièces de la charte, sur le vrai ciel animé. */
 function heroHTML(w, f) {
-  const { alert, points } = story(scenario), [label, icon] = LABELS[w.condition] ?? LABELS.cloudy, m = moments(f.hourly);
+  const { alerts, points } = story(scenario), [label, icon] = LABELS[w.condition] ?? LABELS.cloudy, m = moments(f.hourly);
   const date = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
   const dark = DARK_SKIES.includes(w.condition);
   return `<section class="fm-hero${dark ? ' dark-sky' : ''}"><div class="sky"><niak-weather-sky></niak-weather-sky></div><div class="veil"></div>
     <header class="fm-head"><h2>Synthèse</h2><span>Gardanne · ${date[0].toUpperCase() + date.slice(1)}</span></header>
-    <div class="hero-main"><span class="nw-label">Bulletin du jour</span><p class="headline">${headline(m)}</p>${alert ? bubble(alert, true) : ''}${points.length ? bubble(points[0]) : ''}</div>
+    <div class="hero-main"><span class="nw-label">Bulletin du jour</span><p class="headline">${headline(m)}</p>${alerts.map(a => bubble(a, true)).join('')}${points.length ? bubble(points[0]) : ''}</div>
     <div class="nw-now"><span class="nw-label">En ce moment</span><span class="cond"><ha-icon icon="${icon}"></ha-icon>${label}</span>
       <span class="temp">${nf(w.temp)}<small>°C</small></span>${chip('cold', 'mdi:arrow-bottom-right', '−0,4 °C/h', '')}<span class="nw-badge">Station locale</span></div>
     <div class="hero-tiles">${m.map(x => `<div class="nw-tile nw-glass"><span class="nw-label">${x.label}</span><ha-icon icon="${x.icon}"></ha-icon><strong>${x.temps}</strong><small>${x.phrase}</small>${x.rain >= 1 ? `<span class="nw-rain">${nf(x.rain)} mm</span>` : ''}</div>`).join('')}</div>
@@ -617,12 +622,13 @@ function proposedFull(container) {
 
 let scenario, ticker;
 function render() {
-  const s = scenario, { w, alert, points } = story(s), f = demoForecasts(w.temp, w.rain), [label, icon] = LABELS[w.condition] ?? LABELS.cloudy;
+  const s = scenario, { w, alerts, ticker, points: info } = story(s), f = demoForecasts(w.temp, w.rain), [label, icon] = LABELS[w.condition] ?? LABELS.cloudy;
+  const points = state.open ? info : ticker;
   const dark = DARK_SKIES.includes(w.condition);
   $('slot').innerHTML = `<div class="card${state.open ? ' open' : ''}${dark ? ' dark-sky' : ''}" tabindex="0" role="button" aria-expanded="${state.open}" aria-label="Météo à Gardanne : appui pour ${state.open ? 'replier' : 'déplier'}, appui long pour la carte complète">
     <div class="sky"><niak-weather-sky></niak-weather-sky></div><div class="veil"></div><i class="press-ring"></i>
     <div class="top">
-      <div class="meta"><span class="place">Gardanne</span>${alert ? bubble(alert, true) : ''}</div>
+      <div class="meta"><span class="place">Gardanne</span>${alerts.map((a, i) => i ? bubble(a, true).replace('class="nw-bubble', 'class="extra-alert nw-bubble') : bubble(a, true)).join('')}</div>
       <div class="brief" id="brief">${points.length ? bubble(points[state.index % points.length]) : ''}</div>
       <div class="nw-now"><span class="cond"><ha-icon icon="${icon}"></ha-icon>${label}</span><span class="temp">${nf(w.temp)}<small>°C</small></span>${state.open ? '<span class="nw-badge">Station locale</span>' : ''}</div>
     </div>
@@ -665,6 +671,7 @@ function toggle() {
   card.classList.toggle('open', state.open); card.setAttribute('aria-expanded', state.open);
   if (state.open && !card.querySelector('.nw-badge')) now.insertAdjacentHTML('beforeend', '<span class="nw-badge">Station locale</span>');
   if (!state.open) card.querySelector('.nw-badge')?.remove();
+  const st = story(scenario), list = state.open ? st.points : st.ticker; state.index = 0; $('brief').innerHTML = list.length ? bubble(list[0]) : '';
 }
 
 /** Aperçu de la refonte sur la vraie carte complète : une seule pastille de source, Aujourd'hui et Prévisions repliables. */
@@ -749,7 +756,7 @@ $('close').addEventListener('click', () => $('full').close());
 function startTicker() {
   clearInterval(ticker);
   ticker = setInterval(() => {
-    const { points } = story(scenario), el = $('brief')?.firstElementChild;
+    const st = story(scenario), points = state.open ? st.points : st.ticker, el = $('brief')?.firstElementChild;
     if (points.length < 2 || !el) return;
     el.classList.add('out');
     setTimeout(() => { state.index = (state.index + 1) % points.length; $('brief').innerHTML = bubble(points[state.index]); }, 350);
