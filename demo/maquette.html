@@ -109,7 +109,12 @@
   linear-gradient(0deg,var(--card-background-color) 0%,color-mix(in srgb,var(--card-background-color) 70%,transparent) 30%,transparent 60%)}
 .top {display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"meta now" "brief now";column-gap:14px;row-gap:8px;padding:var(--nw-pad);align-items:center}
 .meta {grid-area:meta;align-self:start;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
-.place {font-size:11px;color:var(--secondary-text-color)} .brief {grid-area:brief;min-width:0;min-height:38px} .top .nw-now {grid-area:now}
+.place {font-size:11px;color:var(--secondary-text-color)} .brief {grid-area:brief;min-width:0;min-height:38px}
+/* Ancré en haut : il ne bouge pas quand la colonne de gauche grandit au dépliage. */
+.top .nw-now {grid-area:now;align-self:start;position:relative}
+/* La source apparaît en fondu sous la température, hors du flux : rien ne bouge. */
+.top .nw-now .nw-badge {position:absolute;top:100%;right:0;margin-top:6px;opacity:0;transform:translateY(-4px);transition:opacity .3s .15s,transform .3s .15s;pointer-events:none}
+.card.open .top .nw-now .nw-badge {opacity:1;transform:none}
 @container (max-width:480px) {.top {grid-template-areas:"meta now" "brief brief"} .sky {--k:.42}}
 /* Le volet qui se déplie : la hauteur s'anime avec grid-template-rows (pas de calcul en JS). */
 .more {display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--nw-expand) var(--nw-ease)}
@@ -133,8 +138,10 @@
 .foot {display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;color:var(--secondary-text-color)}
 .grabber {display:flex;justify-content:center;padding:0 0 8px} .grabber i {width:34px;height:4px;border-radius:4px;background:var(--nw-line);transition:transform .3s}
 .card.open .grabber {display:none}
-/* Tuile repliée : une seule alerte sous le lieu (les suivantes défilent dans la bulle du brief). */
-.card:not(.open) .extra-alert {display:none}
+/* Tuile repliée : une seule alerte sous le lieu (les suivantes défilent dans la bulle du brief) ; au dépliage elles s'ouvrent en douceur. */
+.reveal {display:grid;grid-template-rows:0fr;margin-top:-6px;opacity:0;transition:grid-template-rows var(--nw-expand) var(--nw-ease),margin-top var(--nw-expand) var(--nw-ease),opacity .3s .1s}
+.reveal > div {min-height:0;overflow:clip;overflow-clip-margin:18px}
+.card.open .reveal {grid-template-rows:1fr;margin-top:0;opacity:1}
 /* Appui long : un anneau se remplit pendant l'appui. */
 .card.pressing {box-shadow:0 0 0 3px color-mix(in srgb,var(--primary-color) 45%,transparent)}
 .press-ring {position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;pointer-events:none;opacity:0;
@@ -628,9 +635,9 @@ function render() {
   $('slot').innerHTML = `<div class="card${state.open ? ' open' : ''}${dark ? ' dark-sky' : ''}" tabindex="0" role="button" aria-expanded="${state.open}" aria-label="Météo à Gardanne : appui pour ${state.open ? 'replier' : 'déplier'}, appui long pour la carte complète">
     <div class="sky"><niak-weather-sky></niak-weather-sky></div><div class="veil"></div><i class="press-ring"></i>
     <div class="top">
-      <div class="meta"><span class="place">Gardanne</span>${alerts.map((a, i) => i ? bubble(a, true).replace('class="nw-bubble', 'class="extra-alert nw-bubble') : bubble(a, true)).join('')}</div>
+      <div class="meta"><span class="place">Gardanne</span>${alerts.map((a, i) => i ? `<div class="reveal"><div>${bubble(a, true)}</div></div>` : bubble(a, true)).join('')}</div>
       <div class="brief" id="brief">${points.length ? bubble(points[state.index % points.length]) : ''}</div>
-      <div class="nw-now"><span class="cond"><ha-icon icon="${icon}"></ha-icon>${label}</span><span class="temp">${nf(w.temp)}<small>°C</small></span>${state.open ? '<span class="nw-badge">Station locale</span>' : ''}</div>
+      <div class="nw-now"><span class="cond"><ha-icon icon="${icon}"></ha-icon>${label}</span><span class="temp">${nf(w.temp)}<small>°C</small></span><span class="nw-badge">Station locale</span></div>
     </div>
     <div class="grabber" aria-hidden="true"><i></i></div>
     <div class="more"><div><div class="more-in">
@@ -667,11 +674,13 @@ function bindCard(card) {
 function toggle() {
   state.open = !state.open;
   try { localStorage.setItem('niak-maquette-open', state.open ? '1' : '0'); } catch {}
-  const card = $('slot').querySelector('.card'), now = card.querySelector('.nw-now');
+  const card = $('slot').querySelector('.card');
   card.classList.toggle('open', state.open); card.setAttribute('aria-expanded', state.open);
-  if (state.open && !card.querySelector('.nw-badge')) now.insertAdjacentHTML('beforeend', '<span class="nw-badge">Station locale</span>');
-  if (!state.open) card.querySelector('.nw-badge')?.remove();
-  const st = story(scenario), list = state.open ? st.points : st.ticker; state.index = 0; $('brief').innerHTML = list.length ? bubble(list[0]) : '';
+  const st = story(scenario), before = state.open ? st.ticker : st.points, list = state.open ? st.points : st.ticker;
+  const shown = before[state.index % Math.max(1, before.length)], keep = list.findIndex(p => p.text === shown?.text);
+  if (keep >= 0) { state.index = keep; return; }   // la bulle affichée reste valable : rien ne bouge
+  const el = $('brief').firstElementChild; el?.classList.add('out');
+  setTimeout(() => { state.index = 0; $('brief').innerHTML = list.length ? bubble(list[0]) : ''; }, 300);
 }
 
 /** Aperçu de la refonte sur la vraie carte complète : une seule pastille de source, Aujourd'hui et Prévisions repliables. */
