@@ -20,8 +20,18 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run validate
+      # The bench shows what the integration computes: its engine draws the demonstration views.
+      - uses: actions/checkout@v4
+        with:
+          repository: Niakman13/niak-weather-integration
+          path: integration
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
+        env:
+          NIAK_INTEGRATION: ${{ github.workspace }}/integration
       - uses: softprops/action-gh-release@v2
         with:
           files: |

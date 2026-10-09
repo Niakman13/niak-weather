@@ -6,13 +6,13 @@ Cette page s’adresse à qui veut modifier la carte. Elle explique où se déci
 
 | Dossier | Rôle | Ce qu’on y trouve |
 | --- | --- | --- |
-| `src/engine` | **Calculer**, sans rien afficher | Ressenti, conditions, brief, bulletin, alertes, historiques de la station, Atmo, saisons. `view-model.ts` rassemble tout ce que la carte montre, dans des objets typés et en français clair. |
+| [Intégration](https://github.com/Niakman13/niak-weather-integration) | **Calculer**, sans rien afficher | Ressenti, conditions, brief, bulletin, alertes, historiques de la station, Atmo, saisons. Elle envoie à la carte tout ce qu’elle montre, en français clair ; `src/view.ts` décrit cet envoi. |
 | `src/ui` | **Les pièces** de la charte | `charter.ts` (jetons et pièces de base), `parts.ts` (bulles, pastilles, tuiles, en-têtes de cadre, bouton « i »), `ticker.ts` (la bulle qui défile), `weather-sky.ts` (le ciel animé). |
 | `src/views` | **Assembler** les écrans | `tile.ts` (tuile qui se déplie), `hero.ts` (bandeau de la carte complète), `today.ts`, `forecasts.ts`, `air.ts`, `full.ts` (la carte complète et ses sections repliables). |
 
-`src/niak-weather-card.ts` charge les données de Home Assistant, choisit le format et gère les gestes (appui, appui long, clavier, fenêtre complète). `src/editor` contient l’éditeur des réglages et la détection des capteurs.
+`src/niak-weather-card.ts` s’abonne à l’intégration, choisit le format et gère les gestes (appui, appui long, clavier, fenêtre complète). `src/display.ts` applique les réglages d’affichage, `src/ui/charts.ts` dessine les courbes à partir des points reçus. `src/editor` contient l’éditeur des réglages d’affichage.
 
-Les vues ne lisent que le modèle de vue : elles ne connaissent ni les identifiants des capteurs, ni les unités à convertir, ni les noms internes du moteur. Ajouter une information, c’est l’ajouter au modèle de vue (avec un test dans `test/view-model.test.ts`), puis l’afficher avec les pièces existantes.
+Les vues ne lisent que le modèle de vue : elles ne connaissent ni les identifiants des capteurs, ni les unités à convertir, ni les noms internes du moteur. Ajouter une information, c’est l’ajouter au modèle de vue de l’intégration (`engine/view.py`, avec un test dans `tests/test_view.py`) et à `src/view.ts`, puis l’afficher avec les pièces existantes.
 
 ## La charte : un seul fichier
 

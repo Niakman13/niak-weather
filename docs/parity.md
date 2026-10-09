@@ -4,13 +4,13 @@ Cette page décrit les contrôles de qualité de Niak Weather.
 
 ## Les calculs
 
-Les règles météo sont dans `src/engine` (`weather-model.ts`, `local-model.ts`). Les 96 jeux météo de `reference/model-fixtures.json` contiennent des résultats de référence produits indépendamment du modèle TypeScript testé. Les tests comparent ressenti, effets, condition, priorité d’alerte, textes, direction, Beaufort, prochaine pluie, UV et narration des cumuls. Ils couvrent pluie, neige, brouillard, fournaise humide, rafales, gel, absence d’humidex et ciel nocturne.
+Depuis la 2.0, les règles météo sont dans l’[intégration Niak Weather](https://github.com/Niakman13/niak-weather-integration), avec leurs tests (`python -m pytest`). Les 96 jeux météo de `tests/fixtures/model-fixtures.json` contiennent des résultats de référence produits indépendamment du moteur testé. Les tests comparent ressenti, effets, condition, priorité d’alerte, textes, direction, Beaufort, prochaine pluie, UV et narration des cumuls. Ils couvrent pluie, neige, brouillard, fournaise humide, rafales, gel, absence d’humidex et ciel nocturne.
 
 D’autres tests vérifient le brief, le bulletin, les alertes (vigilance et alerte mesurée affichées ensemble), les historiques de la station, Atmo France, les saisons, la détection des capteurs et le modèle de vue que lisent les écrans.
 
 ## Dans un navigateur
 
-`npm run test:browser` charge la carte compilée avec les données de démonstration et vérifie :
+`npm run test:browser` charge la carte compilée avec les données de démonstration et vérifie ce qu’elle affiche de la vue calculée par l’intégration. Le dépôt de l’intégration doit se trouver à côté de celui de la carte (ou son chemin dans `NIAK_INTEGRATION`), avec Python 3.13. Le banc vérifie :
 
 - chaque format à 375, 768 et 1180 px, en clair et en sombre, par beau temps et sous l’orage : rien ne dépasse de la carte ;
 - l’accessibilité (aucun problème sérieux relevé par axe) ;
@@ -38,13 +38,3 @@ npm run test:browser
 ```
 
 Les captures et le rapport sont produits dans `test-results/`.
-
-## Références des calculs
-
-```sh
-# Python avec Jinja2, uniquement pour fabriquer les fixtures de référence.
-node scripts/generate-fixtures.mjs
-npm run validate
-```
-
-La CI utilise les fixtures commitées, sans installation Python. Il faut vérifier les changements de référence avant de les approuver : une référence ne doit pas être régénérée depuis le nouveau code pour masquer un écart.

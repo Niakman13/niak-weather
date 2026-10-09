@@ -34,7 +34,7 @@ Illustration de présentation avec des données d’exemple ; le rendu réel du 
 > **Version 2.0 en bêta.** La carte reçoit désormais ses calculs de la nouvelle [intégration Niak Weather](https://github.com/Niakman13/niak-weather-integration).
 > Installez les deux, dans leur version bêta.
 > Les sources (météo, station, air et pollens) se règlent dans l’intégration ; elle reprend les réglages de vos cartes.
-> La carte ne garde que l’affichage.
+> La carte ne garde que l’affichage. [Guide de la bêta](docs/v2-beta.md).
 
 [![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
@@ -109,7 +109,7 @@ Au-dessus de la jauge, un mot résume la sensation, selon les seuils de l’éch
 
 Par exemple : un humidex de **29 °C**, un effet du vent de **−0,4 °C** et du soleil de **+1 °C**, sans autre correction, donnent **29,6 °C ressentis**. La pression, les UV, la pollution et les pollens ne sont pas additionnés à ce chiffre ; ils peuvent en revanche enrichir la synthèse.
 
-Ces coefficients sont des règles d’estimation de la carte, pas une formule standard validée. La carte ne connaît pas vos vêtements, votre activité ni votre exposition réelle : l’effet solaire représente une ambiance exposée, pas forcément le ressenti à l’ombre. Sans station, la jauge s’appuie sur la température et l’humidité du bulletin et l’indique ; sans humidité du bulletin non plus, elle est masquée. [Calcul détaillé dans le code](src/engine/weather-model.ts).
+Ces coefficients sont des règles d’estimation de la carte, pas une formule standard validée. La carte ne connaît pas vos vêtements, votre activité ni votre exposition réelle : l’effet solaire représente une ambiance exposée, pas forcément le ressenti à l’ombre. Sans station, la jauge s’appuie sur la température et l’humidité du bulletin et l’indique ; sans humidité du bulletin non plus, elle est masquée. [Calcul détaillé dans le code](https://github.com/Niakman13/niak-weather-integration/blob/main/custom_components/niak_weather/engine/feel.py).
 
 ### Anticiper les prochaines heures et les prochains jours
 
@@ -173,8 +173,8 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-`npm run build` produit `dist/niak-weather-card.js`. Le code est rangé en trois étages : `src/engine` calcule (sans rien afficher), `src/ui/charter.ts` décide de l’apparence de toute la carte, `src/views` assemble les écrans. [Charte et organisation du code](docs/charte.md). Les releases GitHub vérifient le code et le rendu, puis joignent le fichier installable et sa carte de sources. Les utilisateurs reçoivent les mises à jour par HACS sans compilation.
+`npm run build` produit `dist/niak-weather-card.js`. Depuis la 2.0, les calculs sont dans l’[intégration Niak Weather](https://github.com/Niakman13/niak-weather-integration) : `src/view.ts` décrit ce qu’elle envoie, `src/ui/charter.ts` décide de l’apparence de toute la carte, `src/views` assemble les écrans. Les contrôles navigateur demandent le dépôt de l’intégration à côté de celui de la carte (ou son chemin dans `NIAK_INTEGRATION`) et Python 3.13. [Charte et organisation du code](docs/charte.md). Les releases GitHub vérifient le code et le rendu, puis joignent le fichier installable et sa carte de sources. Les utilisateurs reçoivent les mises à jour par HACS sans compilation.
 
-Les tests couvrent le ressenti, les conditions observées, les prévisions, les données manquantes, le préremplissage et les interactions. Les contrôles navigateur vérifient chaque format à 375, 768 et 1180 px en clair et en sombre, l’accessibilité, les gestes, la fenêtre complète, les sections repliables et le respect de la charte. Le banc visuel (`npm run visual:capture`) photographie 94 scènes à heure fixe pour comparer deux versions ; `npm run visual:docs` refait les images de ce README. Ils utilisent des composants hôtes Home Assistant simulés : ils ne garantissent pas tous les thèmes tiers ni la disponibilité des capteurs de chaque installation. [Vérifications et limites](docs/parity.md).
+Les tests de l’intégration couvrent le ressenti, les conditions observées, les prévisions, les données manquantes et le préremplissage ; ceux de la carte, l’affichage et les interactions. Les contrôles navigateur vérifient chaque format à 375, 768 et 1180 px en clair et en sombre, l’accessibilité, les gestes, la fenêtre complète, les sections repliables et le respect de la charte. Le banc visuel (`npm run visual:capture`) photographie 94 scènes à heure fixe pour comparer deux versions ; `npm run visual:docs` refait les images de ce README. Ils utilisent des composants hôtes Home Assistant simulés : ils ne garantissent pas tous les thèmes tiers ni la disponibilité des capteurs de chaque installation. [Vérifications et limites](docs/parity.md).
 
 Licence MIT — [LICENSE](LICENSE).

@@ -27,6 +27,9 @@ jobs:
         with:
           repository: Niakman13/niak-weather-integration
           path: integration
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
         env:
