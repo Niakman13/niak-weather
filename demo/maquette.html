@@ -62,6 +62,8 @@
   padding:var(--nw-pad-bubble);border-radius:var(--nw-radius-bubble);background:var(--nw-glass-strong);border:1px solid var(--nw-line);backdrop-filter:var(--nw-blur);
   transition:opacity .35s, transform .35s}
 .nw-bubble ha-icon {--mdc-icon-size:18px;grid-row:1/3;display:flex;color:var(--secondary-text-color)}
+/* Touche de couleur : seule l'icône prend la couleur du thème de la bulle (température, pluie, vent…). */
+.nw-bubble[style*="--c"]:not(.nw-bubble--alert) ha-icon {color:color-mix(in oklab,var(--c) 70%,var(--primary-text-color))}
 .nw-bubble .nw-label {grid-column:2} .nw-bubble b {grid-column:2;font:var(--nw-text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nw-bubble.out {opacity:0;transform:translateY(-5px)}
 /* Alerte : la même bulle, teintée par son niveau, avec son halo qui respire. */
@@ -408,10 +410,12 @@ function story(s) {
   if (s.vigilance) alert = { level: { Jaune: 1, Orange: 2, Rouge: 3 }[s.vigilance], label: `Vigilance ${s.vigilance.toLowerCase()}`, text: 'Orages', icon: 'mdi:alert-outline' };
   else if (w.condition === 'windy') alert = { level: 2, label: 'Maintenant', text: `Vent très fort, rafales à ${w.gust} km/h`, icon: 'mdi:weather-windy' };
   else if (w.condition === 'pouring') alert = { level: 2, label: 'Maintenant', text: `Forte pluie : ${nf(w.rain)} mm/h`, icon: 'mdi:weather-pouring' };
-  if (w.rain && w.condition !== 'pouring') points.push({ label: 'Maintenant', text: `Il pleut : ${nf(w.rain)} mm/h`, icon: 'mdi:weather-rainy' });
-  if (w.temp > 10 && !w.rain) points.push({ label: 'Maintenant', text: 'Ressenti : 5,3 °C de plus qu’au thermomètre', icon: 'mdi:thermometer' });
-  if (w.temp < 3) points.push({ label: 'Maintenant', text: `Froid : ${nf(w.temp - 0.4)} °C ressentis`, icon: 'mdi:thermometer-low' });
-  points.push({ label: 'À venir', text: 'Forte pluie demain : 18 mm', icon: 'mdi:weather-pouring' });
+  // Chaque point a un thème : il donne la couleur de son icône.
+  if (w.rain && w.condition !== 'pouring') points.push({ label: 'Maintenant', text: `Il pleut : ${nf(w.rain)} mm/h`, icon: 'mdi:weather-rainy', theme: 'rain' });
+  if (w.temp > 10 && !w.rain) points.push({ label: 'Maintenant', text: 'Ressenti : 5,3 °C de plus qu’au thermomètre', icon: 'mdi:thermometer', theme: 'heat' });
+  if (w.temp < 3) points.push({ label: 'Maintenant', text: `Froid : ${nf(w.temp - 0.4)} °C ressentis`, icon: 'mdi:thermometer-low', theme: 'cold' });
+  if (w.condition.startsWith('windy') && !alert) points.push({ label: 'Maintenant', text: `Vent soutenu : ${w.wind} km/h`, icon: 'mdi:weather-windy', theme: 'wind' });
+  points.push({ label: 'À venir', text: 'Forte pluie demain : 18 mm', icon: 'mdi:weather-pouring', theme: 'rain' });
   return { w, alert, points };
 }
 
@@ -438,7 +442,7 @@ function headline(m) {
 const ICON = { 'clear-night': 'mdi:weather-night', partlycloudy: 'mdi:weather-partly-cloudy', rainy: 'mdi:weather-rainy', pouring: 'mdi:weather-pouring', cloudy: 'mdi:weather-cloudy', sunny: 'mdi:weather-sunny' };
 const DAYS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
 
-const bubble = (p, alert) => `<div class="nw-bubble${alert ? ` nw-bubble--alert nw-level${p.level}` : ''}" ${alert ? 'role="status"' : ''}><ha-icon icon="${p.icon}"></ha-icon><span class="nw-label">${p.label}</span><b>${p.text}</b></div>`;
+const bubble = (p, alert) => `<div class="nw-bubble${alert ? ` nw-bubble--alert nw-level${p.level}` : ''}" ${alert ? 'role="status"' : ''}${!alert && p.theme ? ` style="--c:var(--nw-${p.theme})"` : ''}><ha-icon icon="${p.icon}"></ha-icon><span class="nw-label">${p.label}</span><b>${p.text}</b></div>`;
 const tile = (label, icon, value, extra = '') => `<div class="nw-tile nw-glass"><span class="nw-label">${label}</span><ha-icon icon="${icon}"></ha-icon><strong>${value}</strong>${extra}</div>`;
 
 function forecastBlock(f) {
@@ -746,7 +750,8 @@ function startTicker() {
 function specimens() {
   const spec = (title, show, tokens, text) => `<div class="spec${title === 'Couleurs de sens' ? ' wide' : ''}"><div class="show">${show}</div><div class="info"><b>${title}</b>${text}<br>${tokens.map(t => `<code>${t}</code>`).join(' ')}</div></div>`;
   $('specimens').innerHTML = [
-    spec('Bulle du brief', bubble({ label: 'Maintenant', text: 'Il pleut : 1,4 mm/h', icon: 'mdi:weather-rainy' }), ['--nw-glass-strong', '--nw-radius-bubble', '--nw-text'], 'Icône sur deux lignes, étiquette au-dessus du texte.'),
+    spec('Bulle du brief', bubble({ label: 'Maintenant', text: 'Il pleut : 1,4 mm/h', icon: 'mdi:weather-rainy', theme: 'rain' }) + bubble({ label: 'Maintenant', text: 'Ressenti : +5,3 °C', icon: 'mdi:thermometer', theme: 'heat' }) + bubble({ label: 'À venir', text: 'Rafales à 60 km/h', icon: 'mdi:weather-windy', theme: 'wind' }),
+      ['--nw-glass-strong', '--nw-radius-bubble', '--nw-text'], 'Icône sur deux lignes, étiquette au-dessus du texte. L’icône prend la couleur de son thème ; le contour reste neutre (le contour coloré est réservé aux alertes).'),
     spec('Bulle d’alerte', [1, 2, 3].map(l => bubble({ level: l, label: ['Vigilance jaune', 'Vigilance orange', 'Vigilance rouge'][l - 1], text: 'Orages', icon: 'mdi:alert-outline' }, true)).join(''), ['--nw-level1', '--nw-level2', '--nw-level3'], 'La même bulle, teintée par le niveau, avec son halo.'),
     spec('Tuile de moment', tile('Demain matin', 'mdi:weather-pouring', '14–20 °C', '<small>fortes pluies</small><span class="nw-rain">8,6 mm</span>'), ['--nw-glass', '--nw-pad-tile', '--nw-value'], 'Bulletin, heures et jours : la même tuile.'),
     spec('Échelle de texte', `<div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--card-background-color);padding:10px 14px;border-radius:12px">
