@@ -1,4 +1,4 @@
-import type { ForecastResponse, WeatherForecast } from "./types";
+import type { ForecastResponse, WeatherForecast } from "../types";
 
 export function forecastsFromResponse(
   payload: ForecastResponse,

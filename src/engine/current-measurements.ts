@@ -1,7 +1,6 @@
-import { html } from 'lit';
 import { finite, measurement } from './local-model';
-import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
-import { numberFormat } from './intl-cache';
+import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from '../types';
+import { numberFormat } from '../intl-cache';
 
 export interface CurrentMetric {
   key:'temperature'|'wind'|'rain'|'pressure'; title:string; icon:string;
@@ -63,14 +62,4 @@ export function currentMetrics(hass:HomeAssistant,config:WeatherCardConfig,model
   // Temperature, wind, rain, pressure: keep a stable order as optional data comes and goes.
   const order=['temperature','wind','rain','pressure'];
   return result.sort((a,b)=>order.indexOf(a.key)-order.indexOf(b.key));
-}
-export function renderCurrentMetrics(metrics:CurrentMetric[],hass:HomeAssistant){
-  const format=(value:number,key:CurrentMetric['key'])=>numberFormat(hass.language || 'fr',{maximumFractionDigits:key==='temperature'||key==='rain'?1:0}).format(value);
-  return html`<div class="me-tuiles">${metrics.map(metric=>html`<div class="me-tu nw-current-metric" style="--tc:var(--mush-rgb-blue,61,155,233)" data-metric=${metric.key} data-entity=${metric.entity} role="button" tabindex="0" aria-label=${`${metric.title}, ${metric.source}`}>
-    <span class="nw-metric-source" title=${metric.fallback?'Mesure locale indisponible : donnée du bulletin affichée à la place':metric.source}>${metric.source}${metric.fallback?' · repli':''}</span>
-    <div class="nw-metric-body">${metric.key==='wind'?html`<svg class="me-rose" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17.2" class="me-rc"/><text x="20" y="7.4" text-anchor="middle" class="me-rn">N</text><circle cx="20" cy="20" r="1.7" class="me-rd"/>${metric.bearing===undefined?html``:html`<g class="me-aig" style=${`transform:rotate(${metric.bearing}deg)`}><path d="M20 6 L24 21 L20 18.5 L16 21 Z" class="me-aigp"/></g>`}</svg>`:html`<div class="me-tuic"><ha-icon icon=${metric.icon}></ha-icon></div>`}<div class="me-tut"><span class="nw-metric-name">${metric.title}</span>
-      <span class="me-tuv">${metric.text ?? (metric.value===undefined?'—':format(metric.value,metric.key))}<i>${metric.unit}</i></span>
-      <span class="me-tul">${metric.value===undefined && !metric.text?'Donnée indisponible':metric.description}</span>
-      ${metric.detail?html`<span class="me-tus">${metric.detail}</span>`:html``}
-    </div></div></div>`)}</div>`;
 }

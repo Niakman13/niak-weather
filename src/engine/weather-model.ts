@@ -1,4 +1,4 @@
-import type { WeatherForecast } from "./types";
+import type { WeatherForecast } from "../types";
 
 export interface LocalMeasurements {
   temperature?: number;

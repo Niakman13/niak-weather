@@ -1,5 +1,5 @@
-import type { HomeAssistant, WeatherCardConfig } from './types';
-import { dateFormat } from './intl-cache';
+import type { HomeAssistant, WeatherCardConfig } from '../types';
+import { dateFormat } from '../intl-cache';
 
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 export interface SeasonInfo { season: Season; source: 'sensor' | 'date'; label: string; icon: string; dayLength?: number; dayChange?: number;

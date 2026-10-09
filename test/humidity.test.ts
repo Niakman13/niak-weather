@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { comfortWord, dewPoint, frostPoint, humidex, humidexFeel, humidityFeel } from '../src/humidity';
-import { buildLocalModel } from '../src/local-model';
-import { buildWeatherBrief, type BriefPoint } from '../src/weather-brief';
+import { comfortWord, dewPoint, frostPoint, humidex, humidexFeel, humidityFeel } from '../src/engine/humidity';
+import { buildLocalModel } from '../src/engine/local-model';
+import { buildWeatherBrief, type BriefPoint } from '../src/engine/weather-brief';
 import { cleanConfig } from '../src/config';
 import type { HassEntity, HomeAssistant, WeatherCardConfig } from '../src/types';
 

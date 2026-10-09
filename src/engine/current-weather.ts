@@ -1,6 +1,6 @@
 import { finite, measurement } from './local-model';
 import { weatherSourceLabel } from './current-measurements';
-import type { HassEntity, HomeAssistant, WeatherCardConfig } from './types';
+import type { HassEntity, HomeAssistant, WeatherCardConfig } from '../types';
 
 const conditions: Record<string, [string, string]> = {
   sunny:['Ensoleillé','mdi:weather-sunny'], 'clear-night':['Nuit claire','mdi:weather-night'],
@@ -12,6 +12,14 @@ const conditions: Record<string, [string, string]> = {
   windy:['Venteux','mdi:weather-windy'], 'windy-variant':['Venteux et nuageux','mdi:weather-windy-variant'],
   exceptional:['Conditions exceptionnelles','mdi:alert-circle-outline'],
 };
+/** Icon of a condition; at night the sun gives way to the moon. */
+export function conditionIcon(condition: string, night = false): string {
+  if (night && condition === 'sunny') return 'mdi:weather-night';
+  if (night && condition === 'partlycloudy') return 'mdi:weather-night-partly-cloudy';
+  return conditions[condition]?.[1] ?? 'mdi:weather-cloudy';
+}
+/** Name of a condition, as the card shows it. */
+export const conditionLabel = (condition: string): string => conditions[condition]?.[0] ?? condition;
 const available = (e?: HassEntity) => !!e && !['unknown','unavailable'].includes(e.state);
 export interface CurrentWeather {
   condition:string; label:string; icon:string; phase:'day'|'night'|'twilight'|'unknown';

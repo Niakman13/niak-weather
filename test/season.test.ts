@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { currentSeason, dayLength, daylightText, seasonFromDate } from '../src/season';
-import { fillCategory, seasonCandidates } from '../src/config-sources';
+import { currentSeason, dayLength, daylightText, seasonFromDate } from '../src/engine/season';
+import { fillCategory, seasonCandidates } from '../src/editor/config-sources';
 import type { HassEntity, HomeAssistant, WeatherCardConfig } from '../src/types';
 
 const config: WeatherCardConfig = { type: 'custom:niak-weather-card', weather_entity: 'weather.city' };

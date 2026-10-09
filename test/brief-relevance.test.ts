@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
-import {buildWeatherBrief} from '../src/weather-brief';
-import {briefPresentation,briefSecondarySignals} from '../src/brief-preview';
+import {buildWeatherBrief} from '../src/engine/weather-brief';
+import {briefPresentation,briefSecondarySignals} from '../src/engine/brief-preview';
 import type {HomeAssistant,HassEntity,WeatherCardConfig} from '../src/types';
 const config:WeatherCardConfig={type:'custom:niak-weather-card',weather_entity:'weather.test',temperature_entity:'sensor.outdoor'};
 const hass={states:{},config:{time_zone:'Europe/Paris'}} as unknown as HomeAssistant;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { forecastsFromResponse, toFiniteNumber } from "../src/forecast";
-import { detectEcowittStation } from "../src/station-detection";
-import { buildWeatherVerdict } from "../src/weather-model";
+import { forecastsFromResponse, toFiniteNumber } from "../src/engine/forecast";
+import { detectEcowittStation } from "../src/editor/station-detection";
+import { buildWeatherVerdict } from "../src/engine/weather-model";
 
 describe("local weather model", () => {
   it("makes measured rain take precedence over an area forecast", () => {

@@ -1,6 +1,7 @@
 import { finite, measurement } from './local-model';
-import type { WeatherForecast } from './types';
-import { dateFormat, numberFormat } from './intl-cache';
+import { conditionIcon } from './current-weather';
+import type { WeatherForecast } from '../types';
+import { dateFormat, numberFormat } from '../intl-cache';
 
 /** A part of the day in the bulletin: night 0–6 h, morning 6–12 h, afternoon 12–18 h, evening 18–24 h (local time). */
 export interface BulletinPeriod {
@@ -25,9 +26,6 @@ const DAY: Record<string, string> = { sunny: 'ensoleillé', 'clear-night': 'ciel
   rainy: 'pluie', pouring: 'fortes pluies', lightning: 'orages', 'lightning-rainy': 'orages et pluie', hail: 'grêle', snowy: 'neige', 'snowy-rainy': 'pluie et neige',
   windy: 'venteux', 'windy-variant': 'venteux et nuageux', exceptional: 'conditions exceptionnelles' };
 const NIGHT: Record<string, string> = { sunny: 'ciel dégagé', 'clear-night': 'ciel dégagé', partlycloudy: 'quelques nuages' };
-const ICON: Record<string, string> = { sunny: 'mdi:weather-sunny', 'clear-night': 'mdi:weather-night', partlycloudy: 'mdi:weather-partly-cloudy', cloudy: 'mdi:weather-cloudy',
-  fog: 'mdi:weather-fog', rainy: 'mdi:weather-rainy', pouring: 'mdi:weather-pouring', lightning: 'mdi:weather-lightning', 'lightning-rainy': 'mdi:weather-lightning-rainy',
-  hail: 'mdi:weather-hail', snowy: 'mdi:weather-snowy', 'snowy-rainy': 'mdi:weather-snowy-rainy', windy: 'mdi:weather-windy', 'windy-variant': 'mdi:weather-windy-variant' };
 const FROM = ['du nord', 'du nord-est', 'd’est', 'du sud-est', 'du sud', 'du sud-ouest', 'd’ouest', 'du nord-ouest'];
 
 const nf = (v: number, d = 0) => numberFormat('fr-FR', { maximumFractionDigits: d }).format(v);
@@ -88,7 +86,7 @@ export function buildBulletin(hourly: WeatherForecast[], now: Date, timeZone?: s
     if (tmin !== undefined) bits.push(tmin === tmax ? `${nf(tmin)} °C` : `${nf(tmin)} à ${nf(tmax!)} °C`);
     if (wind !== undefined) bits.push(cap(windText(wind, gust, bearing)));
     const d = Math.min(g.day, 2), label = g.slot.names[d];
-    return { key: `${g.day}-${g.slot.slot}`, label: cap(label), short: g.slot.short[d], condition, icon: (night && condition === 'partlycloudy' ? 'mdi:weather-night-partly-cloudy' : night && condition === 'sunny' ? 'mdi:weather-night' : ICON[condition]) ?? 'mdi:weather-cloudy',
+    return { key: `${g.day}-${g.slot.slot}`, label: cap(label), short: g.slot.short[d], condition, icon: conditionIcon(condition, night),
       text: bits.join('. ') + '.', phrase: main, early: evolves ? early : condition, late: evolves ? late : condition, night,
       during: (g.day >= 1 ? 'demain ' : '') + g.slot.during, start: (g.day >= 1 ? 'demain ' : '') + g.slot.start, tmin, tmax, rain, wind, gust, bearing };
   });

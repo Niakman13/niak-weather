@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import fixtures from '../reference/model-fixtures.json';
-import { buildLocalModel, normaliseForecasts, measurement, trend, sourceFields, rainNarrative } from '../src/local-model';
+import { buildLocalModel, normaliseForecasts, measurement, trend, sourceFields, rainNarrative } from '../src/engine/local-model';
 import type { HomeAssistant, WeatherCardConfig, HassEntity } from '../src/types';
-import { candidates, detectEcowittStation } from '../src/station-detection';
-import { renderLocal } from '../src/local-renderer';
+import { candidates, detectEcowittStation } from '../src/editor/station-detection';
 
 /** The feel sentence was rewritten in plain French; the cause the card picks must still match the template's. */
 const plainFeel = (old: string) => old
@@ -93,18 +92,10 @@ describe('data integrity and missing values', () => {
     const id = 'sensor.gw2000_outdoor_temperature', states = { [id]: { entity_id: id, state: '20', attributes: {} } };
     expect(detectEcowittStation({ states }, undefined, { temperature_entity: '' }).temperature_entity).toBeUndefined();
   });
-  it('renders the true SVG curve plus HTML axes/labels, daily bars and historical totals', () => {
-    const a = fixtures[0].expected;
-    const zones = renderLocal({ ent: 'model', ent_prev: 'prev' }, { model: { state: '21', attributes: a }, prev: { attributes: {
-      heures: fixtures[0].hours, jours: [{ n: 'DIM', e: 0, t: 27, m: 17, p: .4, c: 'partlycloudy' }] } } }, {});
-    expect(zones.heros).toContain('me-bulle'); expect(zones.bilan).toContain('536,9');
-    expect(zones.courbe).toContain('me-lbl'); expect(zones.courbe).toContain('MAINTENANT'); expect(zones.courbe).toContain('DEMAIN');
-    expect(zones.jours).toContain('AUJ.'); expect(zones.heros).not.toMatch(/onclick|window\./);
-  });
 });
 describe('Daily wind from hourly forecasts', () => {
   it('keeps the strongest wind and the speed-weighted prevailing direction of each local day', async () => {
-    const { dailyWind, normaliseForecasts } = await import('../src/local-model');
+    const { dailyWind, normaliseForecasts } = await import('../src/engine/local-model');
     const now = new Date('2026-10-08T06:00:00Z');
     // Tomorrow (9 Oct, Paris): southerly 10 km/h in the morning, westerly 30 km/h gusting 50 in the afternoon.
     const hourly = Array.from({ length: 24 }, (_, h) => ({ datetime: new Date(Date.UTC(2026, 9, 8, 22 + h)).toISOString(), temperature: 15,

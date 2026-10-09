@@ -1,6 +1,6 @@
 import {finite,measurement,type History} from './local-model';
-import type {HomeAssistant,WeatherCardConfig} from './types';
-import { dateFormat } from './intl-cache';
+import type {HomeAssistant,WeatherCardConfig} from '../types';
+import { dateFormat } from '../intl-cache';
 export interface Total {value?:number;partial:boolean}
 export interface Statistic {start:number;end:number;sum?:number;state?:number;partial?:boolean}
 export interface StationArchive {rain:Statistic[];rainUnit?:string;counter:History;}

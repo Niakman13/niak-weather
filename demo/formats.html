@@ -13,29 +13,28 @@
   h2.fmt {font-size:17px;margin:34px 0 2px;letter-spacing:-.3px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap} h2.fmt span{font-size:12px;font-weight:500;color:var(--secondary-text-color)}
   p.why {margin:0 0 14px;color:var(--secondary-text-color);max-width:90ch}
   .row {display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
-  .w680 {width:680px;max-width:100%} .w330 {width:332px;max-width:100%} .phone .w680 {width:375px}
-  ha-card {display:block;border-radius:22px;background:var(--card-background-color);box-shadow:0 8px 30px #132c4612;overflow:hidden;container-type:inline-size;border:1px solid var(--divider-color)}
-
+  .w680 {width:680px;max-width:100%} .w330 {width:332px;max-width:100%} .phone .w680, .phone .full {width:375px;max-width:100%}
 </style></head>
 <body>
 <header><h1>Niak Weather · trois formats</h1>
-<p>La vraie carte dans ses trois formats, avec des données de démonstration. Un appui sur la tuile ou l'intermédiaire ouvre la page de la carte complète.</p></header>
+<p>La vraie carte, avec les données de démonstration partagées. <b>Appui</b> sur la tuile : elle se déplie. <b>Appui long</b> : la carte complète s'ouvre par-dessus la page.</p></header>
 <div class="controls">
-  <label>Météo<select id="condition"><option value="sunny">Soleil</option><option value="partlycloudy">Éclaircies</option><option value="cloudy">Ciel couvert</option><option value="rainy">Pluie</option><option value="pouring">Fortes pluies</option><option value="lightning-rainy">Orage et pluie</option><option value="snowy">Neige</option><option value="fog">Brouillard</option><option value="windy">Vent</option><option value="clear-night">Nuit claire</option></select></label>
+  <label>Météo<select id="condition"><option value="partlycloudy">Éclaircies</option><option value="sunny">Soleil</option><option value="cloudy">Ciel couvert</option><option value="rainy">Pluie</option><option value="pouring">Fortes pluies</option><option value="lightning-rainy">Orage et pluie</option><option value="snowy">Neige</option><option value="fog">Brouillard</option><option value="windy">Vent</option><option value="clear-night">Nuit claire</option></select></label>
   <label>Moment<select id="phase"><option value="day">Journée</option><option value="twilight">Crépuscule</option><option value="night">Nuit</option></select></label>
+  <label>Vigilance<select id="vigilance"><option value="">Aucune</option><option>Jaune</option><option>Orange</option><option>Rouge</option></select></label>
+  <label>Station<select id="station"><option value="yes">Station locale</option><option value="no">Bulletin seul</option></select></label>
   <label>Thème<select id="theme"><option value="light">Clair</option><option value="dark">Sombre</option></select></label>
   <label>Largeur<select id="width"><option value="tablet">Tablette</option><option value="phone">Téléphone (375 px)</option></select></label>
   <label class="toggle"><input type="checkbox" id="motion" checked> Animations</label>
 </div>
 
 <h2 class="fmt">1 · Tuile <span>pleine et demi-largeur</span></h2>
-<p class="why">Les points du brief défilent toutes les 5 s ; la vigilance a sa petite bulle (choisis « Orage et pluie »).</p>
+<p class="why">Repliée : le lieu, l'alerte, la bulle du brief qui défile et la météo du moment. Dépliée : le bulletin, les quatre moments et les prévisions (heures ou jours).</p>
 <div class="row"><div class="w680" data-format="tile"></div><div class="w330" data-format="tile"></div></div>
-<h2 class="fmt">2 · Intermédiaire <span>la Synthèse seule</span></h2>
-<p class="why">En-tête, vigilance, brief qui défile, « En ce moment » et, en option, les quatre moments du bulletin.</p>
+<h2 class="fmt">2 · Intermédiaire <span>la même tuile, dépliée au départ</span></h2>
 <div class="row"><div class="w680" data-format="intermediate"></div></div>
-<h2 class="fmt">3 · Complète <span>inchangée</span></h2>
-<div data-format="full"></div>
+<h2 class="fmt">3 · Complète <span>la page météo</span></h2>
+<div class="full" data-format="full"></div>
 <script type="module">
   const icons=await fetch('/icons.json').then(r=>r.json());
   customElements.define('ha-icon',class extends HTMLElement {
@@ -46,32 +45,23 @@
       // Like Home Assistant: ha-icon itself is inline, its inner icon is an inline-flex box.
       this.shadowRoot.innerHTML=`<style>:host{fill:currentcolor}span{display:var(--ha-icon-display,inline-flex);vertical-align:middle;width:var(--mdc-icon-size,24px);height:var(--mdc-icon-size,24px)}svg{width:100%;height:100%;fill:currentColor}</style><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icons[key]??''}"></path></svg></span>`;}
   });
-  customElements.define('ha-card',class extends HTMLElement {connectedCallback(){if(!this.shadowRoot)this.attachShadow({mode:'open'}).innerHTML='<style>:host{display:block;border-radius:22px;background:var(--card-background-color);box-shadow:0 8px 30px #132c4612;border:1px solid var(--divider-color);overflow:hidden;container-type:inline-size}</style><slot></slot>';}});
+  customElements.define('ha-card',class extends HTMLElement {connectedCallback(){if(!this.shadowRoot)this.attachShadow({mode:'open'}).innerHTML='<style>:host{display:block;border-radius:var(--ha-card-border-radius,12px);background:var(--card-background-color);border:1px solid var(--divider-color);overflow:hidden;container-type:inline-size}</style><slot></slot>';}});
   await import('/card.js');
+  const { scenarioHass, scenarioConfig } = await import('/demo-hass.js');
   const $=id=>document.getElementById(id);
   const cards=[...document.querySelectorAll('[data-format]')].map(slot=>{const c=document.createElement('niak-weather-card');c.dataset.format=slot.dataset.format;slot.append(c);return c;});
-  document.addEventListener('location-changed',()=>{const s=document.createElement('div');s.textContent='→ ouvre '+location.pathname;Object.assign(s.style,{position:'fixed',bottom:'16px',left:'50%',transform:'translateX(-50%)',background:'var(--card-background-color)',border:'1px solid var(--divider-color)',padding:'10px 18px',borderRadius:'8px',zIndex:30});document.body.append(s);setTimeout(()=>s.remove(),1600);history.replaceState(null,'','/formats');});
+  // A tap on a value of the full card asks Home Assistant for the sensor's details: shown here as a note.
+  document.addEventListener('hass-more-info',e=>{const s=document.createElement('div');s.textContent='Détails de '+e.detail.entityId;Object.assign(s.style,{position:'fixed',bottom:'16px',left:'50%',transform:'translateX(-50%)',background:'var(--card-background-color)',border:'1px solid var(--divider-color)',padding:'10px 18px',borderRadius:'8px',zIndex:30});document.body.append(s);setTimeout(()=>s.remove(),1600);});
   function refresh(){
-    const condition=$('condition').value,phase=condition==='clear-night'?'night':$('phase').value,night=phase==='night';
+    const condition=$('condition').value,phase=condition==='clear-night'?'night':$('phase').value;
     document.documentElement.classList.toggle('dark',$('theme').value==='dark');document.body.classList.toggle('phone',$('width').value==='phone');
-    const temp=condition==='snowy'?-1.5:night?16.4:22.4,storm=condition==='lightning-rainy',now=new Date();
-    const sensor=(id,value,unit)=>({entity_id:id,state:String(value),attributes:{unit_of_measurement:unit}});
-    const rain=['rainy','lightning-rainy'].includes(condition)?1.4:condition==='pouring'?8.2:0;
-    const states={'weather.demo':{entity_id:'weather.demo',state:condition,attributes:{friendly_name:'Gardanne',temperature:temp,temperature_unit:'°C',attribution:'Météo-France',wind_speed_unit:'km/h'}},
-      'sensor.temperature':sensor('sensor.temperature',temp,'°C'),'sensor.humidity':sensor('sensor.humidity',78,'%'),'sensor.wind':sensor('sensor.wind',condition==='windy'?42:8,'km/h'),
-      'sensor.gust':sensor('sensor.gust',condition==='windy'?60:14,'km/h'),'sensor.rain':sensor('sensor.rain',rain,'mm/h'),'sensor.rain_day':sensor('sensor.rain_day',rain*2,'mm'),
-      'sensor.pressure':sensor('sensor.pressure',1014,'hPa'),'sensor.trend':sensor('sensor.trend',-0.4,'°C/h'),'sensor.solar':sensor('sensor.solar',night?0:350,'W/m²'),
-      'sensor.vigilance':{entity_id:'sensor.vigilance',state:storm?'Jaune':'Vert',last_updated:now.toISOString(),attributes:{attribution:'Data provided by Météo-France',Orages:storm?'Jaune':'Vert'}},
-      'sun.sun':{entity_id:'sun.sun',state:night?'below_horizon':'above_horizon',attributes:{elevation:night?-20:phase==='twilight'?1:35}}};
-    const forecasts={hourly:Array.from({length:30},(_,i)=>({datetime:new Date(now.getTime()+(i+1)*3600000).toISOString(),temperature:temp+4*Math.sin(i/5),precipitation:i>20&&i<26?4:rain&&i<3?rain:0,condition:i>20&&i<26?'pouring':condition})),
-      daily:Array.from({length:7},(_,i)=>({datetime:new Date(now.getTime()+i*86400000).toISOString(),temperature:25-i,templow:17-i,precipitation:i===1?72:0,condition:i===1?'pouring':'partlycloudy'}))};
-    const hass={states,language:'fr',config:{time_zone:Intl.DateTimeFormat().resolvedOptions().timeZone},callWS:async m=>m.type==='call_service'?({response:{'weather.demo':{forecast:forecasts[m.service_data.type]}}}):{}};
+    const scenario={condition,phase,vigilance:$('vigilance').value||undefined,season:'autumn',station:$('station').value==='yes',animated:$('motion').checked};
     for(const card of cards){
-      card.setConfig({type:'custom:niak-weather-card',format:card.dataset.format,weather_entity:'weather.demo',vigilance_entity:'sensor.vigilance',location:'Gardanne',weather_path:'/meteo',temperature_entity:'sensor.temperature',humidity_entity:'sensor.humidity',wind_speed_entity:'sensor.wind',wind_gust_entity:'sensor.gust',rain_rate_entity:'sensor.rain',daily_rain_entity:'sensor.rain_day',pressure_entity:'sensor.pressure',temperature_trend_entity:'sensor.trend',solar_radiation_entity:'sensor.solar',forecast_source:'Météo-France',weather_animations:$('motion').checked});
-      card.hass=hass;
+      const config={...scenarioConfig({...scenario,format:card.dataset.format})};delete config.weather_path;
+      card.setConfig(config);card.hass=scenarioHass(scenario);
     }
   }
-  for(const id of ['condition','phase','theme','width','motion'])$(id).addEventListener('change',refresh);
+  for(const id of ['condition','phase','vigilance','station','theme','width','motion'])$(id).addEventListener('change',refresh);
   refresh();
 </script>
 </body></html>

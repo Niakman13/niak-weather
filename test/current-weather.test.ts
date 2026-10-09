@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCurrentWeather } from '../src/current-weather';
+import { buildCurrentWeather } from '../src/engine/current-weather';
 import type { HassEntity, HomeAssistant, WeatherCardConfig } from '../src/types';
 
 const entity=(id:string,state:string,attributes:Record<string,unknown>={}):HassEntity=>({entity_id:id,state,attributes});

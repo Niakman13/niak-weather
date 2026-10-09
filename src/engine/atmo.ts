@@ -1,6 +1,6 @@
-import type { AtmoField, AtmoMetric, HassEntity, HomeAssistant, WeatherCardConfig, HomeAssistantEntityRegistryEntry as Registry } from './types';
-import type { RegistryContext } from './station-detection';
-import { dateFormat } from './intl-cache';
+import type { AtmoField, AtmoMetric, HassEntity, HomeAssistant, WeatherCardConfig, HomeAssistantEntityRegistryEntry as Registry } from '../types';
+import type { RegistryContext } from '../editor/station-detection';
+import { dateFormat } from '../intl-cache';
 
 // Contract verified against sebcaps/atmofrance const.py and sensor.py (2.1.2).
 // Pollution sensors are indices, NOT pollutant concentrations. Pollen levels use 1..6; 0 is missing.
@@ -28,6 +28,10 @@ export const atmoMetrics: Record<AtmoMetric, { label: string; key: string; match
 export const pollenMetrics: AtmoMetric[] = ['grass', 'ragweed', 'mugwort', 'alder', 'birch', 'olive'];
 export const pollutantMetrics: AtmoMetric[] = ['pm25', 'pm10', 'no2', 'o3', 'so2'];
 export const atmoField = (metric: AtmoMetric, tomorrow = false): AtmoField => `atmo_${metric}${tomorrow ? '_tomorrow' : ''}_entity`;
+/** Atmo France gives the pollens: the Polleninformation sensors are then left out. */
+export function usesAtmoPollens(config: WeatherCardConfig): boolean {
+  return config.pollen_source === 'atmo' || (config.pollen_source === undefined && atmoFields.some(f => !!config[f]));
+}
 export const atmoFields = [false, true].flatMap(tomorrow => (Object.keys(atmoMetrics) as AtmoMetric[]).map(metric => atmoField(metric, tomorrow)));
 export const normal = (value: unknown) => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const text = (e: HassEntity, r?: Registry) => normal(`${e.entity_id} ${e.attributes.friendly_name ?? ''} ${r?.original_name ?? ''} ${r?.unique_id ?? ''} ${r?.translation_key ?? ''}`);

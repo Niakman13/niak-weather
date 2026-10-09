@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import gw2000aDailyRain from './fixtures/gw2000a-daily-rain-2026-10-07.json';
-import { columnStatus, rainDays, windPoints, windScale, windChartSeries, windCurvePaths, pressureChartSeries } from '../src/recent-details';
+import { chartY, columnStatus, curvePaths, rainDays, windChartSeries, pressureChartSeries } from '../src/engine/history-series';
 const now=new Date('2026-10-05T16:00:00Z');
 const p=(date:string,s:string)=>({s,lu:Date.parse(date)/1000});
 describe('Recorded rain days',()=>{
@@ -83,10 +83,10 @@ describe('Wind history and scale',()=>{
   it('smooths curves without connecting across gaps',()=>{
     const start=now.getTime()-21600_000;
     const series=[10,20,10,undefined,5,10].map((v,i)=>({t:start+i*600_000,v}));
-    const paths=windCurvePaths(series,30,now);
+    const paths=curvePaths(series,30,now);
     expect(paths).toHaveLength(2);expect(paths[0].line).toContain(' C');
     expect(paths[0].line).not.toContain(' H');
-    expect(windCurvePaths([{t:start,v:10}],30,now)).toEqual([]);
+    expect(curvePaths([{t:start,v:10}],30,now)).toEqual([]);
   });
   it('keeps brief gust peaks while bounding dense history to 37 points',()=>{
     const rows=Array.from({length:21600},(_,i)=>({s:i===5000?'150':'10',lu:now.getTime()/1000-21600+i}));
@@ -94,28 +94,12 @@ describe('Wind history and scale',()=>{
     expect(result).toHaveLength(37);
     expect(Math.max(...result.map(p=>p.v??0))).toBe(150);
   });
-  it('does not create a historic curve from a current reading alone',()=>{
-    expect(windPoints([],'km/h',now,14)).toEqual([]);
-  });
-  it('keeps the beginning state, outages and current value in metric units',()=>{
-    const points=windPoints([p('2026-10-05T09:00:00Z','2'),p('2026-10-05T12:00:00Z','unavailable'),p('2026-10-05T13:00:00Z','5')],'m/s',now,14);
-    expect(points[0]).toEqual({t:Date.parse('2026-10-05T10:00:00Z'),v:7.2});
-    expect(points.some(p=>p.v===undefined)).toBe(true);
-    expect(points.at(-1)?.v).toBe(14);
-  });
-  it('does not bridge the end of an unavailable sensor',()=>{
-    expect(windPoints([p('2026-10-05T14:00:00Z','10')],'km/h',now).at(-1)?.v).toBeUndefined();
-  });
-  it('bounds dense history while keeping peaks',()=>{
-    const rows=Array.from({length:21600},(_,i)=>({s:i===5000?'150':'10',lu:now.getTime()/1000-21600+i}));
-    const result=windPoints(rows,'km/h',now,14);
-    expect(result.length).toBeLessThan(400);
-    expect(Math.max(...result.map(p=>p.v??0))).toBe(150);
-  });
-  it('uses a readable scale instead of treating the maximum as 100 percent',()=>{
-    expect(windScale(14,30)).toBe(80);
-    expect(windScale(90,150)).toBe(160);
-    expect(windScale(0,0)).toBe(80);
+  it('places curves in the 100 × 50 box, the oldest point on the left edge and the newest on the right',()=>{
+    const start=now.getTime()-21600_000;
+    const [path]=curvePaths([{t:start,v:0},{t:now.getTime(),v:30}],30,now);
+    expect(path.line.startsWith(`M0.00,${chartY(0,30).toFixed(2)}`)).toBe(true);
+    expect(path.line.endsWith(`100.00,${chartY(30,30).toFixed(2)}`)).toBe(true);
+    expect(chartY(30,30)).toBeLessThan(chartY(0,30));
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBulletin } from '../src/bulletin';
+import { buildBulletin } from '../src/engine/bulletin';
 
 /** Hourly forecast from `startIso` for `n` hours; `at(h)` gives the fields for hour offset h. */
 const plan = (startIso: string, n: number, at: (h: number) => Record<string, unknown>) =>

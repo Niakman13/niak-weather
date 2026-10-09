@@ -32,6 +32,29 @@ export function demoWeather(s) {
   };
 }
 
+/** Historique simulé de la station (format « minimal_response » de Home Assistant) : vent, rafales, pression, température et pluie du jour. */
+export function demoHistory(ids, s, now = new Date()) {
+  const { temp, rain, wind } = demoWeather(s), end = now.getTime() / 1000, rows = {};
+  const series = (f, hours = 6, step = 300) => Array.from({ length: hours * 3600 / step + 1 }, (_, i) => {
+    const lu = end - hours * 3600 + i * step; return { s: String(Math.round(f(i, (end - lu) / 3600) * 10) / 10), lu };
+  });
+  const mean = i => Math.max(0, wind * (0.75 + 0.3 * Math.sin(i / 9) + 0.1 * Math.sin(i * 1.7)));
+  if (ids.includes('sensor.wind')) rows['sensor.wind'] = series(mean);
+  if (ids.includes('sensor.gust')) rows['sensor.gust'] = series(i => mean(i) * 1.55 + 4 + 2 * Math.sin(i * 2.3));
+  if (ids.includes('sensor.pressure')) rows['sensor.pressure'] = series((i, ago) => 1014 - ago * 0.45 + 0.15 * Math.sin(i / 4));
+  if (ids.includes('sensor.temperature')) rows['sensor.temperature'] = series((i, ago) => temp + ago * 0.4);
+  // Pluie depuis minuit : le compteur monte dans la journée et revient à zéro à minuit, sur les 7 derniers jours.
+  if (ids.includes('sensor.rain_day')) {
+    const totals = [0, 2.1, 0, 0, 5.4, 2.1, rain * 2], midnight = new Date(now); midnight.setHours(0, 0, 0, 0);
+    rows['sensor.rain_day'] = totals.flatMap((total, d) => {
+      const day = midnight.getTime() / 1000 - (6 - d) * 86400;
+      return [{ s: '0', lu: day + 60 }, { s: String(Math.round(total * 0.4 * 10) / 10), lu: day + 9 * 3600 }, { s: String(total), lu: Math.min(end - 60, day + 18 * 3600) }]
+        .filter(r => r.lu < end);
+    });
+  }
+  return rows;
+}
+
 /** Construit l'état Home Assistant d'un scénario : météo, station, vigilance, Atmo et prévisions. */
 export function scenarioHass(s) {
   const now = new Date(), { condition, night, temp, rain, wind, gust } = demoWeather(s);
@@ -62,6 +85,7 @@ export function scenarioHass(s) {
   }
   const { hourly, daily } = demoForecasts(temp, rain, now);
   const callWS = async m => {
+    if (m.type === 'history/history_during_period') return s.station === false ? {} : demoHistory(m.entity_ids, s, now);
     if (m.type !== 'call_service') return m.type === 'recorder/get_statistics_metadata' ? [] : {};
     if (s.forecasts === false) throw new Error('Prévisions indisponibles');
     return { response: { 'weather.demo': { forecast: m.service_data.type === 'hourly' ? hourly : daily } } };

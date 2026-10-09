@@ -1,5 +1,5 @@
 import {candidates,detectEcowittStation,functionMatches,sensorText,stationRules,type RegistryContext,type SensorField} from './station-detection';
-import type {HomeAssistant,WeatherCardConfig} from './types';
+import type {HomeAssistant,WeatherCardConfig} from '../types';
 export type StationModel=NonNullable<WeatherCardConfig['station_model']>;
 export const stationModelOptions=[{value:'gw2000a',label:'Ecowitt GW2000A'},{value:'ws90',label:'Shelly / Ecowitt WS90 — Zigbee2MQTT'},{value:'manual',label:'Autre station / configuration manuelle'}];
 export function selectedStationModel(config:Partial<WeatherCardConfig>):StationModel {

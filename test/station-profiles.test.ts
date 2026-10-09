@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {fillCategory,manualCandidates} from '../src/config-sources';
+import {fillCategory,manualCandidates} from '../src/editor/config-sources';
 import type {HomeAssistant,WeatherCardConfig} from '../src/types';
 const prefix='sensor.station_meteo_ecowitt_ws90_powered_by_shelly_';
 const measurements={temperature:['temperature','°C'],dew_point:['temperature','°C'],apparent_temperature:['temperature','°C'],illuminance:['illuminance','lx'],illuminance_raw:['',''],wind_speed:['wind_speed','km/h'],gust_speed:['wind_speed','km/h'],wind_direction:['','°'],precipitation:['precipitation','mm'],precipitations_24h:['precipitation','mm']} as const;
@@ -20,7 +20,7 @@ describe('Station profiles and function-aware choices',()=>{
     expect(fillCategory({states:{[id]:{entity_id:id,state:'180',attributes:{unit_of_measurement:'°'}}}} as unknown as HomeAssistant,{entities:[],devices:[]},{...config,station_device_id:undefined},'station').wind_speed_entity).toBeUndefined();
   });
   it('recognizes a WS90 MQTT profile and reports ambiguous fields without choosing',async()=>{
-    const profiles=await import('../src/station-profiles');
+    const profiles=await import('../src/editor/station-profiles');
     const report=profiles.stationReport(hass,registry,config);
     expect(report.profile).toBe('WS90 via MQTT');
     expect(report.fields.find(f=>f.field==='illuminance_entity')).toMatchObject({status:'recognized',entity:prefix+'illuminance'});
@@ -33,7 +33,7 @@ describe('Station profiles and function-aware choices',()=>{
     expect(fillCategory(hass,registry,{...config,temperature_entity:prefix+'temperature'},'station',true).temperature_entity).toBe(prefix+'temperature');
   });
   it('reports a real ambiguity without selecting either thermometer',async()=>{
-    const {stationReport}=await import('../src/station-profiles');
+    const {stationReport}=await import('../src/editor/station-profiles');
     const id='sensor.station_ws90_outdoor_temperature',more={...states,[id]:{...states[prefix+'temperature'],entity_id:id}};
     const context={...registry,entities:[...registry.entities,{entity_id:id,device_id:'station',platform:'mqtt'}]};
     const report=stationReport({...hass,states:more},context,config);

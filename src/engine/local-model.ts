@@ -1,7 +1,7 @@
-import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from './types';
+import type { HassEntity, HomeAssistant, WeatherCardConfig, WeatherForecast } from '../types';
 import { buildWeatherVerdict, round } from './weather-model';
 import { comfortWord, dewPoint, frostPoint, humidex, humidexFeel, humidityFeel } from './humidity';
-import { dateFormat } from './intl-cache';
+import { dateFormat } from '../intl-cache';
 
 export type History = Record<string, Array<{ s: string; lu?: number; lc?: number }>>;
 export const sourceFields = {

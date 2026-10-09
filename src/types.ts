@@ -50,8 +50,12 @@ export type AtmoField = `atmo_${AtmoMetric}${'' | '_tomorrow'}_entity`;
 export interface WeatherCardConfig extends Partial<Record<AtmoField, string>> {
   type: "custom:niak-weather-card";
   weather_entity: string;
-  /** full (default), intermediate (the banner alone) or tile (one band); the small formats open weather_path on tap. */
+  /** full (default): the weather page. tile: one band that unfolds on tap. intermediate: the same tile, unfolded at first.
+   *  On the small formats a long press opens the full card, or weather_path when it is set. */
   format?: 'full' | 'intermediate' | 'tile';
+  /** Full card: start with « Aujourd'hui » or « Prévisions » folded. */
+  collapse_today?: boolean;
+  collapse_predictions?: boolean;
   smart_brief?: boolean;
   show_synthesis?: boolean;
   show_today?: boolean;

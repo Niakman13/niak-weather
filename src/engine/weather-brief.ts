@@ -1,7 +1,7 @@
 import { atmoField, atmoFields, atmoMetrics, atmoReading, pollenMetrics, pollutantMetrics, normal } from './atmo';
 import { finite } from './local-model';
-import type { HassEntity, HomeAssistant, WeatherCardConfig,WeatherForecast } from './types';
-import { dateFormat, numberFormat } from './intl-cache';
+import type { HassEntity, HomeAssistant, WeatherCardConfig,WeatherForecast } from '../types';
+import { dateFormat, numberFormat } from '../intl-cache';
 
 export interface BriefPoint { hours: number; temperature?: number; precipitation?: number; condition?: string; }
 export interface BriefSignal {

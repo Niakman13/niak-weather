@@ -1,5 +1,5 @@
-import type { HassEntity, HomeAssistant, HomeAssistantEntityRegistryEntry as Registry, WeatherCardConfig } from './types';
-import { detectAtmo } from './atmo';
+import type { HassEntity, HomeAssistant, HomeAssistantEntityRegistryEntry as Registry, WeatherCardConfig } from '../types';
+import { detectAtmo } from '../engine/atmo';
 export interface Device { id: string; name?: string; name_by_user?: string; manufacturer?: string; }
 export interface RegistryContext { entities: Registry[]; devices: Device[]; }
 export type SensorField = keyof Pick<WeatherCardConfig,

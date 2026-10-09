@@ -1,6 +1,6 @@
-import { atmoAreas, atmoFields } from './atmo';
+import { atmoAreas, atmoFields } from '../engine/atmo';
 import { candidates, detectEcowittStation, functionMatches, stationRules, type RegistryContext, type SensorField } from './station-detection';
-import type { HassEntity, HomeAssistant, WeatherCardConfig } from './types';
+import type { HassEntity, HomeAssistant, WeatherCardConfig } from '../types';
 
 export type SourceCategory = 'general' | 'weather' | 'station' | 'atmo';
 export const categoryFields: Record<SourceCategory, Array<keyof WeatherCardConfig>> = {

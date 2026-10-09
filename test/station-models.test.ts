@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import * as profiles from '../src/station-profiles';
+import * as profiles from '../src/editor/station-profiles';
 describe('Explicit station model setup',()=>{
   it('starts from existing GW2000A entities without requiring a device selection',()=>{
     const resolve=(profiles as any).selectedStationModel;

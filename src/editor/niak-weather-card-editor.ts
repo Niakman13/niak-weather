@@ -2,11 +2,11 @@ import { css, html, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { getRegistry, stationRules, type RegistryContext, type SensorField } from './station-detection';
 import { categoryFields, fillCategory, manualCandidates, measurementMatches, seasonCandidates, sourceDevices, sourceStatus, vigilanceCandidates, type SourceCategory } from './config-sources';
-import type { HomeAssistant, WeatherCardConfig } from './types';
-import { atmoAreas, atmoCandidates, atmoFields, atmoField, atmoMetrics } from './atmo';
-import { cleanConfig } from './config';
+import type { HomeAssistant, WeatherCardConfig } from '../types';
+import { atmoAreas, atmoCandidates, atmoFields, atmoField, atmoMetrics } from '../engine/atmo';
+import { cleanConfig } from '../config';
 import {modelDevices,selectedStationModel,stationGroups,stationModelOptions,stationReport} from './station-profiles';
-import type { AtmoField, AtmoMetric } from './types';
+import type { AtmoField, AtmoMetric } from '../types';
 const categoryOptions:Record<SourceCategory,string[]>={
   general:['format','location','smart_brief','weather_animations','weather_animation_quality','weather_path','show_synthesis','show_bulletin','show_today','show_predictions'],
   weather:['forecast_source'],station:['station_device_id','station_history','station_model'],
