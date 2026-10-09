@@ -2,6 +2,7 @@
 //   node scripts/visual/visual.mjs capture [--card dist/niak-weather-card.js] [--out actuel] [--only ciel,alertes]
 //   node scripts/visual/visual.mjs compare reference actuel     → images de différences + rapport
 //   node scripts/visual/visual.mjs sheet actuel                 → une planche PNG par groupe
+//   node scripts/visual/visual.mjs docs                         → les images du README (docs/images), en haute définition
 // Heure figée (8 octobre 2026, 17 h 40 à Paris) et animations coupées : une même scène donne toujours la même image.
 import { createServer } from 'node:http';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
@@ -96,6 +97,62 @@ async function sheet() {
   await browser.close();
 }
 
-const commands = { capture, compare, sheet };
-if (!commands[command]) { console.error('Commande : capture | compare | sheet'); process.exit(2); }
+/** Les images du README : la carte complète (deux vues), les trois cadres de mesures et les formats de la page d'accueil. */
+async function docs() {
+  const card = resolve(root, 'dist/niak-weather-card.js'), dir = join(root, 'docs/images');
+  const server = await serve(card), browser = await chromium.launch();
+  const page = await browser.newPage({ viewport: { width: 1300, height: 900 }, deviceScaleFactor: 2 });
+  await page.clock.install({ time: FIXED_TIME });
+  await page.goto(`http://127.0.0.1:${server.address().port}/`);
+  await page.waitForFunction(() => window.ready);
+  const settle = async () => { await page.waitForTimeout(400); await page.evaluate(() => document.fonts.ready); };
+  const shot = { animations: 'disabled', caret: 'hide' }, page_ = { ...shot, fullPage: true };
+  // Carte complète : pluie en cours sous une vigilance jaune, pour montrer les deux alertes ensemble.
+  await page.evaluate(s => window.show(s), { format: 'full', width: 1180, condition: 'rainy', vigilance: 'Jaune', phenomenon: 'Pluie-inondation', animated: false });
+  await settle();
+  const full = page.locator('niak-weather-card'), box = await full.boundingBox();
+  const bottom = async selector => { const b = await page.locator(selector).first().boundingBox(); return b.y + b.height; };
+  const predictions = await page.locator('niak-weather-card .fm-section').nth(1).boundingBox();
+  await page.screenshot({ ...page_, path: join(dir, '1.png'), clip: { x: box.x, y: box.y, width: box.width, height: predictions.y - box.y } });
+  await page.screenshot({ ...page_, path: join(dir, '2.png'), clip: { x: box.x, y: predictions.y, width: box.width, height: await bottom('niak-weather-card .nw-full') - predictions.y } });
+  await page.locator('niak-weather-card .grid3').screenshot({ ...shot, path: join(dir, '3.png') });
+  // Formats : tuile pleine et demi-largeur repliées, tuile dépliée, par temps d'orage avec vigilance jaune.
+  await page.evaluate(async () => {
+    const { scenarioHass, scenarioConfig } = await import('/demo-hass.js');
+    const s = { condition: 'lightning-rainy', vigilance: 'Jaune', phase: 'day', animated: false };
+    const stage = document.getElementById('stage'); stage.replaceChildren();
+    stage.style.cssText = 'display:grid;grid-template-columns:680px 332px;gap:16px;align-items:start;padding:16px';
+    for (const [format, width, column] of [['tile', 680, '1'], ['tile', 332, '2'], ['intermediate', 680, '1']]) {
+      const box = document.createElement('div'); box.style.cssText = `width:${width}px;grid-column:${column}`;
+      const card = document.createElement('niak-weather-card'); box.append(card); stage.append(box);
+      card.setConfig(scenarioConfig({ ...s, format })); card.hass = scenarioHass(s);
+    }
+  });
+  await settle();
+  await page.locator('#stage').screenshot({ ...shot, path: join(dir, 'niak-weather-formats.png') });
+  // Bannière GitHub : titre, slogan, pastilles et bandeau de la carte complète, par temps d'orage avec vigilance jaune.
+  await page.setViewportSize({ width: 1672, height: 767 });
+  await page.evaluate(async () => {
+    const { scenarioHass, scenarioConfig } = await import('/demo-hass.js');
+    const s = { condition: 'lightning-rainy', vigilance: 'Jaune', phase: 'day', animated: false };
+    document.body.style.cssText = 'margin:0;padding:0';
+    const stage = document.getElementById('stage');
+    stage.style.cssText = 'display:flex;flex-direction:column;align-items:center;box-sizing:border-box;width:1672px;height:767px;padding:44px 86px 0;'
+      + 'background:radial-gradient(120% 90% at 50% 0%,#f7f9fc 0%,#edf1f7 60%,#e6ebf3 100%);font-family:Roboto,system-ui,sans-serif;color:#1d2a3d';
+    stage.innerHTML = `<h1 style="margin:0;font-size:84px;line-height:1;font-weight:800;letter-spacing:-3px">Niak Weather</h1>
+      <p style="margin:20px 0 0;font-size:30px;color:#566275">Votre station météo et les prévisions, réunies en une carte qui parle.</p>
+      <div style="display:flex;gap:12px;margin:22px 0 34px">${['Station locale', 'Prévisions', 'Vigilance Météo-France', 'Air et pollens', 'Ciel animé']
+        .map(t => `<span style="padding:6px 16px;border-radius:999px;border:1px solid #d5dce6;background:#fffc;font-size:18px;color:#3c495c">${t}</span>`).join('')}</div>
+      <div id="banner-card" style="width:1500px;border-radius:22px;overflow:hidden;box-shadow:0 18px 50px #1d2a3d22"></div>`;
+    const card = document.createElement('niak-weather-card'); document.getElementById('banner-card').append(card);
+    card.setConfig({ ...scenarioConfig({ ...s, format: 'full' }), show_today: false, show_predictions: false }); card.hass = scenarioHass(s);
+  });
+  await settle();
+  await page.locator('#stage').screenshot({ ...shot, path: join(dir, 'niak-weather-banner.png') });
+  await browser.close(); server.close();
+  console.log(`Images du README mises à jour dans ${dir}`);
+}
+
+const commands = { capture, compare, sheet, docs };
+if (!commands[command]) { console.error('Commande : capture | compare | sheet | docs'); process.exit(2); }
 await commands[command]();

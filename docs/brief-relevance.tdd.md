@@ -14,6 +14,6 @@ Après correction : scénario ordinaire sans titre, pic depuis le maximum dispon
 
 `npm run validate` : 278 tests, vérification des types et compilation. `npm run test:browser` : contrôles existants et scénarios sans signal, grand écart et pluie demain réussis ; rendu examiné à 375 et 1440 px dans une simulation locale. La page de production n’a pas reçu le nouveau module.
 
-Couverture ciblée : `npm test -- --coverage --coverage.include=src/brief-preview.ts --coverage.include=src/weather-brief.ts` : 100 % des lignes et fonctions, plus de 88 % des branches. Ces mesures concernent les deux modules, pas toute la carte.
+Couverture ciblée : `npm test -- --coverage --coverage.include=src/engine/brief-preview.ts --coverage.include=src/engine/weather-brief.ts` : 100 % des lignes et fonctions, plus de 88 % des branches. Ces mesures concernent les deux modules, pas toute la carte.
 
 La clarification de l’interface conserve le ciel animé et les niveaux d’attention existants. Les messages d’absence de point ou les limites restent dans l’aide, pas dans le résumé principal. Aucun changement de station ni publication supplémentaire n’est effectué dans ce travail.

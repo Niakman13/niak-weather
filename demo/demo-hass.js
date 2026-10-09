@@ -69,6 +69,8 @@ export function scenarioHass(s) {
     'sensor.temperature': sensor('sensor.temperature', temp, '°C'), 'sensor.humidity': sensor('sensor.humidity', 78, '%'),
     'sensor.wind': sensor('sensor.wind', wind, 'km/h'), 'sensor.gust': sensor('sensor.gust', gust, 'km/h'),
     'sensor.rain': sensor('sensor.rain', rain, 'mm/h'), 'sensor.rain_day': sensor('sensor.rain_day', rain * 2, 'mm'),
+    'sensor.rain_week': sensor('sensor.rain_week', Math.round((rain * 2 + 9.6) * 10) / 10, 'mm'), 'sensor.rain_month': sensor('sensor.rain_month', Math.round((rain * 2 + 45.4) * 10) / 10, 'mm'),
+    'sensor.rain_year': sensor('sensor.rain_year', Math.round((rain * 2 + 534.1) * 10) / 10, 'mm'),
     'sensor.pressure': sensor('sensor.pressure', 1014, 'hPa'), 'sensor.trend': sensor('sensor.trend', -0.4, '°C/h'),
     'sensor.solar': sensor('sensor.solar', night ? 0 : 350, 'W/m²'),
   });
@@ -100,7 +102,8 @@ export function scenarioConfig(s) {
     season_entity: 'sensor.season', forecast_source: 'Météo-France', weather_animations: s.animated ?? false,
     ...(s.vigilance ? { vigilance_entity: 'sensor.vigilance' } : {}),
     ...(station ? { temperature_entity: 'sensor.temperature', humidity_entity: 'sensor.humidity', wind_speed_entity: 'sensor.wind', wind_gust_entity: 'sensor.gust',
-      rain_rate_entity: 'sensor.rain', daily_rain_entity: 'sensor.rain_day', pressure_entity: 'sensor.pressure', temperature_trend_entity: 'sensor.trend',
+      rain_rate_entity: 'sensor.rain', daily_rain_entity: 'sensor.rain_day', weekly_rain_entity: 'sensor.rain_week', monthly_rain_entity: 'sensor.rain_month',
+      yearly_rain_entity: 'sensor.rain_year', pressure_entity: 'sensor.pressure', temperature_trend_entity: 'sensor.trend',
       solar_radiation_entity: 'sensor.solar' } : {}),
     ...(s.atmo !== false ? { atmo_air_entity: 'sensor.atmo_air', atmo_air_tomorrow_entity: 'sensor.atmo_air_j1', atmo_pollen_entity: 'sensor.atmo_pollen',
       atmo_pollen_tomorrow_entity: 'sensor.atmo_pollen_j1', pollen_source: 'atmo', show_atmo_tomorrow: true } : { pollen_source: 'none' }) };
