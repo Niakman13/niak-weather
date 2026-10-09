@@ -31,6 +31,11 @@ Illustration de présentation avec des données d’exemple ; le rendu réel du 
 
 **Version stable : v1.20.3.** Une carte redessinée de bout en bout : une tuile qui se déplie d’un appui, la carte complète d’un appui long, un seul style partout. [Nouveautés de la version 1.20.0](docs/release-1.20.0.md) · [brouillard plus fiable 1.20.1](docs/release-1.20.1.md) · [plus fluide sur téléphone 1.20.2](docs/release-1.20.2.md) · [plus fluide 1.16.3](docs/release-1.16.3.md) · [1.16.1](docs/release-1.16.1.md) · [Installation et mise à jour](docs/installation.md).
 
+> **Version 2.0 en bêta.** La carte reçoit désormais ses calculs de la nouvelle [intégration Niak Weather](https://github.com/Niakman13/niak-weather-integration).
+> Installez les deux, dans leur version bêta.
+> Les sources (météo, station, air et pollens) se règlent dans l’intégration ; elle reprend les réglages de vos cartes.
+> La carte ne garde que l’affichage.
+
 [![Ouvrir Niak Weather dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Niakman13&repository=niak-weather&category=plugin)
 
 ![Niak Weather — synthèse avec bulletin du jour, ressenti, pluie, vent, pression, air extérieur et pollens](docs/images/1.png)
