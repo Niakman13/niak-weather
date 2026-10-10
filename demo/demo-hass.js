@@ -6,8 +6,31 @@
 const PHASES = { day: 35, twilight: 1, night: -20 };
 const sensor = (id, value, unit) => ({ entity_id: id, state: String(value), attributes: unit ? { unit_of_measurement: unit } : {} });
 
+/** Ce qui arrive dans les prochaines heures, pour voir la frise se remplir. `base` fixe le temps du moment ; `hour` réécrit l'heure i (i = 0 : dans une heure). */
+export const STORIES = {
+  orage: { label: 'Orage en fin d’après-midi', base: { condition: 'sunny', phase: 'day', temperature: 27, wind: 10, gust: 18 },
+    hour: (i, h, night) => i < 2 ? { ...h, temperature: 27, precipitation: 0, condition: 'sunny' }
+      : i <= 4 ? { ...h, temperature: [24, 21, 20][i - 2], precipitation: [2.4, 9, 1.5][i - 2], condition: i === 3 ? 'lightning-rainy' : 'rainy', wind_speed: i === 3 ? 40 : 22, wind_gust_speed: i === 3 ? 80 : 45 }
+      : { ...h, temperature: Math.max(15, 19 - (i - 5) * .5), precipitation: 0, condition: night ? 'clear-night' : 'partlycloudy' } },
+  gel: { label: 'Nuit de gel', base: { condition: 'clear-night', phase: 'night', temperature: 4, wind: 3, gust: 6 },
+    hour: (i, h, night) => ({ ...h, temperature: i <= 9 ? Math.round((4 - .8 * (i + 1)) * 10) / 10 : Math.round((-4 + (i - 9) * 1.4) * 10) / 10, precipitation: 0,
+      condition: night ? 'clear-night' : 'sunny', wind_speed: 3, humidity: 82 }) },
+  brouillard: { label: 'Brouillard au petit matin', base: { condition: 'partlycloudy', phase: 'twilight', temperature: 13, wind: 4, gust: 8 },
+    hour: (i, h, night) => ({ ...h, temperature: i <= 9 ? 13 - .6 * (i + 1) : 7 + (i - 9) * 1.2, precipitation: 0, condition: night ? 'clear-night' : 'partlycloudy',
+      wind_speed: 2, humidity: i >= 5 ? 99 : 88 }) },
+  demain: { label: 'Forte pluie demain', base: { condition: 'cloudy', phase: 'day', temperature: 17 },
+    hour: (i, h) => ({ ...h, precipitation: 0, condition: 'cloudy' }), tomorrow: 32 },
+  chargee: { label: 'Journée chargée', base: { condition: 'partlycloudy', phase: 'day', temperature: 16, wind: 12, gust: 25 },
+    hour: (i, h, night) => i <= 4 ? { ...h, temperature: [15.5, 14, 12.5, 11.5, 11][i], precipitation: [0, 1.6, 2.2, 7.5, 1][i],
+        condition: ['partlycloudy', 'rainy', 'rainy', 'lightning-rainy', 'rainy'][i], wind_gust_speed: i === 3 ? 70 : 30 }
+      : { ...h, temperature: i <= 12 ? 10 - (i - 5) * 1.1 : 1.5 + (i - 12) * 1.5, precipitation: 0, condition: night ? 'clear-night' : 'sunny', wind_speed: 4, humidity: 90 },
+    tomorrow: 24 },
+};
+/** Le scénario avec son histoire : le temps du moment vient de l'histoire choisie. */
+export const withStory = s => STORIES[s.story] ? { ...s, ...STORIES[s.story].base } : s;
+
 /** Prévisions réalistes : cycle jour/nuit, averse demain matin, 7 jours variés. */
-export function demoForecasts(temp, rain, now = new Date()) {
+export function demoForecasts(temp, rain, now = new Date(), story) {
   const t0 = new Date(now); t0.setMinutes(0, 0, 0);
   const hourly = Array.from({ length: 30 }, (_, i) => {
     const d = new Date(t0.getTime() + (i + 1) * 3600_000), hr = d.getHours();
@@ -16,7 +39,10 @@ export function demoForecasts(temp, rain, now = new Date()) {
       precipitation_probability: p ? 80 : 10, wind_speed: i > 10 ? 18 : 9, wind_bearing: 200,
       condition: p > 3 ? 'pouring' : p ? 'rainy' : (hr >= 20 || hr < 7) ? 'clear-night' : 'partlycloudy' };
   });
+  const told = STORIES[story];
+  if (told) hourly.forEach((h, i) => { const hr = new Date(h.datetime).getHours(); hourly[i] = told.hour(i, h, hr >= 20 || hr < 7); });
   const dc = ['partlycloudy', 'pouring', 'rainy', 'cloudy', 'sunny', 'sunny', 'partlycloudy'], lo = [16, 15, 13, 12, 11, 12, 13], hi = [25, 21, 19, 20, 22, 23, 22], rr = [0, 18.4, 3.2, 0, 0, 0, 0];
+  if (told) { rr[1] = told.tomorrow ?? 0; dc[1] = told.tomorrow ? 'pouring' : 'partlycloudy'; }
   const daily = dc.map((c, i) => ({ datetime: new Date(t0.getTime() + i * 86400_000).toISOString(), condition: c, temperature: hi[i], templow: lo[i], precipitation: rr[i], wind_speed: i === 1 ? 28 : 12, wind_bearing: 200 }));
   return { hourly, daily };
 }
@@ -101,8 +127,9 @@ export function scenarioSources(s) {
 }
 
 /** Tout ce que l'intégration lirait dans Home Assistant pour ce scénario : ce que son moteur reçoit (scripts/view_cli.py). */
-export function scenarioData(s, now = new Date()) {
-  const { temp, rain } = demoWeather(s), { hourly, daily } = s.forecasts === false ? { hourly: [], daily: [] } : demoForecasts(temp, rain, now);
+export function scenarioData(scenario, now = new Date()) {
+  const s = withStory(scenario);
+  const { temp, rain } = demoWeather(s), { hourly, daily } = s.forecasts === false ? { hourly: [], daily: [] } : demoForecasts(temp, rain, now, s.story);
   return { options: scenarioSources(s), states: scenarioStates(s, now), hourly, daily,
     history: s.station === false ? {} : demoHistory(['sensor.wind', 'sensor.gust', 'sensor.pressure', 'sensor.rain_day'], s, now),
     now: now.toISOString(), time_zone: 'Europe/Paris', latitude: 43.45, elevation: 0 };
