@@ -20,11 +20,11 @@ const LIGHT_SKY = matchMedia('(pointer: coarse)');
 let instances = 0;
 
 /** Why there is no weather to show, and what to do about it. */
-type Problem = 'missing' | 'not_configured' | 'choose_entry' | 'not_found' | 'version';
+type Problem = 'missing' | 'not_configured' | 'choose_entry' | 'not_found' | 'version' | 'error';
 const PROBLEMS: Record<Problem, { title: string; text: string; links?: [string, string][] }> = {
   // Home Assistant only starts an integration once it is added: downloaded from HACS but not added yet, it does not answer either.
   missing: { title: 'Niak Weather a besoin de son intégration',
-    text: 'Depuis la version 2.0, la carte reçoit ses calculs de l’intégration Niak Weather. Déjà téléchargée depuis HACS ? Ajoutez-la dans Paramètres → Appareils et services. Sinon, installez-la depuis HACS, redémarrez Home Assistant, puis ajoutez-la.',
+    text: 'Depuis la version 2.0, la carte reçoit ses calculs de l’intégration Niak Weather. Déjà téléchargée depuis HACS ? Ajoutez-la dans Paramètres → Appareils et services. Sinon, installez-la depuis HACS, redémarrez Home Assistant, puis ajoutez-la. Déjà ajoutée ? Elle n’a pas démarré : les journaux disent pourquoi (Paramètres → Système → Journaux, cherchez « niak »).',
     links: [['Ajouter l’intégration', '/config/integrations/dashboard/add?domain=niak_weather'], ['L’installer', 'https://github.com/Niakman13/niak-weather-integration#installation']] },
   not_configured: { title: 'Ajoutez l’intégration Niak Weather',
     text: 'Elle est installée mais pas encore configurée. Elle peut reprendre les réglages de vos cartes.',
@@ -32,6 +32,9 @@ const PROBLEMS: Record<Problem, { title: string; text: string; links?: [string, 
   choose_entry: { title: 'Choisissez un lieu', text: 'Plusieurs lieux Niak Weather sont configurés : choisissez celui de cette carte dans ses réglages.' },
   not_found: { title: 'Lieu introuvable', text: 'Le lieu de cette carte n’existe plus : choisissez-en un autre dans ses réglages.' },
   version: { title: 'Mettez à jour la carte', text: 'L’intégration Niak Weather est plus récente que cette carte : mettez la carte à jour dans HACS.' },
+  // The integration answered, with an error: say which, it tells what went wrong.
+  error: { title: 'L’intégration Niak Weather a renvoyé une erreur',
+    text: 'Les journaux de Home Assistant disent pourquoi : Paramètres → Système → Journaux, cherchez « niak ».', links: [['Voir les journaux', '/config/logs']] },
 };
 
 @customElement('niak-weather-card')
@@ -41,6 +44,8 @@ export class NiakWeatherCard extends LitElement {
   /** What the integration computed, as it last sent it. */
   @state() private view?: WeatherView;
   @state() private problem?: Problem;
+  /** The integration's own words when it answered with an error. */
+  private failure = '';
   /** The tile is unfolded (remembered on this device). */
   @state() private open = false;
   /** The full card is shown over the page, after a long press on the tile. */
@@ -103,11 +108,13 @@ export class NiakWeatherCard extends LitElement {
     const subscription = connection.subscribeMessage<ViewMessage | { version: number; reload: true }>(m => this.receive(m),
       { type: 'niak_weather/subscribe', ...(config.entry_id ? { entry_id: config.entry_id } : {}) });
     this.subscription = subscription;
-    subscription.catch((error: { code?: string }) => {
+    subscription.catch((error: { code?: string; message?: string }) => {
       if (this.subscription !== subscription) return;
       this.subscription = undefined;
       const code = error?.code;
-      this.problem = code === 'not_configured' || code === 'choose_entry' || code === 'not_found' ? code : 'missing';
+      // Only an unknown command means the integration is not running; any other answer is an error of its own.
+      this.failure = [error?.message, code].filter(Boolean).join(' · ');
+      this.problem = code === 'not_configured' || code === 'choose_entry' || code === 'not_found' ? code : !code || code === 'unknown_command' ? 'missing' : 'error';
       // Home Assistant may still be starting, or the place being set up: try again, less often when nothing answers.
       if (code !== 'choose_entry') this.retryLater(code === 'unknown_command' ? 30_000 : 5_000);
     });
@@ -152,7 +159,7 @@ export class NiakWeatherCard extends LitElement {
 
   private renderProblem(p: (typeof PROBLEMS)[Problem]) {
     return html`<ha-card><div class="nw-problem" role="status"><ha-icon icon="mdi:weather-partly-cloudy"></ha-icon>
-      <div><b>${p.title}</b><p>${p.text}</p>${p.links ? html`<div class="links">${p.links.map(([label, href], i) => html`<a class=${i ? 'second' : ''} href=${href}
+      <div><b>${p.title}</b>${p === PROBLEMS.error && this.failure ? html`<p class="failure">« ${this.failure} »</p>` : nothing}<p>${p.text}</p>${p.links ? html`<div class="links">${p.links.map(([label, href], i) => html`<a class=${i ? 'second' : ''} href=${href}
         target=${href.startsWith('/') ? nothing : '_blank'} rel="noopener noreferrer" @click=${this.follow}>${label}</a>`)}</div>` : nothing}</div></div></ha-card>`;
   }
   /** A link inside Home Assistant opens there, without reloading the page. */
@@ -238,6 +245,7 @@ export class NiakWeatherCard extends LitElement {
     .nw-problem a { display:inline-block; padding:6px 14px; border-radius:var(--nw-radius-pill); background:var(--nw-accent); color:var(--nw-bg);
       font-weight:600; text-decoration:none; font-size:var(--nw-fs-small); }
     .nw-problem .links { display:flex; flex-wrap:wrap; gap:8px; }
+    .nw-problem .failure { color:var(--nw-fg); font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:var(--nw-fs-small); word-break:break-word; }
     .nw-problem a.second { background:none; color:var(--nw-accent); box-shadow:inset 0 0 0 1px var(--nw-line); }
     dialog.nw-dialog { border:0; padding:0; width:min(1180px, 96vw); max-height:92vh; border-radius:16px; overflow:auto; overscroll-behavior:contain;
       background:var(--nw-bg); color:var(--nw-fg); box-shadow:0 24px 80px #0005; }

@@ -192,13 +192,14 @@ try {
   // 10. Without the integration, or before it is set up, the card says what to do instead of staying empty.
   const problems = await page.evaluate(async () => {
     const stage = document.getElementById('stage'), result = {};
-    for (const code of ['unknown_command', 'not_configured', 'choose_entry']) {
+    for (const code of ['unknown_command', 'not_configured', 'choose_entry', 'unknown_error']) {
       const card = document.createElement('niak-weather-card'); stage.replaceChildren(card);
       card.setConfig({ type: 'custom:niak-weather-card' });
-      card.hass = { states: {}, language: 'fr', locale: { language: 'fr' }, callWS: async () => ({}), connection: { subscribeMessage: () => Promise.reject({ code }) } };
+      card.hass = { states: {}, language: 'fr', locale: { language: 'fr' }, callWS: async () => ({}), connection: { subscribeMessage: () => Promise.reject({ code, message: 'Erreur de test' }) } };
       await new Promise(r => setTimeout(r, 50)); await card.updateComplete;
       const root = card.shadowRoot;
-      result[code] = [root.querySelector('.nw-problem b')?.textContent, ...[...root.querySelectorAll('.nw-problem a')].map(a => a.getAttribute('href'))];
+      result[code] = [root.querySelector('.nw-problem b')?.textContent, ...[...root.querySelectorAll('.nw-problem a')].map(a => a.getAttribute('href')),
+        ...(root.querySelector('.failure') ? [root.querySelector('.failure').textContent] : [])];
     }
     stage.replaceChildren(); return result;
   });
@@ -206,7 +207,9 @@ try {
     // Downloaded but not added, the integration is not started either: the message offers to add it first, then to install it.
     unknown_command: ['Niak Weather a besoin de son intégration', '/config/integrations/dashboard/add?domain=niak_weather', 'https://github.com/Niakman13/niak-weather-integration#installation'],
     not_configured: ['Ajoutez l’intégration Niak Weather', '/config/integrations/dashboard/add?domain=niak_weather'],
-    choose_entry: ['Choisissez un lieu'] }, 'Messages without the integration');
+    choose_entry: ['Choisissez un lieu'],
+    // Any other answer is the integration's own error: shown as it is, with the way to the logs.
+    unknown_error: ['L’intégration Niak Weather a renvoyé une erreur', '/config/logs', '« Erreur de test · unknown_error »'] }, 'Messages without the integration');
   report.problems = problems;
 
   assert.deepEqual(errors, [], 'Browser errors');
