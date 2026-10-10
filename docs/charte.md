@@ -56,6 +56,8 @@ Variables disponibles : `niak-rain-color`, `niak-wind-color`, `niak-heat-color`,
 | Légende | `.nw-legend` | Toujours centrée sous son graphique |
 | Bouton « i » et bulle d’explication | `info()` | Synthèse, Ressenti |
 
+Poids du texte : Home Assistant fournit Roboto en 400, 500 et 700, et un 600 s’affiche donc en gras. Le bulletin du jour (`.nw-bulletin`) et la pastille de source (`.nw-badge`) sont en 500 (moyen), jamais en gras.
+
 Règles de la charte : seule l’icône d’une bulle prend la couleur de son thème, le contour coloré et le halo sont réservés aux alertes. Un graphique a un titre « période · unité » au-dessus, sa légende centrée en dessous et ses valeurs posées dessus.
 
 ## Le bandeau
@@ -63,7 +65,7 @@ Règles de la charte : seule l’icône d’une bulle prend la couleur de son th
 Le bandeau tient en trois choses, du plus officiel au plus détaillé.
 
 1. **La vigilance officielle** (Météo-France, pour le département) : une pastille compacte en haut, l’icône du phénomène dans un disque de la couleur du niveau. Elle porte le contour net et le halo des alertes, comme la bulle d’alerte. Sur une carte étroite, seul le phénomène reste écrit (« Orages ») : le disque et le halo disent le niveau. Sans vigilance, rien n’apparaît.
-2. **Le bulletin du jour**, en entier, sous l’étiquette « Bulletin du jour ».
+2. **Le bulletin du jour**, en entier, sous l’étiquette « Bulletin du jour », en poids moyen (`.nw-bulletin`).
 3. **La frise**, dans un verre dépoli (`--nw-glass-clear`, `--nw-frost`) au contour net de 1 px :
    - en haut, **la phrase qui défile** : un point à la fois, toutes les 4,5 s, avec une barre de progression par point. Elle se met en pause au survol ou au focus ;
    - au-dessus de la piste, **une étiquette par point**, à son heure. Les points du moment (mesurés chez vous, ou à moins de 20 min) forment **une seule étiquette « Maintenant »**, avec leurs icônes empilées et leur nombre. L’icône du point affiché passe devant, teintée. Un appui sur une étiquette affiche son point ; un nouvel appui passe au point suivant du groupe ;

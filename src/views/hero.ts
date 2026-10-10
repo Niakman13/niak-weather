@@ -37,7 +37,7 @@ export function renderHero(v: WeatherView, sky: TemplateResult, uid: string): Te
     <header class="fm-head"><h2>Synthèse</h2>${briefInfo(v, uid)}<span>${[v.location, v.dateLabel].filter(Boolean).join(' · ')}</span>${season}</header>
     <div class="hero-main">
       ${official.length ? html`<div class="nw-alerts">${official.map(a => alertPill(a))}</div>` : nothing}
-      ${v.bulletin ? html`${label('Bulletin du jour')}<p class="headline">${unbroken(v.bulletin.summary)}</p>` : nothing}
+      ${v.bulletin ? html`${label('Bulletin du jour')}<p class="nw-bulletin">${unbroken(v.bulletin.summary)}</p>` : nothing}
     </div>
     ${nowBlock(v, true, trend)}
     ${frise(v)}
@@ -55,7 +55,7 @@ export const heroStyles = css`
   .nw-hero > .fm-head { grid-area:head; cursor:default; flex-wrap:wrap; }
   .hero-main { grid-area:main; display:flex; flex-direction:column; align-items:flex-start; gap:10px; min-width:0; }
   .nw-alerts { display:flex; flex-wrap:wrap; gap:8px; max-width:100%; }
-  .nw-hero .headline { margin:0; font-size:var(--nw-fs-text); font-weight:600; line-height:1.45; max-width:62ch; animation:nw-rise .7s var(--nw-ease) both; }
+  .nw-hero .nw-bulletin { animation:nw-rise .7s var(--nw-ease) both; }
   @keyframes nw-rise { from { opacity:0; filter:blur(3px); } }
   .nw-hero > .nw-now { grid-area:now; align-self:start; gap:4px; }
   .nw-hero > .nw-now .temp { font-size:var(--nw-fs-temp); }
@@ -65,7 +65,7 @@ export const heroStyles = css`
   .brief-group ul { list-style:none; margin:4px 0 0; padding:0; display:grid; gap:4px; }
   .brief-group li { display:flex; align-items:flex-start; gap:7px; font-size:var(--nw-fs-small); }
   .brief-group li ha-icon { --mdc-icon-size:15px; color:var(--nw-fg2); margin-top:1px; }
-  @media (prefers-reduced-motion:reduce) { .nw-hero .headline { animation:none; } }
+  @media (prefers-reduced-motion:reduce) { .nw-hero .nw-bulletin { animation:none; } }
   @container (max-width:650px) {
     .nw-hero { grid-template-columns:minmax(0,1fr); grid-template-areas:"head" "now" "main" "frise"; padding:16px 14px 18px; }
   }

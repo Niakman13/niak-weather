@@ -72,8 +72,11 @@ export const pieces = css`
   /* Coloured text, always readable: the meaning colour mixed into the text colour. */
   .nw-ink { font-size:var(--nw-fs-small); font-weight:600; color:color-mix(in oklab, var(--c) var(--nw-ink), var(--nw-fg)); }
 
+  /* The day's bulletin: medium weight, never bold. Home Assistant's Roboto comes in 400, 500 and 700: a 600 shows as bold. */
+  .nw-bulletin { margin:0; font-size:var(--nw-fs-text); font-weight:500; line-height:1.5; max-width:62ch; }
+
   /* Source pill: one rule for the whole card. Same shape as the info pill, only the tint differs. */
-  .nw-badge { display:inline-flex; align-items:center; font-size:var(--nw-fs-small); line-height:18px; font-weight:600; white-space:nowrap;
+  .nw-badge { display:inline-flex; align-items:center; font-size:var(--nw-fs-small); line-height:18px; font-weight:500; white-space:nowrap;
     padding:3px 10px; border-radius:var(--nw-radius-pill); border:1px solid var(--nw-line); background:color-mix(in srgb, var(--nw-bg) 70%, transparent); color:var(--nw-fg);
     max-width:100%; overflow:hidden; text-overflow:ellipsis; box-sizing:border-box; }
   /* Info pill: tinted background, icon and text in the colour, value in bold. */

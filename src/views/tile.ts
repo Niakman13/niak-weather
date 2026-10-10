@@ -44,7 +44,7 @@ export function renderTile(v: WeatherView, sky: TemplateResult, s: TileState): T
     </div>
     <div class="grabber" aria-hidden="true"><i></i></div>
     <div class="more" ?inert=${!s.open}><div><div class="more-in">
-      ${headline ? html`<div class="bulletin">${label('Bulletin du jour')}<p class="headline">${unbroken(headline)}</p></div>` : nothing}
+      ${headline ? html`<div class="bulletin">${label('Bulletin du jour')}<p class="nw-bulletin">${unbroken(headline)}</p></div>` : nothing}
       ${frise(v)}
       <div class="foot"><span>${v.forecastSource}${v.now.temperatureSource !== v.forecastSource ? ` · ${v.now.temperatureSource.toLowerCase()}` : ''}</span>
         <span>Appui long : ${s.holdTarget === 'page' ? 'page météo' : 'carte complète'}</span></div>
@@ -94,7 +94,6 @@ export const tileStyles = css`
   .more-in { padding:0 16px 14px; display:flex; flex-direction:column; gap:12px; opacity:0; transform:translateY(-6px); transition:opacity .3s .1s, transform .3s .1s; }
   .open .more-in { opacity:1; transform:none; }
   .bulletin { display:flex; flex-direction:column; gap:4px; }
-  .headline { margin:0; font-size:var(--nw-fs-text); font-weight:600; line-height:1.45; max-width:62ch; }
   .foot { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; font-size:var(--nw-fs-small); color:var(--nw-fg2); }
   .grabber { display:flex; justify-content:center; padding:0 0 8px; }
   .grabber i { width:34px; height:4px; border-radius:4px; background:var(--nw-line); }
