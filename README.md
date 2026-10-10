@@ -125,7 +125,7 @@ Variables : `niak-rain-color`, `niak-wind-color`, `niak-heat-color`, `niak-cold-
 
 | Message | Que faire |
 | --- | --- |
-| Niak Weather a besoin de son intégration | Installez [l’intégration](https://github.com/Niakman13/niak-weather-integration#installation), puis redémarrez Home Assistant. |
+| Niak Weather a besoin de son intégration | Déjà téléchargée depuis HACS ? Ajoutez-la dans **Paramètres → Appareils et services** : Home Assistant ne la démarre qu’une fois ajoutée. Sinon, [installez-la](https://github.com/Niakman13/niak-weather-integration#installation), redémarrez, puis ajoutez-la. |
 | Ajoutez l’intégration Niak Weather | Elle est installée : ajoutez-la dans **Paramètres → Appareils et services**. |
 | Choisissez un lieu | Plusieurs lieux existent : choisissez celui de la carte dans ses réglages. |
 | Mettez à jour la carte | L’intégration est plus récente : mettez la carte à jour dans HACS. |

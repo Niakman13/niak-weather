@@ -198,14 +198,15 @@ try {
       card.hass = { states: {}, language: 'fr', locale: { language: 'fr' }, callWS: async () => ({}), connection: { subscribeMessage: () => Promise.reject({ code }) } };
       await new Promise(r => setTimeout(r, 50)); await card.updateComplete;
       const root = card.shadowRoot;
-      result[code] = [root.querySelector('.nw-problem b')?.textContent, root.querySelector('.nw-problem a')?.getAttribute('href') ?? null];
+      result[code] = [root.querySelector('.nw-problem b')?.textContent, ...[...root.querySelectorAll('.nw-problem a')].map(a => a.getAttribute('href'))];
     }
     stage.replaceChildren(); return result;
   });
   assert.deepEqual(problems, {
-    unknown_command: ['Niak Weather a besoin de son intégration', 'https://github.com/Niakman13/niak-weather-integration#installation'],
+    // Downloaded but not added, the integration is not started either: the message offers to add it first, then to install it.
+    unknown_command: ['Niak Weather a besoin de son intégration', '/config/integrations/dashboard/add?domain=niak_weather', 'https://github.com/Niakman13/niak-weather-integration#installation'],
     not_configured: ['Ajoutez l’intégration Niak Weather', '/config/integrations/dashboard/add?domain=niak_weather'],
-    choose_entry: ['Choisissez un lieu', null] }, 'Messages without the integration');
+    choose_entry: ['Choisissez un lieu'] }, 'Messages without the integration');
   report.problems = problems;
 
   assert.deepEqual(errors, [], 'Browser errors');

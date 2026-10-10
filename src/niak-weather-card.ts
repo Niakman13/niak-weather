@@ -21,13 +21,14 @@ let instances = 0;
 
 /** Why there is no weather to show, and what to do about it. */
 type Problem = 'missing' | 'not_configured' | 'choose_entry' | 'not_found' | 'version';
-const PROBLEMS: Record<Problem, { title: string; text: string; link?: [string, string] }> = {
+const PROBLEMS: Record<Problem, { title: string; text: string; links?: [string, string][] }> = {
+  // Home Assistant only starts an integration once it is added: downloaded from HACS but not added yet, it does not answer either.
   missing: { title: 'Niak Weather a besoin de son intégration',
-    text: 'Depuis la version 2.0, la carte reçoit ses calculs de l’intégration Niak Weather. Installez-la depuis HACS, puis redémarrez Home Assistant.',
-    link: ['Installer l’intégration', 'https://github.com/Niakman13/niak-weather-integration#installation'] },
+    text: 'Depuis la version 2.0, la carte reçoit ses calculs de l’intégration Niak Weather. Déjà téléchargée depuis HACS ? Ajoutez-la dans Paramètres → Appareils et services. Sinon, installez-la depuis HACS, redémarrez Home Assistant, puis ajoutez-la.',
+    links: [['Ajouter l’intégration', '/config/integrations/dashboard/add?domain=niak_weather'], ['L’installer', 'https://github.com/Niakman13/niak-weather-integration#installation']] },
   not_configured: { title: 'Ajoutez l’intégration Niak Weather',
     text: 'Elle est installée mais pas encore configurée. Elle peut reprendre les réglages de vos cartes.',
-    link: ['Ajouter l’intégration', '/config/integrations/dashboard/add?domain=niak_weather'] },
+    links: [['Ajouter l’intégration', '/config/integrations/dashboard/add?domain=niak_weather']] },
   choose_entry: { title: 'Choisissez un lieu', text: 'Plusieurs lieux Niak Weather sont configurés : choisissez celui de cette carte dans ses réglages.' },
   not_found: { title: 'Lieu introuvable', text: 'Le lieu de cette carte n’existe plus : choisissez-en un autre dans ses réglages.' },
   version: { title: 'Mettez à jour la carte', text: 'L’intégration Niak Weather est plus récente que cette carte : mettez la carte à jour dans HACS.' },
@@ -151,8 +152,8 @@ export class NiakWeatherCard extends LitElement {
 
   private renderProblem(p: (typeof PROBLEMS)[Problem]) {
     return html`<ha-card><div class="nw-problem" role="status"><ha-icon icon="mdi:weather-partly-cloudy"></ha-icon>
-      <div><b>${p.title}</b><p>${p.text}</p>${p.link ? html`<a href=${p.link[1]} target=${p.link[1].startsWith('/') ? nothing : '_blank'}
-        rel="noopener noreferrer" @click=${this.follow}>${p.link[0]}</a>` : nothing}</div></div></ha-card>`;
+      <div><b>${p.title}</b><p>${p.text}</p>${p.links ? html`<div class="links">${p.links.map(([label, href], i) => html`<a class=${i ? 'second' : ''} href=${href}
+        target=${href.startsWith('/') ? nothing : '_blank'} rel="noopener noreferrer" @click=${this.follow}>${label}</a>`)}</div>` : nothing}</div></div></ha-card>`;
   }
   /** A link inside Home Assistant opens there, without reloading the page. */
   private follow = (e: MouseEvent) => {
@@ -236,6 +237,8 @@ export class NiakWeatherCard extends LitElement {
     .nw-problem p { margin:4px 0 10px; color:var(--nw-fg2); }
     .nw-problem a { display:inline-block; padding:6px 14px; border-radius:var(--nw-radius-pill); background:var(--nw-accent); color:var(--nw-bg);
       font-weight:600; text-decoration:none; font-size:var(--nw-fs-small); }
+    .nw-problem .links { display:flex; flex-wrap:wrap; gap:8px; }
+    .nw-problem a.second { background:none; color:var(--nw-accent); box-shadow:inset 0 0 0 1px var(--nw-line); }
     dialog.nw-dialog { border:0; padding:0; width:min(1180px, 96vw); max-height:92vh; border-radius:16px; overflow:auto; overscroll-behavior:contain;
       background:var(--nw-bg); color:var(--nw-fg); box-shadow:0 24px 80px #0005; }
     dialog.nw-dialog::backdrop { background:#0b1520aa; backdrop-filter:blur(2px); }

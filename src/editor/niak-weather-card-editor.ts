@@ -68,16 +68,18 @@ export class NiakWeatherCardEditor extends LitElement {
     const data = Object.fromEntries(Object.entries({ ...defaults, ...this.config }).filter(([key]) => key !== 'type'));
     const one = this.entries?.length === 1 ? this.entries[0] : undefined;
     return html`
-      ${this.entries === null ? html`<p class="note warn">L’intégration Niak Weather n’est pas installée : la carte en a besoin depuis la version 2.0.
-          <a href="https://github.com/Niakman13/niak-weather-integration#installation" target="_blank" rel="noopener noreferrer">L’installer</a></p>`
+      ${this.entries === null ? html`<p class="note warn">L’intégration Niak Weather ne répond pas : la carte en a besoin depuis la version 2.0.
+          Déjà téléchargée ? <a href="/config/integrations/dashboard/add?domain=niak_weather" @click=${this.follow}>Ajoutez-la</a>.
+          Sinon, <a href="https://github.com/Niakman13/niak-weather-integration#installation" target="_blank" rel="noopener noreferrer">installez-la</a>.</p>`
         : this.entries?.length === 0 ? html`<p class="note warn">Ajoutez l’intégration Niak Weather : Paramètres → Appareils et services.</p>`
         : html`<p class="note">${one ? html`Lieu : <b>${one.title}</b>. ` : nothing}Les sources (prévisions, station, air et pollens) se règlent dans
           <a href=${SETTINGS} @click=${this.follow}>l’intégration Niak Weather</a>.</p>`}
       <ha-form .hass=${this.hass} .data=${data} .schema=${this.schema()} .computeLabel=${this.computeLabel} @value-changed=${this.changed}></ha-form>`;
   }
+  /** A link inside Home Assistant opens there, without reloading the page. */
   private follow = (e: MouseEvent) => {
     e.preventDefault();
-    history.pushState(null, '', SETTINGS);
+    history.pushState(null, '', (e.currentTarget as HTMLAnchorElement).getAttribute('href') ?? SETTINGS);
     window.dispatchEvent(new CustomEvent('location-changed', { bubbles: true, composed: true }));
   };
   static styles = css`
