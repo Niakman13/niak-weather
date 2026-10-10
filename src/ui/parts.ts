@@ -5,6 +5,8 @@ import { numberFormat } from '../intl-cache';
 
 /** French number, at most `digits` decimals (exactly `digits` when `fixed`). */
 export const nf = (v: number, digits = 1, fixed = false) => numberFormat('fr-FR', { maximumFractionDigits: digits, minimumFractionDigits: fixed ? digits : 0 }).format(v);
+/** A number stays with its unit at the end of a line: « (6 °C) » is never cut after the 6. */
+export const unbroken = (text: string) => text.replace(/(\d) (°C|km\/h|mm|%|hPa)/g, '$1\u00a0$2');
 /** The colour of a meaning token, for `--c`. */
 export const tint = (theme: string) => `--c:var(--nw-${theme})`;
 /** Colour of a temperature, from cold (5 °C) to heat (30 °C), mixed from the palette. */
@@ -32,13 +34,11 @@ export function alertBubble(a: AlertPoint, extraClass = ''): TemplateResult {
     <ha-icon icon=${a.icon}></ha-icon>${a.label ? html`<span class="nw-label">${a.label}</span>` : nothing}<b title=${a.text}>${a.text}</b></p>`;
 }
 
-/** A moment of the day, an hour or a day: label, icon, value, then whatever follows. */
-export function tile(title: string, icon: string, value: string, extra: unknown = nothing, tip = ''): TemplateResult {
-  return html`<div class="nw-tile nw-glass" title=${tip || nothing}>${label(title)}<ha-icon icon=${icon}></ha-icon><strong>${value}</strong>${extra}</div>`;
+/** The official vigilance in the banner: « Vigilance orange · Orages », as a compact pill with its halo. */
+export function alertPill(a: AlertPoint): TemplateResult {
+  return html`<p class=${`nw-alert nw-level${a.level}`} role="status" title=${a.source} data-entity=${entity(a.entity)}>
+    <span class="dot"><ha-icon icon=${a.icon}></ha-icon></span><span>${a.label ? html`<b>${a.label}<span class="sep"> · </span></b>` : nothing}${a.text}</span></p>`;
 }
-
-/** Rain amount in the rain colour, or an empty line so tiles keep the same height. */
-export const rainLine = (mm: number, min = .1) => mm >= min ? html`<span class="nw-ink" style=${tint('rain')}>${nf(mm)} mm</span>` : html`<span class="nw-ink">&nbsp;</span>`;
 
 const ROSE = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSO', 'SO', 'OSO', 'O', 'ONO', 'NO', 'NNO'];
 /** Where the wind comes from, as a point of the compass (« SO »). */

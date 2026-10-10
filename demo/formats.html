@@ -49,15 +49,17 @@
   await import('/card.js');
   const { scenarioHass, scenarioConfig } = await import('/demo-hass.js');
   const $=id=>document.getElementById(id);
-  const cards=[...document.querySelectorAll('[data-format]')].map(slot=>{const c=document.createElement('niak-weather-card');c.dataset.format=slot.dataset.format;slot.append(c);return c;});
+  // Each scenario gets new cards: the integration's view arrives once per subscription.
+  const slots=[...document.querySelectorAll('[data-format]')];
   // A tap on a value of the full card asks Home Assistant for the sensor's details: shown here as a note.
   document.addEventListener('hass-more-info',e=>{const s=document.createElement('div');s.textContent='Détails de '+e.detail.entityId;Object.assign(s.style,{position:'fixed',bottom:'16px',left:'50%',transform:'translateX(-50%)',background:'var(--card-background-color)',border:'1px solid var(--divider-color)',padding:'10px 18px',borderRadius:'8px',zIndex:30});document.body.append(s);setTimeout(()=>s.remove(),1600);});
   function refresh(){
     const condition=$('condition').value,phase=condition==='clear-night'?'night':$('phase').value;
     document.documentElement.classList.toggle('dark',$('theme').value==='dark');document.body.classList.toggle('phone',$('width').value==='phone');
     const scenario={condition,phase,vigilance:$('vigilance').value||undefined,season:'autumn',station:$('station').value==='yes',animated:$('motion').checked};
-    for(const card of cards){
-      const config={...scenarioConfig({...scenario,format:card.dataset.format})};delete config.weather_path;
+    for(const slot of slots){
+      const card=document.createElement('niak-weather-card');slot.replaceChildren(card);
+      const config={...scenarioConfig({...scenario,format:slot.dataset.format})};delete config.weather_path;
       card.setConfig(config);card.hass=scenarioHass(scenario);
     }
   }

@@ -41,7 +41,9 @@ try {
       await show({ format, width, theme, condition, vigilance: condition === 'pouring' ? 'Orange' : undefined, animated: false });
       const overflow = await inCard(root => {
         const host = root.host.getBoundingClientRect();
-        return [...root.querySelectorAll('*')].filter(e => { const r = e.getBoundingClientRect(); return r.width && !e.closest('.sky, dialog, .hours, .days, .press-ring') && (r.right > host.right + 1 || r.left < host.left - 1); })
+        // The timeline draws in its own shadow root: its labels and hours are checked too.
+        const all = [...root.querySelectorAll('*'), ...[...root.querySelectorAll('niak-frise')].flatMap(f => [...f.shadowRoot.querySelectorAll('*')])];
+        return all.filter(e => { const r = e.getBoundingClientRect(); return r.width && !e.closest('.sky, dialog, .press-ring') && (r.right > host.right + 1 || r.left < host.left - 1); })
           .map(e => e.className || e.tagName).slice(0, 5);
       });
       assert.deepEqual(overflow, [], `Overflow ${format} ${width} ${theme} ${condition}`);
@@ -66,19 +68,23 @@ try {
   await page.evaluate(() => { const c = document.querySelector('niak-weather-card'), { weather_path, ...config } = c.config; c.setConfig(config); }); await sleep(50);
   const tile = page.locator('niak-weather-card .nw-tilecard');
   const state = () => inCard(root => ({ open: root.querySelector('.nw-tilecard').classList.contains('open'), expanded: root.querySelector('.nw-tilecard').getAttribute('aria-expanded'),
-    dialog: !!root.querySelector('dialog')?.open, inert: root.querySelector('.more').inert, reveal: getComputedStyle(root.querySelector('.reveal') ?? root.host).opacity }));
-  assert.deepEqual(await state(), { open: false, expanded: 'false', dialog: false, inert: true, reveal: '0' }, 'Tile starts folded, extra alert waiting in the bubble');
-  const tickerFolded = await inCard(root => root.querySelector('niak-ticker').points.map(p => 'alert' in p));
-  assert.equal(tickerFolded[0], true, 'Folded: the second alert leads the scrolling bubble, in alert style');
+    dialog: !!root.querySelector('dialog')?.open, inert: root.querySelector('.more').inert }));
+  assert.deepEqual(await state(), { open: false, expanded: 'false', dialog: false, inert: true }, 'Tile starts folded');
+  const folded = await inCard(root => ({ top: [...root.querySelectorAll('.meta .nw-alert')].map(a => a.textContent.replace(/\s+/g, ' ').trim()),
+    ticker: root.querySelector('niak-ticker').points.map(p => ['alert' in p, p.official ?? false]) }));
+  assert.deepEqual(folded.top, ['Vigilance jaune · Orages'], 'Folded: the official vigilance stays on top, as a compact pill');
+  assert.deepEqual(folded.ticker[0], [true, false], 'Folded: what the station measures leads the scrolling bubble, in alert style');
   await tile.click({ position: { x: 120, y: 30 } }); await sleep(600);
-  const open = await state();
-  assert.deepEqual({ ...open, reveal: undefined }, { open: true, expanded: 'true', dialog: false, inert: false, reveal: undefined }, 'Tap unfolds');
-  assert.equal(await inCard(root => root.querySelector('niak-ticker').points.some(p => 'alert' in p)), false, 'Unfolded: alerts are stacked, not in the bubble');
+  assert.deepEqual(await state(), { open: true, expanded: 'true', dialog: false, inert: false }, 'Tap unfolds');
+  // Unfolded, the timeline takes over from the bubble: the measured alert leads the « Maintenant » label, with its halo, the vigilance rings the track.
+  const frise = await inCard(root => { const f = root.querySelector('niak-frise').shadowRoot, pin = f.querySelector('.pin');
+    return { bubble: getComputedStyle(root.querySelector('.brief > div')).opacity, first: pin.getAttribute('aria-label').split(' ; ')[0], alert: pin.classList.contains('al'),
+      ring: !!f.querySelector('.ring'), lane: f.querySelectorAll('.seg').length > 0 }; });
+  assert.deepEqual({ ...frise, first: frise.first.startsWith('Maintenant : Forte pluie') }, { bubble: '0', first: true, alert: true, ring: true, lane: true }, 'Unfolded: the timeline');
   assert.equal(await page.evaluate(() => Object.entries(localStorage).find(([k]) => k.startsWith('niak-weather:open:tile'))?.[1]), '1', 'Unfolded state remembered');
-  // Hours and days.
-  await page.locator('niak-weather-card .seg button', { hasText: 'Jours' }).click(); await sleep(100);
-  assert.equal(await inCard(root => root.querySelectorAll('.days .nw-tile').length), 5, 'Days tab');
-  assert.equal((await state()).open, true, 'The switch does not fold the tile');
+  // A tap on a label of the timeline shows its point and does not fold the tile.
+  await page.locator('niak-weather-card niak-frise .pin').last().click(); await sleep(100);
+  assert.equal((await state()).open, true, 'A label of the timeline does not fold the tile');
   // Long press.
   const box = await tile.boundingBox();
   await page.mouse.move(box.x + 100, box.y + 30); await page.mouse.down(); await sleep(650); await page.mouse.up(); await sleep(300);

@@ -1,9 +1,9 @@
-// The banner of the full card: the same pieces as the tile, at full size, over the animated sky.
+// The banner of the full card, over the animated sky: the official vigilance, the day's bulletin, the weather now,
+// then the timeline of the coming hours with the brief's points.
 import { css, html, nothing, type TemplateResult } from 'lit';
 import type { WeatherView } from '../view';
-import { alertBubble, bubble, info, label, nf, tint } from '../ui/parts';
-import { moments, nowBlock } from './tile';
-import '../ui/ticker';
+import { alertPill, info, label, nf, tint, unbroken } from '../ui/parts';
+import { frise, nowBlock } from './tile';
 
 const GROUPS = [
   { key: 'official', title: 'Vigilance officielle' },
@@ -31,41 +31,42 @@ export function renderHero(v: WeatherView, sky: TemplateResult, uid: string): Te
   const trend = v.now.trend === undefined ? nothing : html`<span class="nw-chip" style=${tint(v.now.trend > 0 ? 'heat' : 'cold')}
     title=${v.now.trend > 0 ? 'La température monte' : 'La température baisse'}><ha-icon icon=${v.now.trend > 0 ? 'mdi:arrow-top-right' : 'mdi:arrow-bottom-right'}></ha-icon>${v.now.trend > 0 ? '+' : '−'}${nf(Math.abs(v.now.trend))} °C/h</span>`;
   const season = v.season.news ? html`<span class="nw-chip" style=${tint('calm')} title=${v.season.tip}><ha-icon icon=${v.season.info.icon}></ha-icon>${v.season.news}</span>` : nothing;
-  const headline = v.bulletin ? v.bulletin.summary : v.alerts.length ? undefined : v.points[0]?.text;
-  const points = v.bulletin || v.alerts.length ? v.points : v.points.slice(1);
+  const official = v.alerts.filter(a => a.official);
   return html`<section class=${`nw-hero${v.now.darkSky ? ' dark-sky' : ''}`} aria-label="Synthèse">
     <div class="sky" aria-hidden="true">${sky}</div><div class="veil" aria-hidden="true"></div>
     <header class="fm-head"><h2>Synthèse</h2>${briefInfo(v, uid)}<span>${[v.location, v.dateLabel].filter(Boolean).join(' · ')}</span>${season}</header>
     <div class="hero-main">
-      ${v.bulletin ? label('Bulletin du jour') : nothing}${headline ? html`<p class="headline">${headline}</p>` : nothing}
-      ${v.alerts.map(a => alertBubble(a))}
-      ${points.length > 1 ? html`<niak-ticker .points=${points}></niak-ticker>` : points.length ? bubble(points[0]) : nothing}
+      ${official.length ? html`<div class="nw-alerts">${official.map(a => alertPill(a))}</div>` : nothing}
+      ${v.bulletin ? html`${label('Bulletin du jour')}<p class="headline">${unbroken(v.bulletin.summary)}</p>` : nothing}
     </div>
     ${nowBlock(v, true, trend)}
-    ${v.bulletin ? moments(v.bulletin) : nothing}
+    ${frise(v)}
   </section>`;
 }
 
 export const heroStyles = css`
   .nw-hero { position:relative; isolation:isolate; overflow:hidden; padding:20px 24px 24px; display:grid; grid-template-columns:minmax(0,1fr) auto;
-    grid-template-areas:"head now" "main now" "tiles tiles"; column-gap:24px; row-gap:12px; color:var(--nw-fg); }
+    grid-template-areas:"head now" "main now" "frise frise"; column-gap:24px; row-gap:12px; color:var(--nw-fg); }
   .nw-hero .sky { --k:1; }
+  /* The text side stays readable; the timeline has its own frosted glass, and the ground (puddles, snow) shows along the bottom. */
   .nw-hero .veil { background:linear-gradient(90deg, var(--nw-bg) 0%, color-mix(in srgb, var(--nw-bg) 92%, transparent) 30%,
-    color-mix(in srgb, var(--nw-bg) 45%, transparent) 55%, transparent 78%), linear-gradient(0deg, var(--nw-bg) 0%, transparent 40%); }
+    color-mix(in srgb, var(--nw-bg) 45%, transparent) 55%, transparent 78%);
+    -webkit-mask-image:linear-gradient(0deg, transparent 0, #000 22px); mask-image:linear-gradient(0deg, transparent 0, #000 22px); }
   .nw-hero > .fm-head { grid-area:head; cursor:default; flex-wrap:wrap; }
   .hero-main { grid-area:main; display:flex; flex-direction:column; align-items:flex-start; gap:10px; min-width:0; }
-  .hero-main niak-ticker { max-width:100%; }
-  .nw-hero .headline { margin:0; font-size:var(--nw-fs-text); font-weight:600; line-height:1.45; max-width:56ch; }
+  .nw-alerts { display:flex; flex-wrap:wrap; gap:8px; max-width:100%; }
+  .nw-hero .headline { margin:0; font-size:var(--nw-fs-text); font-weight:600; line-height:1.45; max-width:62ch; animation:nw-rise .7s var(--nw-ease) both; }
+  @keyframes nw-rise { from { opacity:0; filter:blur(3px); } }
   .nw-hero > .nw-now { grid-area:now; align-self:start; gap:4px; }
   .nw-hero > .nw-now .temp { font-size:var(--nw-fs-temp); }
   .nw-hero > .nw-now .temp small { font-size:var(--nw-fs-title); }
-  .nw-hero > .moments { grid-area:tiles; margin-top:6px; gap:12px; }
+  .nw-hero > .nw-frise { grid-area:frise; margin-top:4px; }
   .brief-group { margin-top:10px; }
   .brief-group ul { list-style:none; margin:4px 0 0; padding:0; display:grid; gap:4px; }
   .brief-group li { display:flex; align-items:flex-start; gap:7px; font-size:var(--nw-fs-small); }
   .brief-group li ha-icon { --mdc-icon-size:15px; color:var(--nw-fg2); margin-top:1px; }
+  @media (prefers-reduced-motion:reduce) { .nw-hero .headline { animation:none; } }
   @container (max-width:650px) {
-    .nw-hero { grid-template-columns:minmax(0,1fr); grid-template-areas:"head" "now" "main" "tiles"; padding:16px 14px 18px; }
-    .nw-hero > .moments { grid-template-columns:repeat(2, minmax(0,1fr)); }
+    .nw-hero { grid-template-columns:minmax(0,1fr); grid-template-areas:"head" "now" "main" "frise"; padding:16px 14px 18px; }
   }
 `;

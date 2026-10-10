@@ -32,12 +32,14 @@ export interface Season {
 }
 export interface SeasonView { info: Season; news?: string; tip: string }
 
+/** When a forecast point happens (seconds), and the banner's label for it (« 20 h », « midi », « demain »); absent for what is measured now. */
+export interface Timed { at?: number; clock?: string }
 /** An alert bubble: the official vigilance, or what the station measures at home. Both can show at once. */
-export interface AlertPoint { level: 1 | 2 | 3; label?: string; text: string; icon: string; source: string; official: boolean; entity?: string }
+export interface AlertPoint extends Timed { level: 1 | 2 | 3; label?: string; text: string; icon: string; source: string; official: boolean; entity?: string }
 /** A point of the scrolling bubble. */
-export interface TickerPoint { group: string; label: string; icon: string; text: string; level: number; theme?: Theme; entity?: string }
+export interface TickerPoint extends Timed { group: string; label: string; icon: string; text: string; level: number; theme?: Theme; entity?: string }
 
-export interface BriefSignal {
+export interface BriefSignal extends Timed {
   key: string; group: 'now' | 'future' | 'environment' | 'official'; severity: 0 | 1 | 2 | 3;
   text: string; explanation: string; icon: string; entity?: string;
 }
@@ -90,6 +92,8 @@ export interface Slot {
   day: number;
   temperature?: number; precipitation: number; condition: string; conditionLabel: string; icon: string; night: boolean;
   wind?: number; gust?: number; bearing?: number;
+  /** Seconds: where the hour sits on the banner's timeline. */
+  time?: number;
 }
 export interface DayForecast {
   label: string; today: boolean; condition: string; conditionLabel: string; icon: string;

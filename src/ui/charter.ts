@@ -22,15 +22,15 @@ export const tokens = css`
     --nw-radius: 14px;
     --nw-radius-pill: 999px;
 
-    /* Glass over the sky: light for tiles, whiter for the brief bubble. */
-    --nw-glass: color-mix(in srgb, var(--nw-bg) 72%, transparent);
+    /* Glass over the sky: the brief bubble and the timeline's labels. */
     --nw-glass-strong: color-mix(in srgb, var(--nw-bg) 84%, transparent);
     --nw-blur: blur(6px) saturate(1.2);
+    /* Frosted glass of the banner's timeline: clearer, so the animated sky shows through, and blurred more to stay readable. */
+    --nw-glass-clear: color-mix(in srgb, var(--nw-bg) 45%, transparent);
+    --nw-frost: blur(14px) saturate(1.6);
 
     /* Spacing */
-    --nw-gap: 10px;
     --nw-pad-bubble: 6px 14px 7px 10px;
-    --nw-pad-tile: 11px 13px;
     --nw-pad-panel: 18px 20px;
 
     /* Type scale: six sizes for the whole card, nothing else.
@@ -68,17 +68,6 @@ export const pieces = css`
 
   /* Label: small capitals, one size everywhere. */
   .nw-label { font-size:var(--nw-fs-label); line-height:13px; font-weight:700; letter-spacing:var(--nw-label-spacing); text-transform:uppercase; color:var(--nw-fg2); white-space:nowrap; }
-  .nw-glass { background:var(--nw-glass); border:1px solid var(--nw-line); backdrop-filter:var(--nw-blur); }
-
-  /* Tile: a moment of the day, an hour or a day. */
-  .nw-tile { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; align-content:start; column-gap:8px; row-gap:3px;
-    padding:var(--nw-pad-tile); border-radius:var(--nw-radius); min-width:0; box-sizing:border-box; }
-  /* Tiles sit on the veil, where a blur would hardly show but would be recomputed at every frame of the sky: glass without blur. */
-  .nw-tile.nw-glass { backdrop-filter:none; }
-  .nw-tile > .nw-label, .nw-tile > small, .nw-tile > .nw-ink { grid-column:1/-1; }
-  .nw-tile ha-icon { --mdc-icon-size:24px; }
-  .nw-tile strong { font-size:var(--nw-fs-title); line-height:1.2; font-weight:750; letter-spacing:-.3px; white-space:nowrap; }
-  .nw-tile small { font-size:var(--nw-fs-small); opacity:.85; }
 
   /* Coloured text, always readable: the meaning colour mixed into the text colour. */
   .nw-ink { font-size:var(--nw-fs-small); font-weight:600; color:color-mix(in oklab, var(--c) var(--nw-ink), var(--nw-fg)); }
@@ -199,7 +188,21 @@ export const bubbles = css`
     opacity:0; animation:nw-glow 5.2s ease-in-out infinite; animation-play-state:var(--nw-motion, running); pointer-events:none; }
   .nw-bubble--alert ha-icon { color:color-mix(in oklab, var(--al) 70%, var(--nw-fg)); }
   .nw-bubble--alert .nw-label { color:color-mix(in oklab, var(--al) var(--nw-ink), var(--nw-fg)); }
+  /* Official vigilance in the banner: a compact pill, its icon in a disc of the level's colour, the same outline and halo as the alert bubble. */
+  .nw-alert { --al:var(--nw-level1); position:relative; display:inline-flex; align-items:center; gap:8px; max-width:100%; box-sizing:border-box; margin:0;
+    padding:3px 14px 3px 3px; border-radius:var(--nw-radius-pill); font-size:var(--nw-fs-text); line-height:18px; color:var(--nw-fg);
+    background:color-mix(in srgb, var(--al) 30%, color-mix(in srgb, var(--nw-bg) 55%, transparent)); border:1px solid color-mix(in oklab, var(--al) 60%, transparent);
+    backdrop-filter:var(--nw-blur); box-shadow:0 0 6px 0 color-mix(in oklab, var(--al) 32%, transparent), 0 4px 18px -10px color-mix(in oklab, var(--al) 65%, transparent); }
+  .nw-alert::after { content:''; position:absolute; inset:-1px; border-radius:inherit; box-shadow:0 0 16px 2px color-mix(in oklab, var(--al) 55%, transparent);
+    opacity:0; animation:nw-glow 5.2s ease-in-out infinite; animation-play-state:var(--nw-motion, running); pointer-events:none; }
+  .nw-alert .dot { display:grid; place-items:center; width:24px; height:24px; flex:none; border-radius:50%; background:var(--al); color:#2b2620; }
+  .nw-alert .dot ha-icon { --mdc-icon-size:14px; display:flex; line-height:0; }
+  .nw-alert > span:last-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nw-alert b { font-weight:650; }
+  /* On a narrow card the phenomenon is enough: the disc's colour and the halo give the level, screen readers still read it. */
+  @container (max-width:400px) { .nw-alert b { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; } }
+  /* The level's colour, after the pieces that set the yellow of level 1. */
   .nw-level2 { --al:var(--nw-level2); } .nw-level3 { --al:var(--nw-level3); }
   @keyframes nw-glow { 50% { opacity:1; } }
-  @media (prefers-reduced-motion:reduce) { .nw-bubble { transition:none; } .nw-bubble--alert::after { animation:none; } }
+  @media (prefers-reduced-motion:reduce) { .nw-bubble { transition:none; } .nw-bubble--alert::after, .nw-alert::after { animation:none; } }
 `;

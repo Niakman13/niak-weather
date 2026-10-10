@@ -42,7 +42,6 @@ export class NiakWeatherCard extends LitElement {
   @state() private problem?: Problem;
   /** The tile is unfolded (remembered on this device). */
   @state() private open = false;
-  @state() private tab: 'hours' | 'days' = 'hours';
   /** The full card is shown over the page, after a long press on the tile. */
   @state() private dialogOpen = false;
   @state() private folded: Record<SectionId, boolean> = { today: false, predictions: false };
@@ -144,7 +143,7 @@ export class NiakWeatherCard extends LitElement {
     return html`<ha-card>
       <div @pointerdown=${this.down} @pointermove=${this.move} @pointerup=${this.up} @pointercancel=${this.cancelPress} @pointerleave=${this.cancelPress}
         @contextmenu=${this.noMenu} @keydown=${this.tileKey}>
-        ${renderTile(view, sky, { open: this.open, tab: this.tab, holdTarget: this.weatherPath ? 'page' : 'card', onTab: tab => { this.tab = tab; } })}</div>
+        ${renderTile(view, sky, { open: this.open, holdTarget: this.weatherPath ? 'page' : 'card' })}</div>
       ${this.dialogOpen ? html`<dialog class="nw-dialog" aria-label=${title} @close=${() => { this.dialogOpen = false; }} @click=${this.openEntity} @keydown=${this.entityKey}>
         <header><b>${title}</b><button type="button" @click=${this.closeDialog}>Fermer</button></header>${full()}</dialog>` : nothing}
     </ha-card>`;
