@@ -106,13 +106,14 @@ export class NiakWeatherSky extends LitElement {
     const windy=['windy','windy-variant'].includes(this.condition);
     const heavy=this.condition==='pouring';
     const low=this.quality==='low';
-    const n=low ? 8 : heavy ? 80 : hail ? 18 : rain ? 44 : snow ? 46 : 20;
+    const n=low ? 8 : heavy ? 80 : hail ? 18 : rain ? 44 : snow ? 90 : 20;
     const particles=(kind:string,count=n)=>Array.from({length:count},(_,i)=>{
-      const depth=i%3;
+      // Snow has a fourth depth: big flakes in the foreground, one in four (one in two on a lightened sky, so they still show).
+      const depth=kind==='snow' ? (low ? [1,3][i%2] : i%4) : i%3;
       // Snow falls straight and slowly, each flake swaying on its own rhythm; far flakes are smaller, paler and slower.
-      const duration=kind==='rain' ? (heavy ? .45 : .8)+depth*.22 : kind==='snow' ? [12,9.5,7.5][depth]+(i%4)*.6 : kind==='hailstone' ? 1.9+(i*37%8)/10 : 3+depth;
-      const size=kind==='snow' ? [2.5,3.5,5][depth] : kind==='hailstone' ? 4+i%3 : 2+depth;
-      return html`<i class=${`particle ${kind} depth-${depth}`} style=${`--x:${(i*37+7)%100}%;--delay:${-((i*13)%37)/37*duration}s;--duration:${duration}s;--size:${size}px;--rest:${(i*19+8)%88}%;--drift:${heavy ? -85 : -38}px;--amp:${[4,7,10][depth]}px;--sw:${2.6+(i*5%20)/10}s;--dx:${(i%2?1:-1)*(5+(i*5*37+11)%8)}px`}></i>`;
+      const duration=kind==='rain' ? (heavy ? .45 : .8)+depth*.22 : kind==='snow' ? [13,10.5,8.5,7][depth]+(i*7%5)*.5 : kind==='hailstone' ? 1.9+(i*37%8)/10 : 3+depth;
+      const size=kind==='snow' ? [3,5,7,11][depth] : kind==='hailstone' ? 4+i%3 : 2+depth;
+      return html`<i class=${`particle ${kind} depth-${depth}`} style=${`--x:${(i*37+7)%100}%;--delay:${-((i*13)%37)/37*duration}s;--duration:${duration}s;--size:${size}px;--rest:${(i*19+8)%88}%;--drift:${heavy ? -85 : -38}px;--amp:${[4,7,10,14][depth]}px;--sw:${2.6+(i*5%20)/10}s;--dx:${(i%2?1:-1)*(5+(i*5*37+11)%8)}px`}></i>`;
     });
     // Water on the ground: a shimmering film, and splashes (two droplets and a widening ripple) here and there.
     const ground=(count:number)=>html`<div class="wet"></div>${Array.from({length:low?Math.min(count,5):count},(_,i)=>html`<i class="splash" style=${`--x:${4+(i*11*37+11)%92}%;--d:${1.1+(i*37+11)%7/10}s;--dl:-${((i*3*37+11)%150)/100}s`}></i>`)}`;
@@ -183,7 +184,8 @@ export class NiakWeatherSky extends LitElement {
     .scene.rainy {--sky:linear-gradient(150deg,#263e56,#486580 65%,#6c8aa1);--tint:.45;}
     .scene.pouring {--sky:linear-gradient(150deg,#17293f,#35485e 65%,#536c83);--tint:.45;}
     .scene.lightning,.scene.lightning-rainy {--sky:linear-gradient(150deg,#0b1626,#1d2c40 65%,#32435a);--tint:.52;}
-    .scene.snowy,.scene.snowy-rainy {--sky:linear-gradient(150deg,#476784,#8baac1 75%,#cbdee6);}
+    /* A snowy sky a shade darker than the flakes, so they show. */
+    .scene.snowy,.scene.snowy-rainy {--sky:linear-gradient(150deg,#3b5876,#7491ab 70%,#a9bfcf);--tint:.55;}
     .scene.hail {--sky:linear-gradient(150deg,#1d2a3c,#3f5068 65%,#56677d);--tint:.5;}
     .scene.night:not(.clear-night):not(.sunny):not(.partlycloudy) {--sky:linear-gradient(150deg,#111c2c,#334457 80%,#506276);--tint:.44;}
     .scene.night.lightning,.scene.night.lightning-rainy {--tint:.56;}
@@ -220,15 +222,19 @@ export class NiakWeatherSky extends LitElement {
     .cloud.heavy-right {left:80%;top:-40px;width:320px;height:190px;opacity:.85;animation-delay:-17s;}
     .night .cloud-rear {fill:#73869f;}.night .cloud-near {fill:#a0aec1;}
     .rainy .cloud-rear {fill:#7d90a5;}.pouring .cloud-rear,.hail .cloud-rear {fill:#56677c;}.lightning .cloud-rear,.lightning-rainy .cloud-rear {fill:#46566a;}
-    .rainy .cloud-near {fill:#b0c0cf;}.pouring .cloud-near,.hail .cloud-near {fill:#8496aa;}.lightning .cloud-near,.lightning-rainy .cloud-near {fill:#728499;}
+    .rainy .cloud-near {fill:#b0c0cf;}.pouring .cloud-near,.hail .cloud-near {fill:#8496aa;}
+    /* Snow clouds are grey: white flakes show over them. */
+    .snowy .cloud-rear,.snowy-rainy .cloud-rear {fill:#94a6b9;}.snowy .cloud-near,.snowy-rainy .cloud-near {fill:#bccad8;}.lightning .cloud-near,.lightning-rainy .cloud-near {fill:#728499;}
     .windy .cloud,.windy-variant .cloud {animation-name:wind-clouds;}
     .particle {position:absolute;left:var(--x);top:-40px;height:calc(100% + 80px);width:3px;animation:fall var(--duration) linear var(--delay) infinite;}
     .particle::before {content:'';position:absolute;top:0;left:0;display:block;}
     .rain::before {width:1.8px;height:23px;border-radius:2px;background:linear-gradient(#e4f3ff38,#eef8fff5);rotate:9deg;}
     .rain.depth-0 {opacity:.55;}.rain.depth-1 {opacity:.82;}.rain.depth-2::before {width:2.3px;height:30px;}
     .pouring .rain::before {height:34px;rotate:15deg;}.pouring .rain.depth-2::before {height:44px;width:2.6px;}
-    .snow {animation-name:snow;}.snow.depth-0 {opacity:.55;}.snow.depth-1 {opacity:.75;}.snow.depth-2 {opacity:.95;}
-    .snow::before {width:var(--size);height:var(--size);border-radius:50%;background:#ffffffe6;box-shadow:0 0 0 .6px rgba(70,110,150,.45),0 0 3px #fff5;
+    .snow {animation-name:snow;}.snow.depth-0 {opacity:.6;}.snow.depth-1 {opacity:.8;}.snow.depth-2,.snow.depth-3 {opacity:1;}
+    /* A white flake with a fine blue-grey rim and a soft glow: it shows on a pale sky as on a dark one. */
+    .snow::before {width:var(--size);height:var(--size);border-radius:50%;background:radial-gradient(circle at 40% 38%,#fff 55%,#eef5fc);
+      box-shadow:0 0 0 1px rgba(60,95,135,.6),0 1px 4px rgba(30,60,100,.35),0 0 6px 1px #fff6;
       animation:snow-sway var(--sw) ease-in-out var(--delay) infinite alternate;}
     /* Snow settling on the ground: a thin white layer that thickens slowly, a few crystals sparkling. */
     .snowbank {position:absolute;left:-1%;right:-1%;bottom:-1px;height:18px;transform-origin:50% 100%;scale:1 .3;animation:settle 40s ease-out forwards;}

@@ -82,7 +82,7 @@ Le ciel derrière le bandeau :
 - **soleil** : un grand disque entier avec ses rayons qui tournent lentement, plus gros et plus chaud en été ;
 - **lune** : des cratères (un creux ombré, un bord éclairé) ;
 - **nuages, orages et vent** : ceux de la carte (nuages dessinés, éclairs avec flash, rafales en volutes) ;
-- **neige** : elle tombe droit en se balançant doucement, sur trois profondeurs. Une couche blanche se forme au sol et s’épaissit en 40 s ;
+- **neige** : elle tombe droit en se balançant doucement, sur quatre profondeurs, avec de gros flocons au premier plan. Les nuages de neige sont gris, pour que les flocons blancs se voient. Une couche blanche se forme au sol et s’épaissit en 40 s ;
 - **grêle** : elle rebondit deux fois sur le bas du cadre, puis fond ;
 - **pluie, orage et grêle** : l’eau au sol miroite, avec des éclaboussures et des ondes.
 
