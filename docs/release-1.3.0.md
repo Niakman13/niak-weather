@@ -4,7 +4,7 @@ La Synthèse accueille la météo actuelle à droite : état du ciel, températu
 
 Le ciel animé couvre tout le bandeau, même lorsque les points à retenir sont dépliés. Un voile dégradé protège la lisibilité du texte. Nuages bicolores, pluie et fortes pluies, éclairs ramifiés, neige, brouillard et rafales donnent vie aux conditions actuelles. Le ressenti reste dans la synthèse et sa jauge, sans répétition dans le bloc météo.
 
-Le décor suit l’état actuel du fournisseur météo, avec confirmation de la pluie par le capteur configuré ; les prévisions et vigilances ne changent pas le ciel actuel. Le jour et la nuit suivent les informations solaires disponibles. [Sources, règles et limites](current-weather.md).
+Le décor suit l’état actuel du fournisseur météo, avec confirmation de la pluie par le capteur configuré ; les prévisions et vigilances ne changent pas le ciel actuel. Le jour et la nuit suivent les informations solaires disponibles. [Sources, règles et limites](https://github.com/Niakman13/niak-weather/blob/v1.20.3/docs/current-weather.md).
 
 Les animations peuvent être désactivées ou allégées dans l’éditeur. Elles se mettent en pause hors écran et dans les onglets masqués, et respectent la préférence système de réduction des mouvements.
 

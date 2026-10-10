@@ -8,7 +8,7 @@ Le nouveau cadre Pression affiche la valeur actuelle en hPa, sa source et la var
 
 La température actuelle reste dans le bandeau supérieur, accompagnée d’une bulle **Station locale** ou du fournisseur météo, par exemple **Météo-France**, à la place du libellé Thermomètre. La jauge de ressenti et les mesures techniques en bulles sont conservées.
 
-Sans station, les cadres utilisent les données disponibles du bulletin, avec une source explicite. La pluie annoncée n’est jamais présentée comme un cumul mesuré et les graphiques locaux ne sont pas inventés en l’absence d’historique. [Lecture des cadres et limites](recent-details.md).
+Sans station, les cadres utilisent les données disponibles du bulletin, avec une source explicite. La pluie annoncée n’est jamais présentée comme un cumul mesuré et les graphiques locaux ne sont pas inventés en l’absence d’historique. [Lecture des cadres et limites](https://github.com/Niakman13/niak-weather/blob/v1.20.3/docs/recent-details.md).
 
 248 tests unitaires et les contrôles navigateur à 375/768/1440 px, en clair et sombre, vérifient les sources, la rose des vents, les statistiques fermées initialement, leur ouverture indépendante et l’égalité des hauteurs sur une même rangée. Les interfaces Home Assistant des tests sont simulées.
 

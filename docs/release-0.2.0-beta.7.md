@@ -19,4 +19,4 @@ Cette version reste une préversion : **la publication stable v1 est en attente*
 
 Validation : 121 tests, six comparaisons du rendu météo de référence sans différence, six captures du nouveau bloc en clair/sombre sans débordement, filtres/préremplissage/changement de commune et interactions. Les tests navigateur utilisent un environnement Home Assistant simulé ; la nouvelle configuration reste à vérifier sur l’instance après mise à jour.
 
-[Guide Atmo France](https://github.com/Niakman13/niak-weather/blob/main/docs/atmo-france.md) · [Installation](https://github.com/Niakman13/niak-weather/blob/main/docs/installation.md)
+[Guide Atmo France](https://github.com/Niakman13/niak-weather/blob/v1.20.3/docs/atmo-france.md) · [Installation](https://github.com/Niakman13/niak-weather/blob/v1.20.3/docs/installation.md)

@@ -16,4 +16,4 @@ Dans **HACS → Niak Weather**, installer la mise à jour **v1.0.0**, ou utilise
 
 121 tests de calcul/données, comparaisons du rendu météo à trois largeurs en clair/sombre et contrôles du bloc Atmo, des interactions et du nouveau libellé. Les tests navigateur utilisent des composants hôtes Home Assistant simulés : ils ne constituent pas une validation de tous les thèmes externes ou de chaque installation.
 
-[Installation](https://github.com/Niakman13/niak-weather/blob/main/docs/installation.md) · [Sources et prérequis](https://github.com/Niakman13/niak-weather/blob/main/docs/sources.md) · [Réglages Atmo France](https://github.com/Niakman13/niak-weather/blob/main/docs/atmo-france.md)
+[Installation](https://github.com/Niakman13/niak-weather/blob/v1.20.3/docs/installation.md) · [Sources et prérequis](https://github.com/Niakman13/niak-weather/blob/v1.20.3/docs/sources.md) · [Réglages Atmo France](https://github.com/Niakman13/niak-weather/blob/v1.20.3/docs/atmo-france.md)

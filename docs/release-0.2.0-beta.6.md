@@ -16,4 +16,4 @@ Dans HACS, ouvrir Niak Weather puis **⋮ → Retélécharger / Redownload**, ch
 
 Dans l’éditeur, **Préremplir les entités manquantes**, puis vérifier les choix. Les sources pré-calculées sont facultatives ; le modèle intégré fonctionne sans template supplémentaire.
 
-[Guide d’installation](https://github.com/Niakman13/niak-weather/blob/main/docs/installation.md) · [Vérifications et limites](https://github.com/Niakman13/niak-weather/blob/main/docs/parity.md)
+[Guide d’installation](https://github.com/Niakman13/niak-weather/blob/v1.20.3/docs/installation.md) · [Vérifications et limites](https://github.com/Niakman13/niak-weather/blob/main/docs/parity.md)

@@ -6,7 +6,7 @@ Les détails de station remplacent les barres relatives par deux cadres modernes
 
 **Vent** : rafales actuelles, ou vent moyen si aucun capteur de rafales n’est configuré ; maximum du jour ; échelle graduée avec deux repères ; historique des six dernières heures et tendance de la même mesure. Le maximum du jour n’est plus une barre toujours remplie à 100 %.
 
-Les historiques utilisent les capteurs de station et Recorder, jamais les prévisions météo. Sans historique accessible, les chiffres disponibles sont conservés et un message remplace le graphique. Les conversions d’unités et les interruptions de disponibilité sont prises en compte. [Mécanique et limites](recent-details.md).
+Les historiques utilisent les capteurs de station et Recorder, jamais les prévisions météo. Sans historique accessible, les chiffres disponibles sont conservés et un message remplace le graphique. Les conversions d’unités et les interruptions de disponibilité sont prises en compte. [Mécanique et limites](https://github.com/Niakman13/niak-weather/blob/v1.20.3/docs/recent-details.md).
 
 240 tests unitaires passent, ainsi que les contrôles navigateur mobile/tablette/desktop en thèmes clair et sombre : graphiques, échelle, données manquantes, mise en cache des demandes et clic sur la bonne source. Les interfaces Home Assistant des tests sont simulées.
 

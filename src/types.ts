@@ -33,7 +33,7 @@ export interface WeatherCardConfig {
   smart_brief?: boolean;
   show_synthesis?: boolean;
   show_today?: boolean;
-  /** Daily bulletin in the banner: first sentence and four period tiles. */
+  /** The day's bulletin in the banner, and in the unfolded tile. */
   show_bulletin?: boolean;
   show_predictions?: boolean;
   show_atmo_details?: boolean;

@@ -9,7 +9,7 @@ const defaults: Partial<WeatherCardConfig> = { format: 'full', show_synthesis: t
   show_atmo_details: true, show_atmo_tomorrow: true };
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   entry_id: 'Lieu', format: 'Format de la carte', smart_brief: 'Activer le brief intelligent',
-  show_synthesis: 'Afficher la section Synthèse / météo actuelle', show_bulletin: 'Afficher le bulletin du jour (prévisions par période)',
+  show_synthesis: 'Afficher la section Synthèse / météo actuelle', show_bulletin: 'Afficher le bulletin du jour',
   show_today: 'Afficher la section Aujourd’hui', show_predictions: 'Afficher la section Prévisions',
   collapse_today: 'Section Aujourd’hui repliée au départ', collapse_predictions: 'Section Prévisions repliée au départ',
   weather_animations: 'Animations (ciel animé et halo des alertes)', weather_animation_quality: 'Qualité des animations météo',
@@ -26,7 +26,7 @@ export class NiakWeatherCardEditor extends LitElement {
   @state() private entries?: Array<{ entry_id: string; title: string }> | null;
   private asked = false;
   private readonly computeLabel = (item: { name: keyof WeatherCardConfig }) =>
-    item.name === 'show_bulletin' && this.small ? 'Afficher le bulletin du jour une fois dépliée (matin, après-midi, soir, nuit)' : labels[item.name] ?? item.name;
+    item.name === 'show_bulletin' && this.small ? 'Afficher le bulletin du jour une fois dépliée' : labels[item.name] ?? item.name;
   private get small(): boolean { return !!this.config?.format && this.config.format !== 'full'; }
 
   public setConfig(config: WeatherCardConfig): void {
