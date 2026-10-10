@@ -6,13 +6,13 @@ import type { HomeAssistant, WeatherCardConfig } from '../types';
 /** The card's editor: which place, then how to show it. The sources are set in the integration. */
 const defaults: Partial<WeatherCardConfig> = { format: 'full', show_synthesis: true, show_bulletin: true, show_today: true, show_predictions: true,
   collapse_today: false, collapse_predictions: false, smart_brief: true, weather_animations: true, weather_animation_quality: 'standard',
-  show_atmo_details: true, show_atmo_tomorrow: true };
+  show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true };
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   entry_id: 'Lieu', format: 'Format de la carte', smart_brief: 'Activer le brief intelligent',
   show_synthesis: 'Afficher la section Synthèse / météo actuelle', show_bulletin: 'Afficher le bulletin du jour',
   show_today: 'Afficher la section Aujourd’hui', show_predictions: 'Afficher la section Prévisions',
   collapse_today: 'Section Aujourd’hui repliée au départ', collapse_predictions: 'Section Prévisions repliée au départ',
-  weather_animations: 'Animations (ciel animé et halo des alertes)', weather_animation_quality: 'Qualité des animations météo',
+  weather_animations: 'Animations (ciel animé et halo des alertes)', glass_effect: 'Effet verre dépoli (à couper sur un appareil lent)', weather_animation_quality: 'Qualité des animations météo',
   weather_path: 'Appui long : ouvrir cette page plutôt que la carte complète (ex. /meteo, facultatif)',
   show_atmo_details: 'Afficher les polluants, espèces et concentrations', show_atmo_tomorrow: 'Afficher l’air et les pollens de demain',
 };
@@ -51,7 +51,8 @@ export class NiakWeatherCardEditor extends LitElement {
   }
   private schema(): unknown[] {
     const animation = [{ name: 'weather_animations', selector: { boolean: {} } },
-      { name: 'weather_animation_quality', selector: { select: { options: [{ value: 'standard', label: 'Standard' }, { value: 'low', label: 'Allégée (tablette, vieux téléphone)' }] } } }];
+      { name: 'weather_animation_quality', selector: { select: { options: [{ value: 'standard', label: 'Standard' }, { value: 'low', label: 'Allégée (tablette, vieux téléphone)' }] } } },
+      { name: 'glass_effect', selector: { boolean: {} } }];
     const format = { name: 'format', selector: { select: { mode: 'list', options: [
       { value: 'full', label: 'Complète : la page météo (Synthèse, Aujourd’hui, Prévisions)' },
       { value: 'tile', label: 'Tuile : une bande qui se déplie d’un appui, pleine ou demi-largeur' },

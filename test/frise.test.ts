@@ -22,9 +22,18 @@ describe('The banner’s timeline', () => {
     expect(f.groups.map(g => [g.clock, g.items, g.alert])).toEqual([['Maintenant', [0, 1], 1], ['18 h', [2], undefined], ['20 h', [3], 2]]);
     expect(f.groups.map(g => g.x)).toEqual([0, 1 / 6, 3 / 6]);
   });
-  it('keeps the official vigilance out of the labels: it rings the track', () => {
-    const f = buildFrise([], [vigilance], hours, NOW);
-    expect([f.items, f.vigilance]).toEqual([[], 2]);
+  it('keeps the official vigilance out of the timeline: it has its own pill above', () => {
+    expect(buildFrise([], [vigilance], hours, NOW).items).toEqual([]);
+  });
+  it('follows the integration’s own list when it sends one, the points less than an hour apart sharing a label', () => {
+    const f = buildFrise([point('Vieille liste')], [measured], hours, NOW, [
+      point('La pression monte'),
+      point('Fortes pluies : 12 mm prévus', { group: 'future', label: 'À venir', at: NOW + 2 * 3600, clock: '19 h', level: 2, alert: true }),
+      point('Orage ou grêle', { group: 'future', label: 'À venir', at: NOW + 2.5 * 3600, clock: '19 h', level: 2 }),
+      point('Gelée blanche possible', { group: 'future', label: 'À venir', at: NOW + 11 * 3600, clock: '4 h', level: 1 }),
+    ]);
+    expect(f.items.map(i => i.text)).toEqual(['La pression monte', 'Fortes pluies : 12 mm prévus', 'Orage ou grêle', 'Gelée blanche possible']);
+    expect(f.groups.map(g => [g.clock, g.items, g.alert])).toEqual([['Maintenant', [0], undefined], ['19 h', [1, 2], 2], ['4 h', [3], undefined]]);
   });
   it('cuts the track by the forecast sky, night hours apart, light and heavy rain together', () => {
     expect(buildFrise([], [], hours, NOW).segments.map(s => [s.kind, s.flex / 3600])).toEqual([['sun', 2], ['rain', 2], ['night', 2]]);

@@ -71,7 +71,7 @@ try {
     dialog: !!root.querySelector('dialog')?.open, inert: root.querySelector('.more').inert }));
   assert.deepEqual(await state(), { open: false, expanded: 'false', dialog: false, inert: true }, 'Tile starts folded');
   const folded = await inCard(root => ({ top: [...root.querySelectorAll('.meta .nw-alert')].map(a => a.textContent.replace(/\s+/g, ' ').trim()),
-    ticker: root.querySelector('niak-ticker').points.map(p => ['alert' in p, p.official ?? false]) }));
+    ticker: root.querySelector('niak-ticker').points.map(p => ['official' in p, p.official ?? false]) }));
   assert.deepEqual(folded.top, ['Vigilance jaune · Orages'], 'Folded: the official vigilance stays on top, as a compact pill');
   assert.deepEqual(folded.ticker[0], [true, false], 'Folded: what the station measures leads the scrolling bubble, in alert style');
   await tile.click({ position: { x: 120, y: 30 } }); await sleep(600);
@@ -79,8 +79,9 @@ try {
   // Unfolded, the timeline takes over from the bubble: the measured alert leads the « Maintenant » label, with its halo, the vigilance rings the track.
   const frise = await inCard(root => { const f = root.querySelector('niak-frise').shadowRoot, pin = f.querySelector('.pin');
     return { bubble: getComputedStyle(root.querySelector('.brief > div')).opacity, first: pin.getAttribute('aria-label').split(' ; ')[0], alert: pin.classList.contains('al'),
-      ring: !!f.querySelector('.ring'), lane: f.querySelectorAll('.seg').length > 0 }; });
-  assert.deepEqual({ ...frise, first: frise.first.startsWith('Maintenant : Forte pluie') }, { bubble: '0', first: true, alert: true, ring: true, lane: true }, 'Unfolded: the timeline');
+      title: root.querySelector('.nw-events .nw-label')?.textContent, ring: !!f.querySelector('.ring'), lane: f.querySelectorAll('.seg').length > 0 }; });
+  // The vigilance has its pill above: no ring on the track.
+  assert.deepEqual({ ...frise, first: frise.first.startsWith('Maintenant : Forte pluie') }, { bubble: '0', first: true, alert: true, title: 'Événements', ring: false, lane: true }, 'Unfolded: the timeline');
   assert.equal(await page.evaluate(() => Object.entries(localStorage).find(([k]) => k.startsWith('niak-weather:open:tile'))?.[1]), '1', 'Unfolded state remembered');
   // A tap on a label of the timeline shows its point and does not fold the tile.
   await page.locator('niak-weather-card niak-frise .pin').last().click(); await sleep(100);

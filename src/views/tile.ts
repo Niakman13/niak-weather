@@ -21,9 +21,9 @@ export function nowBlock(v: WeatherView, kicker: boolean, extra: unknown = nothi
     ${extra}<span class="nw-badge">${n.temperatureSource}</span></div>`;
 }
 
-/** The timeline of the coming hours: the brief's points, the measured alert, the vigilance and the forecast sky. Shared with the banner. */
-export const frise = (v: WeatherView) => v.points.length || v.alerts.length || v.hours.length
-  ? html`<niak-frise class="nw-frise" .points=${v.points} .alerts=${v.alerts} .hours=${v.hours}></niak-frise>` : nothing;
+/** « Événements »: the timeline of the coming hours, with the points of now and of the next hours over the forecast sky. Shared with the banner. */
+export const frise = (v: WeatherView) => v.points.length || v.alerts.length || v.hours.length || v.timeline?.length
+  ? html`<div class="nw-events">${label('Événements')}<niak-frise .points=${v.points} .alerts=${v.alerts} .hours=${v.hours} .timeline=${v.timeline}></niak-frise></div>` : nothing;
 
 export function renderTile(v: WeatherView, sky: TemplateResult, s: TileState): TemplateResult {
   // The top keeps the official vigilance, one pill folded, the others opening under it. What the station measures leads the scrolling bubble,
@@ -93,7 +93,7 @@ export const tileStyles = css`
   .more > div { overflow:hidden; min-height:0; }
   .more-in { padding:0 16px 14px; display:flex; flex-direction:column; gap:12px; opacity:0; transform:translateY(-6px); transition:opacity .3s .1s, transform .3s .1s; }
   .open .more-in { opacity:1; transform:none; }
-  .bulletin { display:flex; flex-direction:column; gap:4px; }
+  .bulletin, .nw-events { display:flex; flex-direction:column; gap:4px; }
   .foot { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; font-size:var(--nw-fs-small); color:var(--nw-fg2); }
   .grabber { display:flex; justify-content:center; padding:0 0 8px; }
   .grabber i { width:34px; height:4px; border-radius:4px; background:var(--nw-line); }

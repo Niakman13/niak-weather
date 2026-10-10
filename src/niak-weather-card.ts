@@ -93,6 +93,7 @@ export class NiakWeatherCard extends LitElement {
   }
   protected updated(): void {
     this.toggleAttribute('still', this.config?.weather_animations === false);
+    this.toggleAttribute('flat', this.config?.glass_effect === false);
     const dialog = this.renderRoot.querySelector<HTMLDialogElement>('dialog');
     if (dialog && this.dialogOpen && !dialog.open) dialog.showModal();
   }
@@ -236,6 +237,8 @@ export class NiakWeatherCard extends LitElement {
     :host { display:block; }
     /* Animations switched off: the alert halo stays still too, in the tile, the window and the scrolling bubble. */
     :host([still]) { --nw-motion:paused; }
+    /* Frosted glass switched off: no blur anywhere (it costs a lot on slow devices), a more opaque glass keeps the text readable. */
+    :host([flat]) { --nw-blur:none; --nw-frost:none; --nw-glass-clear:color-mix(in srgb, var(--nw-bg) 86%, transparent); --nw-glass-strong:color-mix(in srgb, var(--nw-bg) 92%, transparent); }
     ha-card { padding:0; overflow:hidden; container-type:inline-size; }
     .nw-wait { min-height:96px; background:var(--nw-bg); }
     .nw-problem { display:flex; gap:14px; align-items:flex-start; padding:18px 20px; color:var(--nw-fg); font-size:var(--nw-fs-text); line-height:1.5; }

@@ -49,7 +49,7 @@ export class NiakTicker extends LitElement {
     this.shown = point?.text;
     if (!point) return nothing;
     const out = this.leaving ? 'out' : '';
-    return html`<div aria-hidden="true">${'alert' in point ? alertBubble(point, out) : bubble(point, out)}</div>
+    return html`<div aria-hidden="true">${'official' in point ? alertBubble(point, out) : bubble(point, out)}</div>
       <ul class="sr">${this.points.map(p => html`<li>${p.label ? `${p.label} : ` : ''}${p.text}</li>`)}</ul>`;
   }
   static styles = [bubbles, css`

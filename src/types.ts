@@ -39,6 +39,8 @@ export interface WeatherCardConfig {
   show_atmo_details?: boolean;
   show_atmo_tomorrow?: boolean;
   weather_animations?: boolean;
+  /** Frosted glass over the sky (blur). Off, the glass is plain and more opaque: lighter for slow devices. */
+  glass_effect?: boolean;
   weather_animation_quality?: 'low' | 'standard';
   weather_path?: string;
   /** Before 2.0 the card held its sources; they stay in old dashboards, for the integration to take over. */

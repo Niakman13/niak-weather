@@ -60,7 +60,7 @@ export const heroStyles = css`
   .nw-hero > .nw-now { grid-area:now; align-self:start; gap:4px; }
   .nw-hero > .nw-now .temp { font-size:var(--nw-fs-temp); }
   .nw-hero > .nw-now .temp small { font-size:var(--nw-fs-title); }
-  .nw-hero > .nw-frise { grid-area:frise; margin-top:4px; }
+  .nw-hero > .nw-events { grid-area:frise; margin-top:4px; display:flex; flex-direction:column; gap:6px; }
   .brief-group { margin-top:10px; }
   .brief-group ul { list-style:none; margin:4px 0 0; padding:0; display:grid; gap:4px; }
   .brief-group li { display:flex; align-items:flex-start; gap:7px; font-size:var(--nw-fs-small); }

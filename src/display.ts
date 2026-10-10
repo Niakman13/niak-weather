@@ -8,7 +8,7 @@ export function displayed(v: WeatherView, config: WeatherCardConfig, tile: boole
   const details = (panels: AirPanel[]) => config.show_atmo_details === false ? panels.map(p => ({ ...p, details: [] })) : panels;
   return {
     ...v,
-    brief: brief ? v.brief : undefined, alerts: brief ? v.alerts : [], points: brief ? v.points : [],
+    brief: brief ? v.brief : undefined, alerts: brief ? v.alerts : [], points: brief ? v.points : [], timeline: brief ? v.timeline : [],
     bulletin: config.show_bulletin === false ? undefined : v.bulletin,
     air: { today: details(v.air.today), tomorrow: config.show_atmo_tomorrow === false ? [] : details(v.air.tomorrow) },
   };

@@ -46,11 +46,12 @@ Vous aviez la version 1.20 ? [Passer à la 2.0](docs/migration.md) : l’intégr
 
 - **La vigilance officielle**, quand il y en a une : une pastille compacte, l’icône du phénomène dans un disque de la couleur du niveau, avec un halo.
 - **Le bulletin du jour**, en entier.
-- **La frise des heures à venir**, dans un verre dépoli :
+- **Les événements des heures à venir**, sur une frise dans un verre dépoli :
   - une phrase qui défile parcourt les points un à un ;
-  - chaque point est une étiquette à son heure ; ceux du moment sont réunis dans « Maintenant » ;
+  - chaque point est une étiquette à son heure (pluie, orage, gel, brouillard, température, pluie de demain, air et pollens dès 3 sur 6), jusqu’à 6 ; ceux du moment sont réunis dans « Maintenant » ;
   - l’alerte mesurée chez vous ouvre cette étiquette, avec son halo ;
-  - la piste suit le ciel prévu, et une vigilance l’entoure d’un anneau lumineux.
+  - la piste suit le ciel prévu heure par heure ;
+  - sur un téléphone, les étiquettes ne gardent que leurs icônes quand elles ne tiennent pas toutes.
 
   Un appui sur une étiquette affiche son point ; le défilement se met en pause au survol.
 - **La météo du moment** à droite : ciel, température, tendance, source.
@@ -88,6 +89,7 @@ Tout se règle dans l’éditeur de la carte. Les sources, elles, se règlent da
 | `show_atmo_details` | `true` | Détail des polluants, des espèces et des concentrations |
 | `show_atmo_tomorrow` | `true` | L’air et les pollens de demain |
 | `weather_animations` | `true` | Ciel animé, défilement et halos. Coupées, le décor reste fixe. |
+| `glass_effect` | `true` | Effet verre dépoli sur le ciel. À couper sur un appareil lent : le flou est ce qui coûte le plus |
 | `weather_animation_quality` | `standard` | `low` : moins de gouttes, de flocons et de nuages, pour une tablette ou un vieux téléphone (choisi d’office sur écran tactile pour la tuile) |
 | `weather_path` | — | Tuile : l’appui long ouvre cette page (par exemple `/meteo`) au lieu de la carte complète |
 

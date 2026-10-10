@@ -64,18 +64,20 @@ Règles de la charte : seule l’icône d’une bulle prend la couleur de son th
 
 Le bandeau tient en trois choses, du plus officiel au plus détaillé.
 
-1. **La vigilance officielle** (Météo-France, pour le département) : une pastille compacte en haut, l’icône du phénomène dans un disque de la couleur du niveau. Elle porte le contour net et le halo des alertes, comme la bulle d’alerte. Sur une carte étroite, seul le phénomène reste écrit (« Orages ») : le disque et le halo disent le niveau. Sans vigilance, rien n’apparaît.
+1. **La vigilance officielle** (Météo-France, pour le département) : une pastille compacte en haut, l’icône du phénomène dans un disque de la couleur du niveau. Elle porte le contour net et le halo des alertes, comme la bulle d’alerte. Sur une carte étroite, seul le phénomène reste écrit (« Orages ») : le disque et le halo disent le niveau. Sans vigilance, rien n’apparaît. Elle n’apparaît que là : la frise ne la répète pas.
 2. **Le bulletin du jour**, en entier, sous l’étiquette « Bulletin du jour », en poids moyen (`.nw-bulletin`).
-3. **La frise**, dans un verre dépoli (`--nw-glass-clear`, `--nw-frost`) au contour net de 1 px :
+3. **La frise**, sous l’étiquette « Événements », dans un verre dépoli (`--nw-glass-clear`, `--nw-frost`) au contour net de 1 px. Elle montre la liste que l’intégration prépare pour elle : ce qui compte maintenant, puis chaque point des prochaines heures à son heure (pluie, orage, gel, brouillard, température, pluie de demain, air et pollens dès 3 sur 6), au plus 6 étiquettes. Les textes ne répètent pas l’heure : l’étiquette la donne.
    - en haut, **la phrase qui défile** : un point à la fois, toutes les 4,5 s, avec une barre de progression par point. Elle se met en pause au survol ou au focus ;
-   - au-dessus de la piste, **une étiquette par point**, à son heure. Les points du moment (mesurés chez vous, ou à moins de 20 min) forment **une seule étiquette « Maintenant »**, avec leurs icônes empilées et leur nombre. L’étiquette prend entièrement la couleur du point affiché, icônes comprises ; l’icône de ce point passe devant, plus soutenue. Un appui sur une étiquette affiche son point ; un nouvel appui passe au point suivant du groupe ;
+   - au-dessus de la piste, **une étiquette par point**, à son heure. Les points du moment (mesurés chez vous, ou à moins de 20 min) forment **une seule étiquette « Maintenant »**, avec leurs icônes empilées et leur nombre. L’étiquette prend entièrement la couleur du point affiché, icônes comprises ; l’icône de ce point passe devant, plus soutenue. Les points à moins d’une heure d’écart partagent une étiquette. Un appui sur une étiquette affiche son point ; un nouvel appui passe au point suivant du groupe ;
    - **l’alerte mesurée chez vous** (pluie forte, vent fort, verglas…) n’a pas de pastille à elle : elle ouvre l’étiquette « Maintenant », qui prend alors le contour et le halo d’alerte. Un point sérieux à venir (niveau 2) a le même traitement ;
-   - **la piste** suit le ciel prévu heure par heure (soleil, nuit, éclaircies, nuages, pluie, orage, neige, grêle, brouillard, vent), dans les couleurs de sens. Une vigilance officielle l’entoure d’un anneau lumineux ;
+   - **la piste** suit le ciel prévu heure par heure (soleil, nuit, éclaircies, nuages, pluie, orage, neige, grêle, brouillard, vent), dans les couleurs de sens ;
    - **les heures** sous la piste : « Maintenant », les repères de 6 heures (« minuit », « midi », « 6 h »), l’heure de fin.
 
-Les étiquettes sont placées après mesure : elles ne se chevauchent jamais et restent dans le cadre. Les heures trop proches s’effacent. Dans la tuile, la frise remplace la bulle qui défile quand on la déplie.
+Les étiquettes sont placées après mesure : elles ne se chevauchent jamais et restent dans le cadre. Quand elles ne tiennent pas toutes (un téléphone), elles ne gardent que leurs icônes ; l’heure reste dans la phrase qui défile. Les heures trop proches s’effacent. Dans la tuile, la frise remplace la bulle qui défile quand on la déplie.
 
 Le halo, partout : une ombre fixe dont seule l’opacité respire (`nw-glow`, 5,2 s). Il ne clignote pas et s’arrête quand les animations sont coupées.
+
+Le verre dépoli coûte cher aux appareils lents : le réglage `glass_effect: false` le coupe partout (plus aucun flou, `--nw-blur` et `--nw-frost` à `none`) et rend le verre plus opaque pour garder le texte lisible.
 
 Le ciel derrière le bandeau :
 

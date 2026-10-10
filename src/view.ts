@@ -37,7 +37,9 @@ export interface Timed { at?: number; clock?: string }
 /** An alert bubble: the official vigilance, or what the station measures at home. Both can show at once. */
 export interface AlertPoint extends Timed { level: 1 | 2 | 3; label?: string; text: string; icon: string; source: string; official: boolean; entity?: string }
 /** A point of the scrolling bubble. */
-export interface TickerPoint extends Timed { group: string; label: string; icon: string; text: string; level: number; theme?: Theme; entity?: string }
+export interface TickerPoint extends Timed { group: string; label: string; icon: string; text: string; level: number; theme?: Theme; entity?: string;
+  /** On the timeline: the point that needs attention most, with the alert's halo. */
+  alert?: boolean }
 
 export interface BriefSignal extends Timed {
   key: string; group: 'now' | 'future' | 'environment' | 'official'; severity: 0 | 1 | 2 | 3;
@@ -116,6 +118,8 @@ export interface WeatherView {
   station: boolean;
   now: CurrentWeather; season: SeasonView;
   alerts: AlertPoint[]; points: TickerPoint[]; brief?: Brief; bulletin?: Bulletin;
+  /** The banner's timeline: every point of the coming hours, each at its time (integration 2.0.5 and later). */
+  timeline?: TickerPoint[];
   comfort?: ComfortView; rain?: RainView; wind?: WindView; pressure?: PressureView; extras: Chip[];
   hours: Slot[]; days: DayForecast[];
   air: { today: AirPanel[]; tomorrow: AirPanel[] };

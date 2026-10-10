@@ -1,5 +1,5 @@
 // The banner's timeline, drawn: a sentence that scrolls through the points over a track cut by the forecast sky,
-// the points as dated labels above it, the official vigilance as a ring around it. The labels are placed after measuring, so they never overlap.
+// the points as dated labels above it. The labels are placed after measuring, so they never overlap; when they cannot all fit, they keep only their icons.
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { buildFrise, type Frise, type FriseGroup, type FriseItem } from '../frise';
@@ -20,6 +20,8 @@ export class NiakFrise extends LitElement {
   @property({ attribute: false }) points: TickerPoint[] = [];
   @property({ attribute: false }) alerts: AlertPoint[] = [];
   @property({ attribute: false }) hours: Slot[] = [];
+  /** The integration's own list for the timeline (2.0.5 and later). */
+  @property({ attribute: false }) timeline?: TickerPoint[];
   /** The point on show. */
   @state() private index = 0;
   /** The point sliding out, for the length of its transition. */
@@ -44,9 +46,9 @@ export class NiakFrise extends LitElement {
 
   protected willUpdate(changed: PropertyValues<this>) {
     const now = Date.now() / 1000;
-    if (!changed.has('points') && !changed.has('alerts') && !changed.has('hours') && now - this.built < STALE) return;
+    if (!changed.has('points') && !changed.has('alerts') && !changed.has('hours') && !changed.has('timeline') && now - this.built < STALE) return;
     const shown = this.frise.items[this.index]?.text;
-    this.frise = buildFrise(this.points, this.alerts, this.hours, now); this.built = now;
+    this.frise = buildFrise(this.points, this.alerts, this.hours, now, this.timeline); this.built = now;
     // The point on show stays on show if it is still there: nothing moves when the view is refreshed.
     const keep = this.frise.items.findIndex(i => i.text === shown);
     this.index = keep >= 0 ? keep : 0; this.leaving = undefined;
@@ -98,6 +100,10 @@ export class NiakFrise extends LitElement {
     const track = this.renderRoot.querySelector<HTMLElement>('.track'), width = track?.clientWidth;
     if (!track || !width) return;
     const pins = [...track.querySelectorAll<HTMLElement>('.pin')];
+    // Too many labels for the width (a phone): they keep only their icons, the time stays in the sentence above.
+    track.classList.remove('compact');
+    const room = (list: HTMLElement[]) => list.reduce((sum, p) => sum + p.offsetWidth + GAP, -GAP) <= width + 2 * EDGE;
+    if (!room(pins)) track.classList.add('compact');
     const w = pins.map(p => p.offsetWidth), x = pins.map(p => Number(p.dataset.x) * width);
     x.forEach((v, i) => { x[i] = Math.max(v, w[i] / 2 - EDGE, i ? x[i - 1] + (w[i - 1] + w[i]) / 2 + GAP : -Infinity); });
     for (let i = x.length - 1; i >= 0; i--) x[i] = Math.min(x[i], i === x.length - 1 ? width - w[i] / 2 + EDGE : x[i + 1] - (w[i + 1] + w[i]) / 2 - GAP);
@@ -115,7 +121,7 @@ export class NiakFrise extends LitElement {
   }
 
   protected render() {
-    const { items, groups, segments, marks, vigilance } = this.frise;
+    const { items, groups, segments, marks } = this.frise;
     if (!items.length && !segments.length) return nothing;
     const when = (i: FriseItem) => i.now || !i.clock ? i.label : `${i.label} · ${i.clock}`;
     return html`<div class=${`panel${this.paused ? ' paused' : ''}`} @pointerenter=${this.pause} @pointerleave=${this.resume} @focusin=${this.pause} @focusout=${this.resume}>
@@ -133,12 +139,11 @@ export class NiakFrise extends LitElement {
             style=${`left:${(g.x * 100).toFixed(2)}%;${tone(lead)}${g.alert ? `;--al:var(--nw-level${g.alert})` : ''}`}
             aria-label=${g.items.map(n => `${when(items[n])} : ${items[n].text}`).join(' ; ')} @click=${() => this.pick(g)} @pointerdown=${stop}>
             <span class="chip"><span class="stack">${g.items.map((n, j) => html`<span class=${`mini${n === this.index || (!active && !j) ? ' cur' : ''}`} style=${tone(items[n])}>
-              <ha-icon icon=${items[n].icon}></ha-icon></span>`)}</span>${g.clock}${g.items.length > 1 ? html`<span class="count">${g.items.length}</span>` : nothing}</span>
+              <ha-icon icon=${items[n].icon}></ha-icon></span>`)}</span><span class="clock">${g.clock}</span>${g.items.length > 1 ? html`<span class="count">${g.items.length}</span>` : nothing}</span>
             <span class="stem"></span></button>`;
         })}</div>
         <div class="lane">${segments.length ? segments.map(s => html`<span class=${`seg s-${s.kind}`} style=${`flex:${s.flex}`}><ha-icon icon=${s.icon}></ha-icon></span>`)
           : html`<span class="seg s-cloud" style="flex:1"></span>`}</div>
-        ${vigilance ? html`<span class="ring" style=${`--al:var(--nw-level${vigilance})`}></span>` : nothing}
         <span class="needle"></span>
       </div>
       ${segments.length ? html`<div class="hours" aria-hidden="true">${marks.map(m => html`<span class=${m.edge ?? ''} style=${`left:${(m.x * 100).toFixed(2)}%`}>${m.text}</span>`)}</div>` : nothing}
@@ -200,7 +205,7 @@ export class NiakFrise extends LitElement {
       font-size:var(--nw-fs-label); font-weight:700; background:var(--nw-fg); color:var(--nw-bg); }
     /* A label holding an alert: the charter's alert outline and halo (a fixed shadow whose opacity breathes). */
     .pin.al .chip { border-color:color-mix(in oklab, var(--al) 70%, transparent); box-shadow:0 0 6px 0 color-mix(in oklab, var(--al) 32%, transparent); }
-    .pin.al .chip::after, .ring::after { content:''; position:absolute; inset:-1px; border-radius:inherit; pointer-events:none; opacity:0;
+    .pin.al .chip::after { content:''; position:absolute; inset:-1px; border-radius:inherit; pointer-events:none; opacity:0;
       box-shadow:0 0 14px 2px color-mix(in oklab, var(--al) 55%, transparent); animation:nw-glow 5.2s ease-in-out infinite; animation-play-state:var(--nw-motion, running); }
     .lane { position:absolute; left:0; right:0; top:40px; height:16px; display:flex; gap:2px; }
     .track.bare .lane { top:5px; }
@@ -212,10 +217,7 @@ export class NiakFrise extends LitElement {
     .s-partly { --tone:color-mix(in oklab, var(--nw-cold) 60%, var(--nw-heat)); } .s-cloud { --tone:color-mix(in srgb, var(--nw-fg2) 35%, var(--nw-bg)); }
     .s-rain { --tone:var(--nw-rain); } .s-storm { --tone:var(--nw-pressure); } .s-snow { --tone:var(--nw-cold); } .s-wind { --tone:var(--nw-wind); }
     .s-hail { --tone:color-mix(in oklab, var(--nw-cold) 55%, var(--nw-pressure)); } .s-fog { --tone:color-mix(in srgb, var(--nw-fg2) 22%, var(--nw-bg)); }
-    /* The official vigilance: a glowing ring around the track. */
-    .ring { position:absolute; left:-4px; right:-4px; top:36px; height:24px; box-sizing:border-box; border-radius:10px; border:1.5px solid var(--al);
-      box-shadow:0 0 6px 0 color-mix(in oklab, var(--al) 32%, transparent); pointer-events:none; }
-    .track.bare .ring { top:1px; }
+    .compact .clock { display:none; }
     .needle { position:absolute; left:0; top:34px; width:3px; height:28px; margin-left:-1.5px; border-radius:2px; background:var(--nw-fg); box-shadow:0 0 0 2px var(--nw-bg); }
     .track.bare .needle { top:0; height:26px; }
     .hours { position:relative; height:14px; margin:0 4px; font-size:var(--nw-fs-label); line-height:14px; color:var(--nw-fg2); letter-spacing:.04em; font-variant-numeric:tabular-nums; }
@@ -223,7 +225,7 @@ export class NiakFrise extends LitElement {
     .hours span.first { translate:0 0; } .hours span.last { translate:-100% 0; } .hours span.hide { visibility:hidden; }
     @keyframes nw-glow { 50% { opacity:1; } }
     @media (prefers-reduced-motion:reduce) {
-      .item, .chip, .mini { transition:none; } .progress i.on::after { animation:none; } .pin.al .chip::after, .ring::after { animation:none; }
+      .item, .chip, .mini { transition:none; } .progress i.on::after { animation:none; } .pin.al .chip::after { animation:none; }
     }
   `;
 }
