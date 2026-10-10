@@ -48,10 +48,10 @@ export const heroStyles = css`
   .nw-hero { position:relative; isolation:isolate; overflow:hidden; padding:20px 24px 24px; display:grid; grid-template-columns:minmax(0,1fr) auto;
     grid-template-areas:"head now" "main now" "frise frise"; column-gap:24px; row-gap:12px; color:var(--nw-fg); }
   .nw-hero .sky { --k:1; }
-  /* The text side stays readable; the timeline has its own frosted glass, and the ground (puddles, snow) shows along the bottom. */
+  /* The text side stays readable; the bottom fades softly towards the next section, light enough for the ground (puddles, snow) to show. */
   .nw-hero .veil { background:linear-gradient(90deg, var(--nw-bg) 0%, color-mix(in srgb, var(--nw-bg) 92%, transparent) 30%,
-    color-mix(in srgb, var(--nw-bg) 45%, transparent) 55%, transparent 78%);
-    -webkit-mask-image:linear-gradient(0deg, transparent 0, #000 22px); mask-image:linear-gradient(0deg, transparent 0, #000 22px); }
+    color-mix(in srgb, var(--nw-bg) 45%, transparent) 55%, transparent 78%),
+    linear-gradient(0deg, color-mix(in srgb, var(--nw-bg) 55%, transparent) 0%, transparent 30%); }
   .nw-hero > .fm-head { grid-area:head; cursor:default; flex-wrap:wrap; }
   .hero-main { grid-area:main; display:flex; flex-direction:column; align-items:flex-start; gap:10px; min-width:0; }
   .nw-alerts { display:flex; flex-wrap:wrap; gap:8px; max-width:100%; }
