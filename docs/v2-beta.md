@@ -27,7 +27,7 @@ Tout se modifie ensuite dans **Configurer**, une partie à la fois. Plusieurs li
 
 ## 3. Passer la carte en 2.0
 
-1. Dans HACS, ouvrez **Niak Weather** (tableau de bord), menu ⋮ → **Retélécharger**, puis choisissez la dernière bêta (**v2.0.0-beta.3**).
+1. Dans HACS, ouvrez **Niak Weather** (tableau de bord), menu ⋮ → **Retélécharger**, puis choisissez la dernière bêta (**v2.0.0-beta.4**).
 2. Rechargez le navigateur (**Ctrl+F5**).
 
 La bêta n’est pas proposée ? Activez d’abord l’entité **Pre-release** de Niak Weather : **Paramètres → Appareils et services → Entités**, filtre **Désactivées**, puis recherchez « Niak Weather ».
