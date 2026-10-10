@@ -127,9 +127,10 @@ export class NiakFrise extends LitElement {
       </div>` : nothing}
       <div class=${`track${groups.length ? '' : ' bare'}`}>
         <div class="chips">${groups.map(g => {
-          const active = g.items.includes(this.index);
+          // The whole label takes the colour of the point on show: its background, the rings of its icons, the icon in front.
+          const active = g.items.includes(this.index), lead = items[active ? this.index : g.items[0]];
           return html`<button type="button" class=${`pin${active ? ' on' : ''}${g.alert ? ' al' : ''}`} data-x=${g.x}
-            style=${`left:${(g.x * 100).toFixed(2)}%;${tone(items[g.items[0]])}${g.alert ? `;--al:var(--nw-level${g.alert})` : ''}`}
+            style=${`left:${(g.x * 100).toFixed(2)}%;${tone(lead)}${g.alert ? `;--al:var(--nw-level${g.alert})` : ''}`}
             aria-label=${g.items.map(n => `${when(items[n])} : ${items[n].text}`).join(' ; ')} @click=${() => this.pick(g)} @pointerdown=${stop}>
             <span class="chip"><span class="stack">${g.items.map((n, j) => html`<span class=${`mini${n === this.index || (!active && !j) ? ' cur' : ''}`} style=${tone(items[n])}>
               <ha-icon icon=${items[n].icon}></ha-icon></span>`)}</span>${g.clock}${g.items.length > 1 ? html`<span class="count">${g.items.length}</span>` : nothing}</span>
@@ -187,13 +188,13 @@ export class NiakFrise extends LitElement {
       background:var(--chip); border:1px solid var(--nw-line); transition:background .35s, transform .35s var(--nw-ease), box-shadow .35s; }
     .stem { width:1px; height:12px; background:var(--nw-line); }
     .pin.on .chip { --chip:color-mix(in srgb, var(--tone) 40%, var(--nw-bg)); transform:translateY(-2px); border-color:transparent; box-shadow:0 6px 14px rgb(0 0 0 / .12); }
-    /* Stacked icons: each ringed with the label's colour to stand apart; the point on show is tinted and comes forward. */
+    /* Stacked icons, all in the label's colour: each ringed with it to stand apart; the point on show is darker and comes forward. */
     .stack { display:flex; }
     .mini { position:relative; display:grid; place-items:center; width:20px; height:20px; border-radius:50%;
-      background:color-mix(in srgb, var(--nw-bg) 88%, transparent); box-shadow:0 0 0 2px var(--chip); transition:transform .3s var(--nw-ease), background .3s; }
+      background:color-mix(in srgb, var(--nw-fg) 6%, var(--chip)); box-shadow:0 0 0 2px var(--chip); transition:transform .3s var(--nw-ease), background .3s; }
     .mini + .mini { margin-left:-4px; }
     .mini ha-icon { --mdc-icon-size:13px; color:color-mix(in oklab, var(--tone) 40%, var(--nw-fg)); }
-    .mini.cur { z-index:1; background:color-mix(in srgb, var(--tone) 55%, var(--nw-bg)); }
+    .mini.cur { z-index:1; background:color-mix(in srgb, var(--tone) 70%, var(--nw-bg)); }
     .pin.on .mini.cur { transform:scale(1.12); }
     .count { display:grid; place-items:center; min-width:16px; height:16px; padding:0 4px; box-sizing:border-box; border-radius:8px;
       font-size:var(--nw-fs-label); font-weight:700; background:var(--nw-fg); color:var(--nw-bg); }
