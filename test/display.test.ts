@@ -4,7 +4,7 @@ import type { AirPanel, WeatherView } from '../src/view';
 import type { WeatherCardConfig } from '../src/types';
 
 const reading = { entityId: 'sensor.air', label: 'Moyen', value: 2, color: '#50ccaa', zone: 'Gardanne', updated: '', stale: false };
-const panel = (tomorrow: boolean): AirPanel => ({ kind: 'air', tomorrow, zone: 'Gardanne', primary: reading, details: [{ label: 'O₃', reading }], updated: '', stale: false });
+const panel = (tomorrow: boolean): AirPanel => ({ kind: 'air', tomorrow, zone: 'Gardanne', primary: reading, details: [{ label: 'O₃', reading }], updated: '10/10 à 13 h', stale: false });
 const view = {
   location: 'Gardanne', alerts: [{ level: 1, text: 'Vigilance jaune', icon: 'mdi:alert', source: 'x', official: true }],
   points: [{ group: 'now', label: 'Maintenant', icon: 'mdi:x', text: 'Il pleut', level: 1 }],
@@ -28,7 +28,8 @@ describe('What the card shows of the integration’s view', () => {
     const v = displayed(view, config({ show_bulletin: false, show_atmo_tomorrow: false, show_atmo_details: false }), false);
     expect(v.bulletin).toBeUndefined();
     expect(v.air.tomorrow).toEqual([]);
-    expect(v.air.today[0]).toMatchObject({ primary: reading, details: [] });
+    // No « Détail » fold at all: neither the list nor the publication date it holds.
+    expect(v.air.today[0]).toMatchObject({ primary: reading, details: [], updated: '' });
     expect(v.location).toBe('Gardanne');
   });
 });

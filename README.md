@@ -75,23 +75,23 @@ Un appui sur une valeur ouvre la fiche de son capteur.
 
 ## Réglages
 
-Tout se règle dans l’éditeur de la carte. Les sources, elles, se règlent dans l’intégration.
+Tout se règle dans l’éditeur de la carte, rangé en blocs : le lieu et le format en haut, puis **Visuel et performance**, **Bandeau**, **Sections** et **Air et pollens** (pour une tuile : **Fonctionnalités**). Les sources, elles, se règlent dans l’intégration.
 
-| Réglage | Par défaut | Rôle |
-| --- | --- | --- |
-| `format` | `full` | `full`, `tile` ou `intermediate` |
-| `entry_id` | — | Le lieu à afficher, s’il y en a plusieurs dans l’intégration |
-| `show_synthesis` | `true` | Complète : afficher le bandeau |
-| `show_bulletin` | `true` | Afficher le bulletin du jour |
-| `smart_brief` | `true` | Complète : afficher les alertes et la frise des points (sinon, la frise ne montre que le ciel prévu) |
-| `show_today`, `show_predictions` | `true` | Complète : afficher les sections Aujourd’hui et Prévisions |
-| `collapse_today`, `collapse_predictions` | `false` | Complète : section repliée au départ |
-| `show_atmo_details` | `true` | Détail des polluants, des espèces et des concentrations |
-| `show_atmo_tomorrow` | `true` | L’air et les pollens de demain |
-| `weather_animations` | `true` | Ciel animé, défilement et halos. Coupées, le décor reste fixe. |
-| `glass_effect` | `true` | Effet verre dépoli sur le ciel. À couper sur un appareil lent : le flou est ce qui coûte le plus |
-| `weather_animation_quality` | `standard` | `low` : moins de gouttes, de flocons et de nuages, pour une tablette ou un vieux téléphone (choisi d’office sur écran tactile pour la tuile) |
-| `weather_path` | — | Tuile : l’appui long ouvre cette page (par exemple `/meteo`) au lieu de la carte complète |
+| Bloc | Réglage | Par défaut | Rôle |
+| --- | --- | --- | --- |
+| En haut | `entry_id` | — | Le lieu à afficher, s’il y en a plusieurs dans l’intégration |
+| En haut | `format` | `full` | `full` (complète), `tile` (tuile) ou `intermediate` (tuile dépliée) |
+| Visuel et performance | `weather_animations` | `true` | Ciel animé, défilement et halos. Coupées, le décor reste fixe |
+| Visuel et performance | `weather_animation_quality` | `standard` | `low` : moins de gouttes, de flocons et de nuages (choisi d’office sur écran tactile pour la tuile) |
+| Visuel et performance | `glass_effect` | `true` | Effet verre dépoli sur le ciel. Le flou est ce qui coûte le plus : à couper sur un appareil lent |
+| Bandeau | `show_synthesis` | `true` | Complète : afficher le bandeau |
+| Bandeau | `show_bulletin` | `true` | Afficher le bulletin du jour |
+| Bandeau | `smart_brief` | `true` | Complète : afficher la vigilance, l’alerte mesurée et les événements (sinon, la frise ne montre que le ciel prévu) |
+| Sections | `show_today`, `show_predictions` | `true` | Complète : afficher les sections Aujourd’hui et Prévisions |
+| Sections | `collapse_today`, `collapse_predictions` | `false` | Complète : section repliée au départ |
+| Air et pollens | `show_atmo_details` | `true` | Le pli « Détail » des polluants et des pollens |
+| Air et pollens | `show_atmo_tomorrow` | `true` | L’air et les pollens de demain |
+| Fonctionnalités (tuile) | `weather_path` | — | L’appui long ouvre cette page (par exemple `/meteo`) au lieu de la carte complète |
 
 Configuration minimale, avec un seul lieu :
 
