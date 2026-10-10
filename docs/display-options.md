@@ -10,11 +10,11 @@ Dans **Général**, le premier réglage choisit le format de la carte :
 - **Tuile** : une bande pour la page d’accueil, en pleine ou demi-largeur. Le lieu, l’alerte, la bulle du brief qui défile et la météo du moment.
 - **Tuile dépliée** (`intermediate`) : la même tuile, ouverte au départ.
 
-**Un appui** déplie ou replie la tuile sur place : la phrase du bulletin, les quatre moments de la journée (**Afficher le bulletin du jour**) et les prévisions, avec un sélecteur **Heures / Jours**. La tuile se souvient d’être dépliée, sur chaque appareil. **Un appui long** (une demi-seconde, un anneau se remplit sous le doigt) ouvre la carte complète par-dessus la page, en plein écran sur téléphone ; **Fermer** ou Échap la referment. Au clavier : Entrée déplie, Maj + Entrée ouvre la carte complète.
+**Un appui** déplie ou replie la tuile sur place : le bulletin du jour (**Afficher le bulletin du jour**) et la frise des heures à venir. En v1.20.3, la tuile dépliée montrait les quatre moments de la journée et un sélecteur **Heures / Jours**. La tuile se souvient d’être dépliée, sur chaque appareil. **Un appui long** (une demi-seconde, un anneau se remplit sous le doigt) ouvre la carte complète par-dessus la page, en plein écran sur téléphone ; **Fermer** ou Échap la referment. Au clavier : Entrée déplie, Maj + Entrée ouvre la carte complète.
 
 Si vous avez déjà une page météo, indiquez-la dans **Appui long : ouvrir cette page** (par exemple `/meteo`) : l’appui long y mène au lieu d’ouvrir la carte complète.
 
-Dans la tuile, la vigilance officielle a sa place sous le lieu. Une seconde alerte (par exemple une forte pluie mesurée chez vous) passe en tête de la bulle qui défile, avec son style d’alerte ; une fois la tuile dépliée, les deux alertes sont empilées. Les points du brief défilent toutes les 5 secondes ; survoler la carte met en pause.
+Dans la tuile, la vigilance officielle a sa place sous le lieu, en pastille compacte. L’alerte mesurée chez vous (par exemple une forte pluie) passe en tête de la bulle qui défile, avec son style d’alerte ; une fois la tuile dépliée, elle ouvre l’étiquette « Maintenant » de la frise. Les points défilent toutes les 5 secondes dans la bulle, toutes les 4,5 secondes dans la frise ; survoler met en pause.
 
 Les sources (météo, station, Atmo France) sont les mêmes pour les trois formats : vous pouvez copier la configuration d’une carte à l’autre et changer seulement `format`.
 
@@ -36,7 +36,7 @@ Lorsque le brief est activé, un petit **i** à côté du titre **Synthèse** ou
 
 La ligne **À venir** apparaît seulement lorsqu’une évolution pertinente est détectée dans les prévisions. Une variation de pression d’au moins 1 hPa peut accompagner les autres informations de la synthèse : c’est une mesure de tendance sur les trois dernières heures, pas une prévision de pluie. L’historique reste affiché pendant le rechargement des données ; sa référence tient compte des changements enregistrés par Home Assistant, sans perdre une mesure simplement parce qu’elle passe la limite exacte des trois heures.
 
-Un quatrième interrupteur, **Afficher le bulletin du jour (prévisions par période)**, affiche ou masque le bulletin du bandeau : une phrase qui résume la journée et quatre tuiles pour les prochaines périodes (matin, après-midi, soir, nuit) avec températures, ciel, pluie et vent notable. Il est activé par défaut ; masqué, le bandeau garde la synthèse et la météo actuelle.
+Un quatrième interrupteur, **Afficher le bulletin du jour (prévisions par période)**, affiche ou masque le bulletin du bandeau : ce soir et cette nuit, puis demain, avec les heures de pluie, le ciel, la température utile et le vent notable. En v1.20.3, il comptait aussi quatre tuiles (matin, après-midi, soir, nuit). Il est activé par défaut ; masqué, le bandeau garde la synthèse et la météo actuelle.
 
 Deux autres réglages choisissent l’état de départ des sections : **Section Aujourd’hui repliée au départ** et **Section Prévisions repliée au départ**. Un appui sur le titre d’une section la replie ou la déplie ensuite à tout moment.
 
@@ -58,6 +58,6 @@ Avec une station, le cadre Pluie présente le cumul depuis minuit ou l’intensi
 
 ## Afficher un ressenti utile
 
-Sans station, la jauge de ressenti s’appuie sur la température et l’humidité du bulletin, et sa bulle l’indique. Sans humidité du bulletin, elle est masquée : elle n’affiche jamais une simple copie de la température. L’humidex est calculé par la carte ; aucune intégration Thermal Comfort n’est nécessaire.
+Sans station, la jauge de ressenti s’appuie sur la température et l’humidité du bulletin, et sa bulle l’indique. Sans humidité du bulletin, elle est masquée : elle n’affiche jamais une simple copie de la température. L’humidex est calculé par Niak Weather (l’intégration en 2.0) ; aucune intégration Thermal Comfort n’est nécessaire.
 
 La synthèse ne traite pas les données de remplacement du bulletin comme des observations de la station locale.
