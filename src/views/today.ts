@@ -33,7 +33,7 @@ function comfortPanel(c: ComfortView, uid: string, station: boolean): TemplateRe
   </section>`;
 }
 
-function rainPanel(r: RainView): TemplateResult {
+export function rainPanel(r: RainView): TemplateResult {
   const top = Math.max(1, ...(r.days ?? []).map(d => d.value ?? 0));
   const now = r.rate !== undefined && r.rate > 0 ? chip({ theme: 'rain', icon: 'mdi:weather-rainy', value: `${nf(r.rate)} mm/h`, label: 'en ce moment', entity: r.rateEntity })
     : r.status ? chip({ theme: 'rain', icon: 'mdi:weather-rainy', label: r.status })

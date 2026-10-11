@@ -10,7 +10,8 @@ export function displayed(v: WeatherView, config: WeatherCardConfig, tile: boole
   return {
     ...v,
     brief: brief ? v.brief : undefined, alerts: brief ? v.alerts : [], points: brief ? v.points : [], timeline: brief ? v.timeline : [],
-    bulletin: config.show_bulletin === false ? undefined : v.bulletin,
+    // A tile whose blocks are chosen keeps the bulletin: its moments come from it.
+    bulletin: config.show_bulletin === false && !(tile && config.tile_blocks?.length) ? undefined : v.bulletin,
     air: { today: details(v.air.today), tomorrow: config.show_atmo_tomorrow === false ? [] : details(v.air.tomorrow) },
   };
 }

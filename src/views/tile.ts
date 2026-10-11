@@ -1,7 +1,9 @@
-// The tile: on the dashboard it is one band; a tap unfolds it in place (bulletin and timeline), a long press opens the full card.
+// The tile: on the dashboard it is one band; a tap unfolds it in place (the blocks chosen: bulletin, events, moments, forecasts),
+// a long press opens the full card.
 import { css, html, nothing, type TemplateResult } from 'lit';
-import type { WeatherView } from '../view';
-import { alertPill, label, nf, unbroken } from '../ui/parts';
+import type { BulletinPeriod, WeatherView } from '../view';
+import type { TileBlock } from '../types';
+import { alertPill, label, nf, tint, unbroken } from '../ui/parts';
 import '../ui/ticker';
 import '../ui/frise';
 
@@ -9,7 +11,44 @@ export interface TileState {
   open: boolean;
   /** What a long press opens: the full card over the page, or the user's weather page. */
   holdTarget: 'card' | 'page';
+  /** What the unfolded tile shows, in this order. */
+  blocks: TileBlock[];
+  tab: 'hours' | 'days';
+  onTab: (tab: 'hours' | 'days') => void;
 }
+
+export const DEFAULT_BLOCKS: TileBlock[] = ['bulletin', 'events'];
+
+/** A moment of the day, an hour or a day: a see-through tile over the sky. */
+function glassTile(title: string, icon: string, value: string, extra: unknown = nothing, tip = ''): TemplateResult {
+  return html`<div class="nw-tile" title=${tip || nothing}>${label(title)}<ha-icon icon=${icon}></ha-icon><strong>${value}</strong>${extra}</div>`;
+}
+/** Rain in the rain colour, or an empty line so the tiles keep the same height. */
+const rainLine = (mm: number, min = .1) => mm >= min ? html`<span class="nw-ink" style=${tint('rain')}>${nf(mm)} mm</span>` : html`<span class="nw-ink">&nbsp;</span>`;
+const temps = (p: BulletinPeriod) => p.tmin === undefined ? '—' : p.tmin === p.tmax ? `${p.tmin} °C` : `${p.tmin}–${p.tmax} °C`;
+
+/** The four moments of the day: evening, night, morning, afternoon. */
+export const moments = (v: WeatherView) => v.bulletin?.periods.length
+  ? html`<div class="block">${label('Les prochains moments')}<div class="moments">${v.bulletin.periods.map(p => glassTile(p.label, p.icon, temps(p),
+    html`<small>${p.phrase}</small>${p.rain >= 1 ? rainLine(p.rain) : nothing}`, p.text))}</div></div>` : nothing;
+
+/** The hours or the days, with the switch between them. */
+export function forecastStrip(v: WeatherView, tab: 'hours' | 'days', onTab: (tab: 'hours' | 'days') => void, title = 'Prévisions'): TemplateResult | typeof nothing {
+  const hours = v.hours.slice(0, 12).filter(h => h.temperature !== undefined), days = v.days.slice(0, 5);
+  if (!hours.length && !days.length) return nothing;
+  const shown = !hours.length ? 'days' : !days.length ? 'hours' : tab;
+  const select = (t: 'hours' | 'days') => (e: Event) => { e.stopPropagation(); onTab(t); };
+  return html`<div class="block"><div class="block-title">${label(title)}
+      ${hours.length && days.length ? html`<span class="seg" role="group" aria-label="Prévisions affichées">
+        <button type="button" aria-pressed=${shown === 'hours'} @click=${select('hours')} @pointerdown=${stopPress}>Heures</button>
+        <button type="button" aria-pressed=${shown === 'days'} @click=${select('days')} @pointerdown=${stopPress}>Jours</button></span>` : nothing}</div>
+    ${shown === 'hours'
+      ? html`<div class="hours">${hours.map(h => glassTile(`${h.hour} h`, h.icon, `${nf(h.temperature!, 0)}°`, rainLine(h.precipitation), h.conditionLabel))}</div>`
+      : html`<div class="days">${days.map(d => glassTile(d.label, d.icon, d.high === undefined ? '—' : `${d.high}°`,
+          html`<span class="lo">${d.low === undefined ? '' : `${d.low}°`}</span>${rainLine(d.rain)}`, d.conditionLabel))}</div>`}</div>`;
+}
+/** The hours/days switch must not start a long press on the card. */
+const stopPress = (e: Event) => e.stopPropagation();
 
 /** « En ce moment »: condition, temperature, then the source. Shared by the tile and the banner. */
 export function nowBlock(v: WeatherView, kicker: boolean, extra: unknown = nothing): TemplateResult {
@@ -44,8 +83,8 @@ export function renderTile(v: WeatherView, sky: TemplateResult, s: TileState): T
     </div>
     <div class="grabber" aria-hidden="true"><i></i></div>
     <div class="more" ?inert=${!s.open}><div><div class="more-in">
-      ${headline ? html`<div class="bulletin">${label('Bulletin du jour')}<p class="nw-bulletin">${unbroken(headline)}</p></div>` : nothing}
-      ${frise(v)}
+      ${s.blocks.map(block => block === 'bulletin' ? (headline ? html`<div class="bulletin">${label('Bulletin du jour')}<p class="nw-bulletin">${unbroken(headline)}</p></div>` : nothing)
+        : block === 'events' ? frise(v) : block === 'moments' ? moments(v) : forecastStrip(v, s.tab, s.onTab))}
       <div class="foot"><span>${v.forecastSource}${v.now.temperatureSource !== v.forecastSource ? ` · ${v.now.temperatureSource.toLowerCase()}` : ''}</span>
         <span>Appui long : ${s.holdTarget === 'page' ? 'page météo' : 'carte complète'}</span></div>
     </div></div></div>
@@ -93,7 +132,28 @@ export const tileStyles = css`
   .more > div { overflow:hidden; min-height:0; }
   .more-in { padding:0 16px 14px; display:flex; flex-direction:column; gap:12px; opacity:0; transform:translateY(-6px); transition:opacity .3s .1s, transform .3s .1s; }
   .open .more-in { opacity:1; transform:none; }
-  .bulletin, .nw-events { display:flex; flex-direction:column; gap:4px; }
+  .bulletin, .nw-events, .block { display:flex; flex-direction:column; gap:6px; }
+  .bulletin, .nw-events { gap:4px; }
+  /* Moments, hours and days: see-through tiles over the sky, without blur (it would be recomputed at every frame of the sky). */
+  .moments, .hours, .days { display:grid; gap:8px; }
+  .moments { grid-template-columns:repeat(4, minmax(0,1fr)); }
+  .days { grid-template-columns:repeat(5, minmax(0,1fr)); }
+  .hours { grid-auto-flow:column; grid-auto-columns:minmax(60px,1fr); overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
+  .nw-tile { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; align-content:start; column-gap:8px; row-gap:3px;
+    padding:10px 12px; border-radius:var(--nw-radius); min-width:0; box-sizing:border-box;
+    background:color-mix(in srgb, var(--nw-bg) 72%, transparent); border:1px solid var(--nw-line); }
+  .nw-tile > .nw-label, .nw-tile > small, .nw-tile > .nw-ink { grid-column:1/-1; }
+  .nw-tile ha-icon { --mdc-icon-size:24px; }
+  .nw-tile strong { font-size:var(--nw-fs-title); line-height:1.2; font-weight:700; letter-spacing:-.3px; white-space:nowrap; }
+  .nw-tile small { font-size:var(--nw-fs-small); color:var(--nw-fg2); }
+  .hours .nw-tile, .days .nw-tile { grid-template-columns:1fr; justify-items:center; text-align:center; padding:9px 6px; }
+  .hours .nw-tile strong, .days .nw-tile strong { font-size:var(--nw-fs-text); }
+  .days .lo { font-size:var(--nw-fs-small); font-weight:600; color:var(--nw-fg2); }
+  .block-title { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .seg { display:inline-flex; padding:2px; border-radius:var(--nw-radius-pill); border:1px solid var(--nw-line); background:color-mix(in srgb, var(--nw-bg) 72%, transparent); }
+  .seg button { font-size:var(--nw-fs-small); line-height:1; font-weight:600; border:0; background:none; color:var(--nw-fg2); padding:5px 10px; border-radius:var(--nw-radius-pill); cursor:pointer; }
+  .seg button[aria-pressed=true] { background:var(--nw-bg); color:var(--nw-fg); box-shadow:0 1px 3px #0002; }
+  @container (max-width:600px) { .moments { grid-template-columns:repeat(2, minmax(0,1fr)); } }
   .foot { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; font-size:var(--nw-fs-small); color:var(--nw-fg2); }
   .grabber { display:flex; justify-content:center; padding:0 0 8px; }
   .grabber i { width:34px; height:4px; border-radius:4px; background:var(--nw-line); }
@@ -107,6 +167,7 @@ export const tileStyles = css`
   @container (max-width:480px) {
     .top { grid-template-areas:"meta now" "brief brief"; }
     .nw-tilecard .sky { --k:.42; --nw-orb-x:calc(100% - 300px); }
+    .days { grid-template-columns:repeat(5, minmax(58px,1fr)); overflow-x:auto; scrollbar-width:none; }
   }
   @media (prefers-reduced-motion:reduce) { .more, .more-in, .reveal, .brief, .brief > div, .top .nw-now .nw-badge { transition:none; } }
 `;

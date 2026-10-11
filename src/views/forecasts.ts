@@ -3,7 +3,7 @@ import { css, html, nothing, svg, type TemplateResult } from 'lit';
 import type { DayForecast, Slot, WeatherView } from '../view';
 import { label, legend, nf, panelHead, rose, tempColor, windArrow } from '../ui/parts';
 
-function hoursChart(hours: Slot[], source: string, entity: string, uid: string): TemplateResult | typeof nothing {
+export function hoursChart(hours: Slot[], source: string, entity: string, uid: string): TemplateResult | typeof nothing {
   const points = hours.map((h, i) => ({ h, i })).filter(p => p.h.temperature !== undefined);
   if (points.length < 3) return nothing;
   const n = hours.length, step = 100 / (n - 1), X = (i: number) => i * step;
@@ -45,7 +45,7 @@ function hoursChart(hours: Slot[], source: string, entity: string, uid: string):
   </section>`;
 }
 
-function week(days: DayForecast[], source: string, entity: string): TemplateResult | typeof nothing {
+export function week(days: DayForecast[], source: string, entity: string): TemplateResult | typeof nothing {
   if (!days.length) return nothing;
   const lows = days.flatMap(d => d.low ?? d.high ?? []), highs = days.flatMap(d => d.high ?? d.low ?? []);
   const lo = Math.min(...lows), hi = Math.max(...highs, lo + 1), P = (t: number) => (t - lo) / (hi - lo) * 100;

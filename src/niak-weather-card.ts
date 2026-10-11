@@ -3,7 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { cleanConfig } from './config';
 import { displayed } from './display';
 import { bubbles, pieces, tokens } from './ui/charter';
-import { renderTile, tileStyles } from './views/tile';
+import { DEFAULT_BLOCKS, renderTile, tileStyles } from './views/tile';
+import { alertItems, compactStyles, renderAlert, renderForecastCard, renderMini, renderRain } from './views/compact';
 import { fullStyles, renderFull, type SectionId } from './views/full';
 import { heroStyles } from './views/hero';
 import { todayStyles } from './views/today';
@@ -40,7 +41,12 @@ const PROBLEMS: Record<Problem, { title: string; text: string; links?: [string, 
 @customElement('niak-weather-card')
 export class NiakWeatherCard extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistant;
+  /** Set by Home Assistant while the dashboard is edited, and in the card picker: the alert card then shows when it would hide. */
+  @property({ attribute: false }) public editMode = false;
+  @property({ attribute: false }) public preview = false;
   @state() private config?: WeatherCardConfig;
+  /** The forecasts on the hours or the days (remembered on this device). */
+  @state() private tab: 'hours' | 'days' = 'hours';
   /** What the integration computed, as it last sent it. */
   @state() private view?: WeatherView;
   @state() private problem?: Problem;
@@ -64,6 +70,7 @@ export class NiakWeatherCard extends LitElement {
     if (!old || old.collapse_today !== next.collapse_today || old.collapse_predictions !== next.collapse_predictions)
       this.folded = { today: next.collapse_today === true, predictions: next.collapse_predictions === true };
     if (!old || old.format !== next.format || old.entry_id !== next.entry_id) this.open = this.remembered(next);
+    if (!old || old.forecast_tab !== next.forecast_tab || old.entry_id !== next.entry_id) this.tab = this.rememberedTab(next);
     // Another place: its own view, from a new subscription.
     if (old && old.entry_id !== next.entry_id) { this.unsubscribe(); this.view = undefined; this.problem = undefined; }
   }
@@ -71,20 +78,47 @@ export class NiakWeatherCard extends LitElement {
   public static getConfigElement(): HTMLElement { return document.createElement('niak-weather-card-editor'); }
   public getCardSize(): number {
     if (!this.config) return 10;
+    if (this.config.format === 'mini') return 1;
+    if (this.config.format === 'alert') return this.view && this.hasAlert(this.view) ? 2 : 0;
+    if (this.config.format === 'forecast' || this.config.format === 'rain') return 5;
     if (this.tile) return this.open ? 7 : 2;
     return Math.max(1, (this.config.show_synthesis === false ? 0 : 4) + (this.config.show_today === false ? 0 : 5) + (this.config.show_predictions === false ? 0 : 4));
   }
-  public getGridOptions() { return this.tile ? { columns: 12, rows: 'auto', min_columns: 6 } : { columns: 'full', rows: 'auto' }; }
+  public getGridOptions() {
+    const format = this.config?.format;
+    if (format === 'mini') return { columns: 12, rows: 1, min_columns: 3 };
+    return this.tile || format === 'alert' || format === 'forecast' || format === 'rain' ? { columns: 12, rows: 'auto', min_columns: 6 } : { columns: 'full', rows: 'auto' };
+  }
 
-  /** Tile and intermediate formats: one band that unfolds; the full card is the weather page. */
-  private get tile(): boolean { return !!this.config?.format && this.config.format !== 'full'; }
+  /** Tile and intermediate formats: one band that unfolds. */
+  private get tile(): boolean { return this.config?.format === 'tile' || this.config?.format === 'intermediate'; }
+  /** Everything but the full card: what a long press (a tap on mini and alert) opens. */
+  private get small(): boolean { return !!this.config?.format && this.config.format !== 'full'; }
+  private hasAlert(v: WeatherView): boolean { const { alerts, points } = alertItems(v); return alerts.length + points.length > 0; }
+  private rememberedTab(config: WeatherCardConfig): 'hours' | 'days' {
+    try { const v = localStorage.getItem(`niak-weather:tab:${config.entry_id ?? ''}`); if (v === 'hours' || v === 'days') return v; } catch { /* private browsing */ }
+    return config.forecast_tab ?? 'hours';
+  }
+  private setTab = (tab: 'hours' | 'days') => {
+    this.tab = tab;
+    try { localStorage.setItem(`niak-weather:tab:${this.config?.entry_id ?? ''}`, tab); } catch { /* private browsing */ }
+  };
   private key(config = this.config!) { return `niak-weather:open:${config.format}:${config.entry_id ?? config.weather_entity ?? ''}`; }
   private remembered(config: WeatherCardConfig): boolean {
     try { const v = localStorage.getItem(this.key(config)); if (v !== null) return v === '1'; } catch { /* private browsing */ }
     return config.format === 'intermediate';
   }
 
-  public connectedCallback(): void { super.connectedCallback(); this.subscribe(); }
+  public connectedCallback(): void { super.connectedCallback(); this.picker = this.inPicker(); this.subscribe(); }
+  /** In the « Add card » window Home Assistant flags nothing: the card finds the window among its ancestors. */
+  private picker = false;
+  private inPicker(): boolean {
+    for (let node: Node | null = this; node; node = node.parentNode ?? (node instanceof ShadowRoot ? node.host : null))
+      if (node instanceof HTMLElement && node.localName === 'hui-card-picker') return true;
+    return false;
+  }
+  /** Being edited or chosen: the alert card shows what it would hide. */
+  private get editing(): boolean { return this.editMode || this.preview || this.picker; }
   public disconnectedCallback(): void { super.disconnectedCallback(); this.cancelPress(); this.unsubscribe(); }
   protected shouldUpdate(changed: PropertyValues): boolean {
     if (changed.has('hass') || changed.has('config')) this.subscribe();
@@ -92,6 +126,8 @@ export class NiakWeatherCard extends LitElement {
     return !(changed.size === 1 && changed.has('hass'));
   }
   protected updated(): void {
+    // The alert card takes no room while all is calm, except while the dashboard is being edited.
+    this.toggleAttribute('hidden', this.config?.format === 'alert' && !!this.view && !this.hasAlert(this.view) && !this.editing);
     this.toggleAttribute('still', this.config?.weather_animations === false);
     this.toggleAttribute('flat', this.config?.glass_effect === false);
     const dialog = this.renderRoot.querySelector<HTMLDialogElement>('dialog');
@@ -147,14 +183,29 @@ export class NiakWeatherCard extends LitElement {
     const full = () => renderFull(view, { sky, uid: this.uid, entity: view.weatherEntity, station: view.station,
       show: { synthesis: config.show_synthesis !== false, today: config.show_today !== false, predictions: config.show_predictions !== false },
       folded: this.folded, onFold: id => { this.folded = { ...this.folded, [id]: !this.folded[id] }; } });
-    if (!this.tile) return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${full()}</ha-card>`;
     const title = `Météo${view.location ? ` · ${view.location}` : ''}`;
+    const dialog = () => this.dialogOpen ? html`<dialog class="nw-dialog" aria-label=${title} @close=${() => { this.dialogOpen = false; }} @click=${this.openEntity} @keydown=${this.entityKey}>
+        <header><b>${title}</b><button type="button" @click=${this.closeDialog}>Fermer</button></header>${full()}</dialog>` : nothing;
+    const holdTarget = this.weatherPath ? 'page' : 'card';
+    switch (config.format) {
+      case 'mini':
+        return html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${renderMini(view, holdTarget)}</div>${dialog()}</ha-card>`;
+      case 'alert': {
+        const body = renderAlert(view, this.editing);
+        return body === nothing ? nothing : html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${body}</div>${dialog()}</ha-card>`;
+      }
+      case 'rain':
+        return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${renderRain(view)}</ha-card>`;
+      case 'forecast':
+        return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${renderForecastCard(view, this.tab, this.setTab, view.weatherEntity, this.uid)}</ha-card>`;
+    }
+    if (!this.tile) return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${full()}</ha-card>`;
+    const blocks = config.tile_blocks?.length ? config.tile_blocks : config.show_bulletin === false ? ['events' as const] : DEFAULT_BLOCKS;
     return html`<ha-card>
       <div @pointerdown=${this.down} @pointermove=${this.move} @pointerup=${this.up} @pointercancel=${this.cancelPress} @pointerleave=${this.cancelPress}
         @contextmenu=${this.noMenu} @keydown=${this.tileKey}>
-        ${renderTile(view, sky, { open: this.open, holdTarget: this.weatherPath ? 'page' : 'card' })}</div>
-      ${this.dialogOpen ? html`<dialog class="nw-dialog" aria-label=${title} @close=${() => { this.dialogOpen = false; }} @click=${this.openEntity} @keydown=${this.entityKey}>
-        <header><b>${title}</b><button type="button" @click=${this.closeDialog}>Fermer</button></header>${full()}</dialog>` : nothing}
+        ${renderTile(view, sky, { open: this.open, holdTarget, blocks, tab: this.tab, onTab: this.setTab })}</div>
+      ${dialog()}
     </ha-card>`;
   }
 
@@ -210,6 +261,12 @@ export class NiakWeatherCard extends LitElement {
     e.preventDefault();
     if (e.shiftKey) this.hold(); else this.toggle();
   };
+  /** Mini and alert: a tap opens the full card (or the weather page). */
+  private tap = (e: Event) => { if (!(e.target as HTMLElement).closest('dialog')) this.hold(); };
+  private tapKey = (e: KeyboardEvent) => {
+    if (!['Enter', ' '].includes(e.key) || (e.target as HTMLElement).closest('dialog')) return;
+    e.preventDefault(); this.hold();
+  };
   private toggle() {
     this.open = !this.open;
     try { localStorage.setItem(this.key(), this.open ? '1' : '0'); } catch { /* private browsing */ }
@@ -233,8 +290,9 @@ export class NiakWeatherCard extends LitElement {
     e.preventDefault(); this.openEntity(e);
   };
 
-  static styles = [tokens, pieces, bubbles, tileStyles, heroStyles, fullStyles, todayStyles, forecastStyles, airStyles, css`
+  static styles = [tokens, pieces, bubbles, tileStyles, compactStyles, heroStyles, fullStyles, todayStyles, forecastStyles, airStyles, css`
     :host { display:block; }
+    :host([hidden]) { display:none; }
     /* Animations switched off: the alert halo stays still too, in the tile, the window and the scrolling bubble. */
     :host([still]) { --nw-motion:paused; }
     /* Frosted glass switched off: no blur anywhere (it costs a lot on slow devices), a more opaque glass keeps the text readable. */
@@ -262,6 +320,25 @@ export class NiakWeatherCard extends LitElement {
   `];
 }
 
-window.customCards = window.customCards || [];
-window.customCards.push({ type: 'niak-weather-card', name: 'Niak Weather', description: 'La météo chez vous, calculée par l’intégration Niak Weather', preview: true });
+// One entry per format in Home Assistant's « Add card » window. Each creates the same card (`custom:niak-weather-card`) with its format:
+// the picker takes the type from getStubConfig, so dashboards never depend on these extra names.
+const FORMATS: Array<[NonNullable<WeatherCardConfig['format']>, string, string]> = [
+  ['full', 'Niak Weather', 'La page météo : synthèse, mesures, prévisions, air et pollens.'],
+  ['tile', 'Niak Weather · Tuile', 'Une bande qui se déplie d’un appui ; son contenu se choisit.'],
+  ['intermediate', 'Niak Weather · Tuile dépliée', 'La tuile, ouverte au départ : bulletin, événements, moments ou prévisions.'],
+  ['mini', 'Niak Weather · Mini', 'Une seule ligne : le ciel, la température et la vigilance.'],
+  ['forecast', 'Niak Weather · Prévisions', 'Les 18 prochaines heures ou les 7 prochains jours.'],
+  ['rain', 'Niak Weather · Pluie', 'La pluie à venir, celle qui tombe et celle qui est tombée.'],
+  ['alert', 'Niak Weather · Alerte', 'Visible seulement en cas de vigilance ou d’alerte.'],
+];
+for (const [format, name, description] of FORMATS) {
+  const type = format === 'full' ? 'niak-weather-card' : `niak-weather-${format === 'intermediate' ? 'tile-open' : format}-card`;
+  if (format !== 'full' && !customElements.get(type)) customElements.define(type, class extends NiakWeatherCard {
+    public static getStubConfig(): WeatherCardConfig { return { type: 'custom:niak-weather-card', format }; }
+    // Written by hand as its own type, it keeps its format.
+    public setConfig(config: WeatherCardConfig): void { super.setConfig({ format, ...config }); }
+  });
+  window.customCards = window.customCards || [];
+  window.customCards.push({ type, name, description, preview: true });
+}
 declare global { interface Window { customCards: Array<Record<string, unknown>>; } }

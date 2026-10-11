@@ -19,14 +19,23 @@ export interface HomeAssistant {
   callWS<T>(message: Record<string, unknown>): Promise<T>;
 }
 
+/** A block of the unfolded tile. */
+export type TileBlock = 'bulletin' | 'events' | 'moments' | 'forecast';
+
 /** The card's own settings: what it shows and how. Its sources (weather, station, air) are set in the Niak Weather integration. */
 export interface WeatherCardConfig {
   type: 'custom:niak-weather-card';
   /** The integration's place to show; may be left out when there is only one. */
   entry_id?: string;
   /** full (default): the weather page. tile: one band that unfolds on tap. intermediate: the same tile, unfolded at first.
-   *  On the small formats a long press opens the full card, or weather_path when it is set. */
-  format?: 'full' | 'intermediate' | 'tile';
+   *  mini: one line. forecast: the hours and the days alone. rain: the rain to come and the rain that fell.
+   *  alert: only while there is a vigilance or an alert, hidden otherwise.
+   *  On the small formats a long press (a tap on mini and alert) opens the full card, or weather_path when it is set. */
+  format?: 'full' | 'intermediate' | 'tile' | 'mini' | 'forecast' | 'rain' | 'alert';
+  /** What the unfolded tile shows, in this order. Default: the bulletin, then the events. */
+  tile_blocks?: TileBlock[];
+  /** The forecasts open on the hours or on the days (the tile's « Prévisions » block and the forecast card). */
+  forecast_tab?: 'hours' | 'days';
   /** Full card: start with « Aujourd'hui » or « Prévisions » folded. */
   collapse_today?: boolean;
   collapse_predictions?: boolean;

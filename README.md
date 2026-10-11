@@ -32,13 +32,21 @@ Les explications (ressenti, alertes, bulletin, sources) sont dans [la documentat
 
 Vous aviez la version 1.20 ? [Passer à la 2.0](docs/migration.md) : l’intégration reprend les réglages de vos cartes.
 
-## Trois formats
+## Sept cartes à choisir
 
-| Format | Pour quoi |
+Dans **Ajouter une carte**, cherchez « Niak Weather » : chaque carte a son aperçu. Toutes s’écrivent `type: custom:niak-weather-card`, seul `format` change.
+
+| Carte | Pour quoi |
 | --- | --- |
-| **Tuile** (`tile`) | La page d’accueil, en pleine ou demi-largeur : le lieu, la vigilance, la bulle qui défile et la météo du moment. **Un appui** la déplie sur place (bulletin et frise), **un appui long** ouvre la carte complète par-dessus la page. |
-| **Tuile dépliée** (`intermediate`) | La même tuile, ouverte au départ. |
 | **Complète** (`full`, par défaut) | Une page météo : le bandeau, puis **Aujourd’hui** et **Prévisions**, qui se replient d’un appui sur leur titre. |
+| **Tuile** (`tile`) | La page d’accueil, en pleine ou demi-largeur : le lieu, la vigilance, la bulle qui défile et la météo du moment. **Un appui** la déplie sur place, **un appui long** ouvre la carte complète par-dessus la page. |
+| **Tuile dépliée** (`intermediate`) | La même tuile, ouverte au départ. |
+| **Mini** (`mini`) | Une seule ligne : le ciel, la température, le lieu et la vigilance. Pour un en-tête ou un téléphone. Un appui ouvre la carte complète. |
+| **Prévisions** (`forecast`) | La courbe des 18 prochaines heures ou le tableau des 7 jours, avec le bouton **Heures / Jours**. |
+| **Pluie** (`rain`) | La pluie à venir (dans l’heure, sur 6 h, la prochaine averse), celle qui tombe et celle des 7 derniers jours. |
+| **Alerte** (`alert`) | Visible seulement en cas de vigilance, d’alerte mesurée chez vous ou de point sérieux à venir. Cachée quand tout est calme. Un appui ouvre la carte complète. |
+
+**Le contenu de la tuile dépliée se choisit**, dans l’ordre voulu : le bulletin du jour, les événements (la frise), les prochains moments (cet après-midi, ce soir, cette nuit, demain matin) et les prévisions avec **Heures / Jours**. Par défaut : le bulletin et les événements.
 
 ![Niak Weather — tuile pleine et demi-largeur repliées, puis tuile dépliée, par temps d’orage avec vigilance jaune](docs/images/niak-weather-formats.png)
 
@@ -75,12 +83,14 @@ Un appui sur une valeur ouvre la fiche de son capteur.
 
 ## Réglages
 
-Tout se règle dans l’éditeur de la carte, rangé en blocs : le lieu et le format en haut, puis **Visuel et performance**, **Bandeau**, **Sections** et **Air et pollens** (pour une tuile : **Fonctionnalités**). Les sources, elles, se règlent dans l’intégration.
+Tout se règle dans l’éditeur de la carte, rangé en blocs : le lieu et le format en haut, puis **Visuel et performance**, **Bandeau**, **Sections** et **Air et pollens** (pour une tuile : **Contenu** et **Fonctionnalités**). Les sources, elles, se règlent dans l’intégration.
 
 | Bloc | Réglage | Par défaut | Rôle |
 | --- | --- | --- | --- |
 | En haut | `entry_id` | — | Le lieu à afficher, s’il y en a plusieurs dans l’intégration |
-| En haut | `format` | `full` | `full` (complète), `tile` (tuile) ou `intermediate` (tuile dépliée) |
+| En haut | `format` | `full` | `full`, `tile`, `intermediate`, `mini`, `forecast`, `rain` ou `alert` |
+| Contenu (tuile) | `tile_blocks` | `bulletin`, `events` | Ce que montre la tuile dépliée, dans l’ordre : `bulletin`, `events`, `moments`, `forecast` |
+| Contenu (tuile), Prévisions | `forecast_tab` | `hours` | Les prévisions s’ouvrent sur les heures (`hours`) ou les jours (`days`). Un appui sur Heures / Jours change l’affichage, gardé sur chaque appareil |
 | Visuel et performance | `weather_animations` | `true` | Ciel animé, défilement et halos. Coupées, le décor reste fixe |
 | Visuel et performance | `weather_animation_quality` | `standard` | `low` : moins de gouttes, de flocons et de nuages (choisi d’office sur écran tactile pour la tuile) |
 | Visuel et performance | `glass_effect` | `true` | Effet verre dépoli sur le ciel. Le flou est ce qui coûte le plus : à couper sur un appareil lent |
@@ -91,7 +101,7 @@ Tout se règle dans l’éditeur de la carte, rangé en blocs : le lieu et le fo
 | Sections | `collapse_today`, `collapse_predictions` | `false` | Complète : section repliée au départ |
 | Air et pollens | `show_atmo_details` | `true` | Le pli « Détail » des polluants et des pollens |
 | Air et pollens | `show_atmo_tomorrow` | `true` | L’air et les pollens de demain |
-| Fonctionnalités (tuile) | `weather_path` | — | L’appui long ouvre cette page (par exemple `/meteo`) au lieu de la carte complète |
+| Fonctionnalités (tuile, mini, alerte) | `weather_path` | — | L’appui long (l’appui pour Mini et Alerte) ouvre cette page (par exemple `/meteo`) au lieu de la carte complète |
 
 Configuration minimale, avec un seul lieu :
 
@@ -107,9 +117,17 @@ format: tile
 weather_path: /meteo
 ```
 
+Une tuile dépliée comme en 1.20, avec les moments et les prévisions :
+
+```yaml
+type: custom:niak-weather-card
+format: intermediate
+tile_blocks: [bulletin, moments, forecast]
+```
+
 ## Le visuel
 
-- **Une seule charte** pour les trois formats : mêmes bulles, mêmes pastilles, mêmes cadres, une palette de couleurs douces accordées entre elles. Elle suit le thème Home Assistant, clair ou sombre.
+- **Une seule charte** pour toutes les cartes : mêmes bulles, mêmes pastilles, mêmes cadres, une palette de couleurs douces accordées entre elles. Elle suit le thème Home Assistant, clair ou sombre.
 - **Le contour coloré et le halo** sont réservés aux alertes ; le halo respire doucement, sans clignoter.
 - **Les animations** se mettent en pause hors de l’écran, et suivent le réglage « réduire les animations » de l’appareil.
 - **Les couleurs de sens** se remplacent dans un thème Home Assistant, si vous le souhaitez :
