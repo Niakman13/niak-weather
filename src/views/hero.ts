@@ -27,7 +27,7 @@ function briefInfo(v: WeatherView, uid: string): TemplateResult {
   });
 }
 
-export type BannerBlock = 'bulletin' | 'events' | 'moments' | 'forecast';
+import type { BannerBlock } from '../types';
 
 /** The banner: the place, the vigilance and the weather now, then its blocks drawn by `draw`, in their order. */
 export function renderHero(v: WeatherView, sky: TemplateResult, uid: string, blocks: BannerBlock[], draw: (b: BannerBlock) => unknown): TemplateResult {

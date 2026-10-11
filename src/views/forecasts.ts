@@ -64,11 +64,13 @@ export function week(days: DayForecast[], source: string, entity: string): Templ
 }
 
 export function renderForecasts(v: WeatherView, entity: string, uid: string, air: TemplateResult | typeof nothing,
-                                blocks: Array<'hours' | 'days'> = ['hours', 'days']): TemplateResult {
-  // The curve and the table chosen, in their order.
-  const panels = blocks.map(b => b === 'hours' ? hoursChart(v.hours, v.provider, entity, uid) : week(v.days, v.provider, entity)).filter(p => p !== nothing);
+                                blocks: Array<'hours' | 'days' | 'air'> = ['hours', 'days', 'air']): TemplateResult {
+  // The curve and the table chosen, in their order; tomorrow's air and pollens under them when chosen.
+  const panels = blocks.map(b => b === 'hours' ? hoursChart(v.hours, v.provider, entity, uid) : b === 'days' ? week(v.days, v.provider, entity) : nothing)
+    .filter(p => p !== nothing);
+  const wanted = blocks.some(b => b !== 'air');
   return html`${panels.length ? html`<div class=${`panels${panels.length === 1 ? ' single' : ''}`}>${panels}</div>`
-    : html`<p class="nw-empty">Prévisions indisponibles pour le moment.</p>`}${air}`;
+    : wanted ? html`<p class="nw-empty">Prévisions indisponibles pour le moment.</p>` : nothing}${blocks.includes('air') ? air : nothing}`;
 }
 
 export const forecastStyles = css`

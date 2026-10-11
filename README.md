@@ -49,7 +49,10 @@ Dans **Ajouter une carte**, cherchez « Niak Weather » : chaque carte a son ape
 **Le contenu se choisit**, dans l’ordre voulu :
 
 - **Tuile dépliée** : le bulletin du jour, les événements (la frise), les prochains moments (cet après-midi, ce soir, cette nuit, demain matin) et les prévisions avec **Heures / Jours** (température, pluie, vent et sa direction). Par défaut : le bulletin et les événements.
-- **Complète** : le bulletin, les événements, les moments et les prévisions en tuiles, puis les sections Aujourd’hui, Prévisions détaillées et Air et pollens, exactement dans l’ordre choisi. Chaque section a aussi son contenu : pluie, vent, pression… pour Aujourd’hui ; heures et jours pour les Prévisions.
+- **Complète** : trois sections, toujours dans cet ordre, chacune avec son propre contenu :
+  - **le bandeau intelligent**, avec son ciel animé : bulletin, événements, prochains moments, prévisions en tuiles ;
+  - **Aujourd’hui** : pluie, vent, pression (et ressenti, pastilles, air et pollens du jour) ;
+  - **Prévisions** : les 18 prochaines heures, les 7 prochains jours (et l’air et les pollens de demain).
 
 ![Niak Weather — tuile pleine et demi-largeur repliées, puis tuile dépliée, par temps d’orage avec vigilance jaune](docs/images/niak-weather-formats.png)
 
@@ -92,8 +95,9 @@ Tout se règle dans l’éditeur de la carte, rangé en blocs : le lieu et le fo
 | --- | --- | --- | --- |
 | En haut | `entry_id` | — | Le lieu à afficher, s’il y en a plusieurs dans l’intégration |
 | En haut | `format` | `full` | `full`, `tile`, `intermediate`, `mini`, `forecast`, `rain` ou `alert` |
-| Contenu (complète) | `full_blocks` | — | Ce que montre la carte complète, exactement dans cet ordre : `bulletin`, `events`, `moments`, `forecast` (les prévisions en tuiles), et les sections `today`, `predictions` (courbe et 7 jours), `air`. Le lieu, la vigilance et la météo du moment restent en tête ; ce qui vient avant la première section va dans le bandeau. Sans cette liste, les interrupteurs ci-dessous décident |
-| Sections (complète) | `today_blocks`, `forecast_blocks`, `air_blocks` | tout | Le contenu de chaque section, dans l’ordre : `comfort`, `rain`, `wind`, `pressure`, `extras` ; `hours`, `days` ; `air`, `pollen`, `tomorrow` |
+| Bandeau intelligent (complète) | `banner_blocks` | `bulletin`, `events` | Sous le lieu, la vigilance et la météo du moment, dans l’ordre : `bulletin`, `events` (la frise), `moments`, `forecast` (les prévisions en tuiles). Le bandeau et son ciel animé restent toujours |
+| Aujourd’hui (complète) | `today_blocks` | tout | `rain`, `wind`, `pressure`, `comfort` (ressenti), `extras` (pastilles), `air` (air et pollens du jour). Une liste vide retire la section |
+| Prévisions (complète) | `forecast_blocks` | tout | `hours` (18 heures), `days` (7 jours), `air` (air et pollens de demain). Une liste vide retire la section |
 | Contenu (tuile) | `tile_blocks` | `bulletin`, `events` | Ce que montre la tuile dépliée, dans l’ordre : `bulletin`, `events`, `moments`, `forecast` |
 | Contenu (tuile), Prévisions | `forecast_tab` | `hours` | Les prévisions s’ouvrent sur les heures (`hours`) ou les jours (`days`). Un appui sur Heures / Jours change l’affichage, gardé sur chaque appareil |
 | Visuel et performance | `weather_animations` | `true` | Ciel animé, défilement et halos. Coupées, le décor reste fixe |

@@ -1,13 +1,12 @@
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { cleanConfig } from '../config';
+import { cleanConfig, sections } from '../config';
 import type { HomeAssistant, WeatherCardConfig } from '../types';
 
 /** The card's editor: which place, then how to show it. The sources are set in the integration. */
 const defaults: Partial<WeatherCardConfig> = { format: 'full', show_synthesis: true, show_bulletin: true, show_today: true, show_predictions: true,
   collapse_today: false, collapse_predictions: false, smart_brief: true, weather_animations: true, weather_animation_quality: 'standard',
-  show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true, tile_blocks: ['bulletin', 'events'], forecast_tab: 'hours',
-  today_blocks: ['comfort', 'rain', 'wind', 'pressure', 'extras'], forecast_blocks: ['hours', 'days'], air_blocks: ['air', 'pollen', 'tomorrow'] };
+  show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true, tile_blocks: ['bulletin', 'events'], forecast_tab: 'hours' };
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   entry_id: 'Lieu', format: 'Format',
   weather_animations: 'Ciel animé et halos', weather_animation_quality: 'Qualité des animations', glass_effect: 'Effet verre dépoli',
@@ -16,8 +15,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   show_predictions: 'Section Prévisions', collapse_predictions: 'Prévisions repliées au départ',
   show_atmo_details: 'Détail des polluants et des pollens', show_atmo_tomorrow: 'Air et pollens de demain',
   weather_path: 'Page à ouvrir',
-  tile_blocks: 'Contenu de la tuile dépliée', forecast_tab: 'Prévisions affichées au départ', full_blocks: 'Contenu de la carte',
-  today_blocks: 'Contenu d’Aujourd’hui', forecast_blocks: 'Contenu des Prévisions détaillées', air_blocks: 'Contenu d’Air et pollens',
+  tile_blocks: 'Contenu de la tuile dépliée', forecast_tab: 'Prévisions affichées au départ', banner_blocks: 'Contenu du bandeau', today_blocks: 'Contenu d’Aujourd’hui', forecast_blocks: 'Contenu des Prévisions',
   hold_action: 'Appui long',
 };
 /** One line under the settings that need it. */
@@ -28,8 +26,9 @@ const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
   smart_brief: 'La vigilance, l’alerte mesurée chez vous et la frise des événements. Coupé, la frise ne montre que le ciel prévu.',
   weather_path: 'Le chemin de la page, par exemple /meteo ou /lovelace/meteo.',
   tile_blocks: 'Cochez ce qui s’affiche quand la tuile est dépliée, et faites glisser pour changer l’ordre.',
-  full_blocks: 'Affiché exactement dans cet ordre. Le lieu, la vigilance et la météo du moment restent en tête ; ce qui vient avant la première section va dans le bandeau, sur le ciel.',
-  air_blocks: 'Avec Air et pollens dans le contenu de la carte.',
+  banner_blocks: 'Le bandeau et son ciel animé restent toujours, avec le lieu, la vigilance et la météo du moment. Cochez ce qu’il montre en dessous, dans l’ordre.',
+  today_blocks: 'Tout décocher retire la section.',
+  forecast_blocks: 'Tout décocher retire la section.',
   forecast_tab: 'Un appui sur Heures ou Jours change l’affichage ; ce choix est gardé sur chaque appareil.',
   hold_action: 'La météo complète par-dessus la page, une page de votre tableau de bord, ou rien.',
 };
@@ -104,30 +103,24 @@ export class NiakWeatherCardEditor extends LitElement {
     if (this.small) return [...place, format, look,
       group('Contenu', 'mdi:view-list-outline', [blocks, ...((this.config?.tile_blocks ?? []).includes('forecast') ? [tab] : [])], true),
       group('Fonctionnalités', 'mdi:tune-variant', path)];
-    const fullBlocks = { name: 'full_blocks', selector: { select: { multiple: true, reorder: true, mode: 'list', options: [
-      { value: 'bulletin', label: 'Bulletin du jour' }, { value: 'events', label: 'Événements (la frise)' },
-      { value: 'moments', label: 'Les prochains moments (soir, nuit, matin…)' }, { value: 'forecast', label: 'Prévisions en tuiles (heures ou jours)' },
-      { value: 'today', label: 'Aujourd’hui (mesures et ressenti)' }, { value: 'predictions', label: 'Prévisions détaillées (courbe 18 h et 7 jours)' },
-      { value: 'air', label: 'Air et pollens' }] } } };
-    const inside = (name: string, options: Array<[string, string]>) => ({ name, selector: { select: { multiple: true, reorder: true, mode: 'list',
+    // The full card's three sections, in their fixed order, each with its own blocks only.
+    const list = (name: string, options: Array<[string, string]>) => ({ name, selector: { select: { multiple: true, reorder: true, mode: 'list',
       options: options.map(([value, label]) => ({ value, label })) } } });
     return [...place, format, look,
-      group('Contenu', 'mdi:view-list-outline', [fullBlocks], true),
-      group('Sections', 'mdi:view-agenda-outline', [
-        inside('today_blocks', [['comfort', 'Ressenti'], ['rain', 'Pluie'], ['wind', 'Vent'], ['pressure', 'Pression'], ['extras', 'Pastilles (humidité, rosée, soleil…)']]),
-        ...toggles('collapse_today'),
-        inside('forecast_blocks', [['hours', 'Les 18 prochaines heures (courbe)'], ['days', 'Les 7 prochains jours (tableau)']]),
-        ...toggles('collapse_predictions'),
-        inside('air_blocks', [['air', 'Air extérieur'], ['pollen', 'Pollens'], ['tomorrow', 'Demain aussi']])]),
-      group('Air et pollens', 'mdi:flower-pollen-outline', toggles('show_atmo_details', 'show_atmo_tomorrow'))];
+      group('Bandeau intelligent', 'mdi:view-day-outline', [list('banner_blocks', [['bulletin', 'Bulletin du jour'], ['events', 'Événements (la frise)'],
+        ['moments', 'Les prochains moments (soir, nuit, matin…)'], ['forecast', 'Prévisions en tuiles (heures ou jours)']])], true),
+      group('Aujourd’hui', 'mdi:calendar-today', [list('today_blocks', [['rain', 'Pluie'], ['wind', 'Vent'], ['pressure', 'Pression'], ['comfort', 'Ressenti'],
+        ['extras', 'Pastilles (humidité, rosée, soleil…)'], ['air', 'Air et pollens du jour']]), ...toggles('collapse_today')]),
+      group('Prévisions', 'mdi:calendar-week', [list('forecast_blocks', [['hours', 'Les 18 prochaines heures'], ['days', 'Les 7 prochains jours'],
+        ['air', 'Air et pollens de demain']]), ...toggles('collapse_predictions')]),
+      group('Air et pollens', 'mdi:flower-pollen-outline', toggles('show_atmo_details'))];
   }
   protected render() {
     if (!this.config || !this.hass) return nothing;
     // An older card shows what its switches allowed: the lists start from there.
-    const c = this.config, banner = c.show_synthesis !== false;
-    const blocks = { ...(c.show_bulletin === false ? { tile_blocks: ['events'] } : {}),
-      full_blocks: [...(banner && c.show_bulletin !== false ? ['bulletin'] : []), ...(banner && c.smart_brief !== false ? ['events'] : []),
-        ...(c.show_today !== false ? ['today'] : []), ...(c.show_predictions !== false ? ['predictions'] : []), 'air'] };
+    const s = sections(this.config);
+    const blocks = { ...(this.config.show_bulletin === false ? { tile_blocks: ['events'] } : {}),
+      banner_blocks: s.banner, today_blocks: s.today, forecast_blocks: s.forecasts };
     const data = Object.fromEntries(Object.entries({ ...defaults, ...blocks, ...this.config }).filter(([key]) => key !== 'type'));
     const one = this.entries?.length === 1 ? this.entries[0] : undefined;
     return html`

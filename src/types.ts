@@ -21,12 +21,10 @@ export interface HomeAssistant {
 
 /** A block of the unfolded tile. */
 export type TileBlock = 'bulletin' | 'events' | 'moments' | 'forecast';
-/** A block of the full card: bulletin, events, moments and forecast (the tile's hours/days strip) go in the banner while they come
- *  first; today, predictions (the curve and the 7 days) and air are sections. */
-export type FullBlock = 'bulletin' | 'events' | 'moments' | 'forecast' | 'today' | 'predictions' | 'air';
-export type TodayBlock = 'comfort' | 'rain' | 'wind' | 'pressure' | 'extras';
-export type ForecastBlock = 'hours' | 'days';
-export type AirBlock = 'air' | 'pollen' | 'tomorrow';
+/** The full card's three sections, always in this order, each with its own blocks: nothing moves from one to another. */
+export type BannerBlock = 'bulletin' | 'events' | 'moments' | 'forecast';
+export type TodayBlock = 'comfort' | 'rain' | 'wind' | 'pressure' | 'extras' | 'air';
+export type ForecastBlock = 'hours' | 'days' | 'air';
 
 /** The card's own settings: what it shows and how. Its sources (weather, station, air) are set in the Niak Weather integration. */
 export interface WeatherCardConfig {
@@ -40,13 +38,13 @@ export interface WeatherCardConfig {
   format?: 'full' | 'intermediate' | 'tile' | 'mini' | 'forecast' | 'rain' | 'alert';
   /** What the unfolded tile shows, in this order. Default: the bulletin, then the events. */
   tile_blocks?: TileBlock[];
-  /** What the full card shows, exactly in this order. The banner (place, vigilance, weather now) always leads and takes the blocks
-   *  that come before the first section; a banner block placed after a section shows there. Unset, the switches (show_*) decide. */
-  full_blocks?: FullBlock[];
-  /** Inside the sections, what shows and in which order. Unset: everything. */
+  /** Full card, what each section shows and in which order; an empty list removes the section. Unset, the older switches decide.
+   *  The banner: bulletin, events (timeline), moments, forecast (the hours/days tiles); the place, vigilance and weather now always lead. */
+  banner_blocks?: BannerBlock[];
+  /** « Aujourd'hui »: comfort (feel), rain, wind, pressure, extras (chips), air (today's air and pollens). */
   today_blocks?: TodayBlock[];
+  /** « Prévisions »: hours (the 18-hour curve), days (the 7-day table), air (tomorrow's air and pollens). */
   forecast_blocks?: ForecastBlock[];
-  air_blocks?: AirBlock[];
   /** What a long press on the tile (a tap on mini and alert) does: popup, the full weather over the page; page, opens weather_path;
    *  none, nothing (the tile then only folds and unfolds). Default: page when weather_path is set, popup otherwise. */
   hold_action?: 'popup' | 'page' | 'none';

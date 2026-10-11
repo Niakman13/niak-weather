@@ -86,7 +86,7 @@ function pressurePanel(p: PressureView): TemplateResult {
   </section>`;
 }
 
-const TODAY: TodayBlock[] = ['comfort', 'rain', 'wind', 'pressure', 'extras'];
+const TODAY: TodayBlock[] = ['comfort', 'rain', 'wind', 'pressure', 'extras', 'air'];
 
 export function renderToday(v: WeatherView, uid: string, station: boolean, air: TemplateResult | typeof nothing, blocks: TodayBlock[] = TODAY): TemplateResult {
   const panel = (b: TodayBlock) => b === 'rain' ? v.rain && rainPanel(v.rain) : b === 'wind' ? v.wind && windPanel(v.wind) : b === 'pressure' ? v.pressure && pressurePanel(v.pressure) : undefined;
@@ -100,9 +100,10 @@ export function renderToday(v: WeatherView, uid: string, station: boolean, air: 
     flush();
     if (b === 'comfort' && v.comfort) out.push(comfortPanel(v.comfort, uid, station));
     if (b === 'extras' && v.extras.length) out.push(html`<div class="nw-chips extras">${v.extras.map(chip)}</div>`);
+    if (b === 'air') out.push(air);
   }
   flush();
-  return html`${out}${air}`;
+  return html`${out}`;
 }
 
 export const todayStyles = css`
