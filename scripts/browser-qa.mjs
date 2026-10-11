@@ -103,7 +103,9 @@ try {
   // Keyboard: Enter folds, Shift+Enter opens the full card, Escape closes it.
   await tile.focus(); await page.keyboard.press('Enter'); await sleep(100);
   assert.equal((await state()).open, false, 'Enter folds');
-  await page.keyboard.press('Shift+Enter'); await sleep(200);
+  await page.keyboard.press('Shift+Enter');
+  // A slow machine (the release build) may take longer than 200 ms to open the window: wait for it, up to 2 s.
+  for (let i = 0; i < 20 && !(await state()).dialog; i++) await sleep(100);
   assert.equal((await state()).dialog, true, 'Shift+Enter opens the full card');
   await page.keyboard.press('Escape'); await sleep(200);
   assert.equal((await state()).dialog, false, 'Escape closes it');
