@@ -63,9 +63,11 @@ export function week(days: DayForecast[], source: string, entity: string): Templ
   </section>`;
 }
 
-export function renderForecasts(v: WeatherView, entity: string, uid: string, air: TemplateResult | typeof nothing): TemplateResult {
-  const chart = hoursChart(v.hours, v.provider, entity, uid), table = week(v.days, v.provider, entity);
-  return html`${chart !== nothing || table !== nothing ? html`<div class=${`panels${chart === nothing || table === nothing ? ' single' : ''}`}>${chart}${table}</div>`
+export function renderForecasts(v: WeatherView, entity: string, uid: string, air: TemplateResult | typeof nothing,
+                                blocks: Array<'hours' | 'days'> = ['hours', 'days']): TemplateResult {
+  // The curve and the table chosen, in their order.
+  const panels = blocks.map(b => b === 'hours' ? hoursChart(v.hours, v.provider, entity, uid) : week(v.days, v.provider, entity)).filter(p => p !== nothing);
+  return html`${panels.length ? html`<div class=${`panels${panels.length === 1 ? ' single' : ''}`}>${panels}</div>`
     : html`<p class="nw-empty">Prévisions indisponibles pour le moment.</p>`}${air}`;
 }
 

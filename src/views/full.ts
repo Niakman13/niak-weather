@@ -1,10 +1,11 @@
 // The full card: the banner, then « Aujourd'hui » and « Prévisions », each folded or unfolded with a tap on its title.
 import { css, html, nothing, type TemplateResult } from 'lit';
 import type { WeatherView } from '../view';
-import type { FullBlock } from '../types';
+import type { AirBlock, ForecastBlock, FullBlock, TodayBlock } from '../types';
 import { renderAir } from './air';
 import { renderForecasts } from './forecasts';
-import { renderHero, type BannerBlock } from './hero';
+import { bulletinBlock, renderHero, type BannerBlock } from './hero';
+import { forecastStrip, frise, moments } from './tile';
 import { renderToday } from './today';
 
 export type SectionId = 'today' | 'predictions' | 'air';
@@ -15,6 +16,9 @@ export interface FullOptions {
   show: { synthesis: boolean; today: boolean; predictions: boolean };
   /** The blocks chosen, in their order; unset, `show` decides as before. */
   blocks?: FullBlock[];
+  today?: TodayBlock[]; forecasts?: ForecastBlock[]; air?: AirBlock[];
+  /** The hours/days strip: its tab and the switch between them. */
+  tab: 'hours' | 'days'; onTab: (tab: 'hours' | 'days') => void;
   folded: Record<SectionId, boolean>;
   onFold: (id: SectionId) => void;
 }
@@ -31,22 +35,28 @@ function section(id: SectionId, title: string, subtitle: string, o: FullOptions,
 }
 
 export function renderFull(v: WeatherView, o: FullOptions): TemplateResult {
+  const isBanner = (b: FullBlock): b is BannerBlock => b === 'bulletin' || b === 'events' || b === 'moments' || b === 'forecast';
+  const draw = (b: BannerBlock) => b === 'bulletin' ? html`<div class="hero-bulletin">${bulletinBlock(v)}</div>` : b === 'events' ? frise(v)
+    : b === 'moments' ? moments(v) : forecastStrip(v, o.tab, o.onTab);
+  const today = () => section('today', 'Aujourd’hui', v.comfort ? 'Mesures et ressenti' : 'Conditions actuelles', o,
+    () => renderToday(v, o.uid, o.station, o.blocks ? nothing : renderAir(v.air.today), o.today));
+  const predictions = () => section('predictions', 'Prévisions', v.forecastSource, o,
+    () => renderForecasts(v, o.entity, o.uid, o.blocks ? nothing : renderAir(v.air.tomorrow), o.forecasts));
   if (o.blocks) {
-    const banner = o.blocks.filter((b): b is BannerBlock => b === 'bulletin' || b === 'events' || b === 'moments');
-    const air = [...v.air.today, ...v.air.tomorrow];
-    return html`<div class="nw-full">${renderHero(v, o.sky, o.uid, banner)}
-      ${o.blocks.map(b => b === 'today' ? section('today', 'Aujourd’hui', v.comfort ? 'Mesures et ressenti' : 'Conditions actuelles', o,
-          () => renderToday(v, o.uid, o.station, nothing))
-        : b === 'predictions' ? section('predictions', 'Prévisions', v.forecastSource, o, () => renderForecasts(v, o.entity, o.uid, nothing))
-        : b === 'air' && air.length ? section('air', 'Air et pollens', 'Aujourd’hui et demain', o, () => renderAir(air) as TemplateResult)
+    // The banner takes the blocks that come before the first section; after it, each block shows exactly where the list puts it.
+    const first = o.blocks.findIndex(b => !isBanner(b)), lead = (first < 0 ? o.blocks : o.blocks.slice(0, first)) as BannerBlock[];
+    const chosen = o.air ?? ['air', 'pollen', 'tomorrow'];
+    const air = [...v.air.today, ...(chosen.includes('tomorrow') ? v.air.tomorrow : [])].filter(p => chosen.includes(p.kind));
+    return html`<div class="nw-full">${renderHero(v, o.sky, o.uid, lead, draw)}
+      ${(first < 0 ? [] : o.blocks.slice(first)).map(b => isBanner(b) ? html`<section class="fm-section fm-plain">${draw(b)}</section>`
+        : b === 'today' ? today() : b === 'predictions' ? predictions()
+        : b === 'air' && air.length ? section('air', 'Air et pollens', chosen.includes('tomorrow') ? 'Aujourd’hui et demain' : 'Aujourd’hui', o, () => renderAir(air) as TemplateResult)
         : nothing)}</div>`;
   }
   return html`<div class="nw-full">
-    ${o.show.synthesis ? renderHero(v, o.sky, o.uid) : nothing}
-    ${o.show.today ? section('today', 'Aujourd’hui', v.comfort ? 'Mesures et ressenti' : 'Conditions actuelles', o,
-      () => renderToday(v, o.uid, o.station, renderAir(v.air.today))) : nothing}
-    ${o.show.predictions ? section('predictions', 'Prévisions', v.forecastSource, o,
-      () => renderForecasts(v, o.entity, o.uid, renderAir(v.air.tomorrow))) : nothing}
+    ${o.show.synthesis ? renderHero(v, o.sky, o.uid, ['bulletin', 'events'], draw) : nothing}
+    ${o.show.today ? today() : nothing}
+    ${o.show.predictions ? predictions() : nothing}
   </div>`;
 }
 
@@ -63,5 +73,7 @@ export const fullStyles = css`
   .fm-fold ha-icon { --mdc-icon-size:20px; transition:transform .3s; }
   .folded .fm-fold ha-icon { transform:rotate(-90deg); }
   .fm-body { display:grid; gap:16px; margin-top:16px; }
+  /* A banner block placed after a section: on the card's own background, without the sky. */
+  .fm-plain > .hero-bulletin, .fm-plain > .nw-events, .fm-plain > .block { display:flex; flex-direction:column; gap:6px; }
   @container (max-width:560px) { .fm-section { padding:16px 14px 18px; } }
 `;

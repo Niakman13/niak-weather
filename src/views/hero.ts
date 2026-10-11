@@ -3,7 +3,7 @@
 import { css, html, nothing, type TemplateResult } from 'lit';
 import type { WeatherView } from '../view';
 import { alertPill, info, label, nf, tint, unbroken } from '../ui/parts';
-import { frise, moments, nowBlock } from './tile';
+import { nowBlock } from './tile';
 
 const GROUPS = [
   { key: 'official', title: 'Vigilance officielle' },
@@ -27,16 +27,16 @@ function briefInfo(v: WeatherView, uid: string): TemplateResult {
   });
 }
 
-export type BannerBlock = 'bulletin' | 'events' | 'moments';
-const DEFAULT_BANNER: BannerBlock[] = ['bulletin', 'events'];
+export type BannerBlock = 'bulletin' | 'events' | 'moments' | 'forecast';
 
-export function renderHero(v: WeatherView, sky: TemplateResult, uid: string, blocks: BannerBlock[] = DEFAULT_BANNER): TemplateResult {
+/** The banner: the place, the vigilance and the weather now, then its blocks drawn by `draw`, in their order. */
+export function renderHero(v: WeatherView, sky: TemplateResult, uid: string, blocks: BannerBlock[], draw: (b: BannerBlock) => unknown): TemplateResult {
   const trend = v.now.trend === undefined ? nothing : html`<span class="nw-chip" style=${tint(v.now.trend > 0 ? 'heat' : 'cold')}
     title=${v.now.trend > 0 ? 'La température monte' : 'La température baisse'}><ha-icon icon=${v.now.trend > 0 ? 'mdi:arrow-top-right' : 'mdi:arrow-bottom-right'}></ha-icon>${v.now.trend > 0 ? '+' : '−'}${nf(Math.abs(v.now.trend))} °C/h</span>`;
   const season = v.season.news ? html`<span class="nw-chip" style=${tint('calm')} title=${v.season.tip}><ha-icon icon=${v.season.info.icon}></ha-icon>${v.season.news}</span>` : nothing;
   const official = v.alerts.filter(a => a.official);
   // The bulletin sits next to the weather now when it comes first; the other blocks follow under them, in their order.
-  const bulletin = v.bulletin ? html`${label('Bulletin du jour')}<p class="nw-bulletin">${unbroken(v.bulletin.summary)}</p>` : nothing;
+  const bulletin = bulletinBlock(v);
   const rest = blocks[0] === 'bulletin' ? blocks.slice(1) : blocks;
   return html`<section class=${`nw-hero${v.now.darkSky ? ' dark-sky' : ''}`} aria-label="Synthèse">
     <div class="sky" aria-hidden="true">${sky}</div><div class="veil" aria-hidden="true"></div>
@@ -46,9 +46,12 @@ export function renderHero(v: WeatherView, sky: TemplateResult, uid: string, blo
       ${blocks[0] === 'bulletin' ? bulletin : nothing}
     </div>
     ${nowBlock(v, true, trend)}
-    ${rest.length ? html`<div class="hero-blocks">${rest.map(b => b === 'bulletin' ? html`<div class="hero-bulletin">${bulletin}</div>` : b === 'events' ? frise(v) : moments(v))}</div>` : nothing}
+    ${rest.length ? html`<div class="hero-blocks">${rest.map(draw)}</div>` : nothing}
   </section>`;
 }
+
+/** « Bulletin du jour » and its text. */
+export const bulletinBlock = (v: WeatherView) => v.bulletin ? html`${label('Bulletin du jour')}<p class="nw-bulletin">${unbroken(v.bulletin.summary)}</p>` : nothing;
 
 export const heroStyles = css`
   .nw-hero { position:relative; isolation:isolate; overflow:hidden; padding:20px 24px 24px; display:grid; grid-template-columns:minmax(0,1fr) auto;

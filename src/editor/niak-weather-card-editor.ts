@@ -6,7 +6,8 @@ import type { HomeAssistant, WeatherCardConfig } from '../types';
 /** The card's editor: which place, then how to show it. The sources are set in the integration. */
 const defaults: Partial<WeatherCardConfig> = { format: 'full', show_synthesis: true, show_bulletin: true, show_today: true, show_predictions: true,
   collapse_today: false, collapse_predictions: false, smart_brief: true, weather_animations: true, weather_animation_quality: 'standard',
-  show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true, tile_blocks: ['bulletin', 'events'], forecast_tab: 'hours' };
+  show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true, tile_blocks: ['bulletin', 'events'], forecast_tab: 'hours',
+  today_blocks: ['comfort', 'rain', 'wind', 'pressure', 'extras'], forecast_blocks: ['hours', 'days'], air_blocks: ['air', 'pollen', 'tomorrow'] };
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   entry_id: 'Lieu', format: 'Format',
   weather_animations: 'Ciel animé et halos', weather_animation_quality: 'Qualité des animations', glass_effect: 'Effet verre dépoli',
@@ -16,6 +17,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   show_atmo_details: 'Détail des polluants et des pollens', show_atmo_tomorrow: 'Air et pollens de demain',
   weather_path: 'Page à ouvrir',
   tile_blocks: 'Contenu de la tuile dépliée', forecast_tab: 'Prévisions affichées au départ', full_blocks: 'Contenu de la carte',
+  today_blocks: 'Contenu d’Aujourd’hui', forecast_blocks: 'Contenu des Prévisions détaillées', air_blocks: 'Contenu d’Air et pollens',
   hold_action: 'Appui long',
 };
 /** One line under the settings that need it. */
@@ -26,7 +28,8 @@ const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
   smart_brief: 'La vigilance, l’alerte mesurée chez vous et la frise des événements. Coupé, la frise ne montre que le ciel prévu.',
   weather_path: 'Le chemin de la page, par exemple /meteo ou /lovelace/meteo.',
   tile_blocks: 'Cochez ce qui s’affiche quand la tuile est dépliée, et faites glisser pour changer l’ordre.',
-  full_blocks: 'Le lieu, la vigilance et la météo du moment restent en tête. Le bulletin, les événements et les moments vont dans le bandeau ; Aujourd’hui, Prévisions et Air et pollens suivent, dans l’ordre choisi.',
+  full_blocks: 'Affiché exactement dans cet ordre. Le lieu, la vigilance et la météo du moment restent en tête ; ce qui vient avant la première section va dans le bandeau, sur le ciel.',
+  air_blocks: 'Avec Air et pollens dans le contenu de la carte.',
   forecast_tab: 'Un appui sur Heures ou Jours change l’affichage ; ce choix est gardé sur chaque appareil.',
   hold_action: 'La météo complète par-dessus la page, une page de votre tableau de bord, ou rien.',
 };
@@ -103,11 +106,19 @@ export class NiakWeatherCardEditor extends LitElement {
       group('Fonctionnalités', 'mdi:tune-variant', path)];
     const fullBlocks = { name: 'full_blocks', selector: { select: { multiple: true, reorder: true, mode: 'list', options: [
       { value: 'bulletin', label: 'Bulletin du jour' }, { value: 'events', label: 'Événements (la frise)' },
-      { value: 'moments', label: 'Les prochains moments (soir, nuit, matin…)' }, { value: 'today', label: 'Aujourd’hui (mesures et ressenti)' },
-      { value: 'predictions', label: 'Prévisions (heures et jours)' }, { value: 'air', label: 'Air et pollens' }] } } };
+      { value: 'moments', label: 'Les prochains moments (soir, nuit, matin…)' }, { value: 'forecast', label: 'Prévisions en tuiles (heures ou jours)' },
+      { value: 'today', label: 'Aujourd’hui (mesures et ressenti)' }, { value: 'predictions', label: 'Prévisions détaillées (courbe 18 h et 7 jours)' },
+      { value: 'air', label: 'Air et pollens' }] } } };
+    const inside = (name: string, options: Array<[string, string]>) => ({ name, selector: { select: { multiple: true, reorder: true, mode: 'list',
+      options: options.map(([value, label]) => ({ value, label })) } } });
     return [...place, format, look,
       group('Contenu', 'mdi:view-list-outline', [fullBlocks], true),
-      group('Sections', 'mdi:view-agenda-outline', toggles('collapse_today', 'collapse_predictions')),
+      group('Sections', 'mdi:view-agenda-outline', [
+        inside('today_blocks', [['comfort', 'Ressenti'], ['rain', 'Pluie'], ['wind', 'Vent'], ['pressure', 'Pression'], ['extras', 'Pastilles (humidité, rosée, soleil…)']]),
+        ...toggles('collapse_today'),
+        inside('forecast_blocks', [['hours', 'Les 18 prochaines heures (courbe)'], ['days', 'Les 7 prochains jours (tableau)']]),
+        ...toggles('collapse_predictions'),
+        inside('air_blocks', [['air', 'Air extérieur'], ['pollen', 'Pollens'], ['tomorrow', 'Demain aussi']])]),
       group('Air et pollens', 'mdi:flower-pollen-outline', toggles('show_atmo_details', 'show_atmo_tomorrow'))];
   }
   protected render() {

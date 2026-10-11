@@ -1,6 +1,7 @@
 // « Aujourd'hui »: the feel, then rain, wind and pressure measured at home, each in the same panel model.
 import { css, html, nothing, svg, type TemplateResult } from 'lit';
 import type { ComfortView, PressureView, RainView, Stat, WeatherView, WindView } from '../view';
+import type { TodayBlock } from '../types';
 import { chartEnd, chartY, curvePaths, extremePills, type ChartPaths, type ChartPill } from '../ui/charts';
 import { chip, entity, info, label, legend, nf, panelHead, tempColor } from '../ui/parts';
 
@@ -85,12 +86,23 @@ function pressurePanel(p: PressureView): TemplateResult {
   </section>`;
 }
 
-export function renderToday(v: WeatherView, uid: string, station: boolean, air: TemplateResult | typeof nothing): TemplateResult {
-  const measures = [v.rain && rainPanel(v.rain), v.wind && windPanel(v.wind), v.pressure && pressurePanel(v.pressure)].filter(Boolean);
-  return html`${v.comfort ? comfortPanel(v.comfort, uid, station) : nothing}
-    ${measures.length ? html`<div class=${`grid3 n${measures.length}`}>${measures}</div>` : nothing}
-    ${v.extras.length ? html`<div class="nw-chips extras">${v.extras.map(chip)}</div>` : nothing}
-    ${air}`;
+const TODAY: TodayBlock[] = ['comfort', 'rain', 'wind', 'pressure', 'extras'];
+
+export function renderToday(v: WeatherView, uid: string, station: boolean, air: TemplateResult | typeof nothing, blocks: TodayBlock[] = TODAY): TemplateResult {
+  const panel = (b: TodayBlock) => b === 'rain' ? v.rain && rainPanel(v.rain) : b === 'wind' ? v.wind && windPanel(v.wind) : b === 'pressure' ? v.pressure && pressurePanel(v.pressure) : undefined;
+  // Measures that follow each other share one grid; the feel and the chips stand on their own.
+  const out: unknown[] = [];
+  let run: TemplateResult[] = [];
+  const flush = () => { if (run.length) out.push(html`<div class=${`grid3 n${run.length}`}>${run}</div>`); run = []; };
+  for (const b of blocks) {
+    const p = panel(b);
+    if (p) { run.push(p); continue; }
+    flush();
+    if (b === 'comfort' && v.comfort) out.push(comfortPanel(v.comfort, uid, station));
+    if (b === 'extras' && v.extras.length) out.push(html`<div class="nw-chips extras">${v.extras.map(chip)}</div>`);
+  }
+  flush();
+  return html`${out}${air}`;
 }
 
 export const todayStyles = css`
