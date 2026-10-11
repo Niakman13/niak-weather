@@ -3,7 +3,7 @@
 import { css, html, nothing, type TemplateResult } from 'lit';
 import type { WeatherView } from '../view';
 import { alertPill, info, label, nf, tint, unbroken } from '../ui/parts';
-import { frise, nowBlock } from './tile';
+import { frise, moments, nowBlock } from './tile';
 
 const GROUPS = [
   { key: 'official', title: 'Vigilance officielle' },
@@ -27,26 +27,32 @@ function briefInfo(v: WeatherView, uid: string): TemplateResult {
   });
 }
 
-export function renderHero(v: WeatherView, sky: TemplateResult, uid: string): TemplateResult {
+export type BannerBlock = 'bulletin' | 'events' | 'moments';
+const DEFAULT_BANNER: BannerBlock[] = ['bulletin', 'events'];
+
+export function renderHero(v: WeatherView, sky: TemplateResult, uid: string, blocks: BannerBlock[] = DEFAULT_BANNER): TemplateResult {
   const trend = v.now.trend === undefined ? nothing : html`<span class="nw-chip" style=${tint(v.now.trend > 0 ? 'heat' : 'cold')}
     title=${v.now.trend > 0 ? 'La température monte' : 'La température baisse'}><ha-icon icon=${v.now.trend > 0 ? 'mdi:arrow-top-right' : 'mdi:arrow-bottom-right'}></ha-icon>${v.now.trend > 0 ? '+' : '−'}${nf(Math.abs(v.now.trend))} °C/h</span>`;
   const season = v.season.news ? html`<span class="nw-chip" style=${tint('calm')} title=${v.season.tip}><ha-icon icon=${v.season.info.icon}></ha-icon>${v.season.news}</span>` : nothing;
   const official = v.alerts.filter(a => a.official);
+  // The bulletin sits next to the weather now when it comes first; the other blocks follow under them, in their order.
+  const bulletin = v.bulletin ? html`${label('Bulletin du jour')}<p class="nw-bulletin">${unbroken(v.bulletin.summary)}</p>` : nothing;
+  const rest = blocks[0] === 'bulletin' ? blocks.slice(1) : blocks;
   return html`<section class=${`nw-hero${v.now.darkSky ? ' dark-sky' : ''}`} aria-label="Synthèse">
     <div class="sky" aria-hidden="true">${sky}</div><div class="veil" aria-hidden="true"></div>
     <header class="fm-head"><h2>Synthèse</h2>${briefInfo(v, uid)}<span>${[v.location, v.dateLabel].filter(Boolean).join(' · ')}</span>${season}</header>
     <div class="hero-main">
       ${official.length ? html`<div class="nw-alerts">${official.map(a => alertPill(a))}</div>` : nothing}
-      ${v.bulletin ? html`${label('Bulletin du jour')}<p class="nw-bulletin">${unbroken(v.bulletin.summary)}</p>` : nothing}
+      ${blocks[0] === 'bulletin' ? bulletin : nothing}
     </div>
     ${nowBlock(v, true, trend)}
-    ${frise(v)}
+    ${rest.length ? html`<div class="hero-blocks">${rest.map(b => b === 'bulletin' ? html`<div class="hero-bulletin">${bulletin}</div>` : b === 'events' ? frise(v) : moments(v))}</div>` : nothing}
   </section>`;
 }
 
 export const heroStyles = css`
   .nw-hero { position:relative; isolation:isolate; overflow:hidden; padding:20px 24px 24px; display:grid; grid-template-columns:minmax(0,1fr) auto;
-    grid-template-areas:"head now" "main now" "frise frise"; column-gap:24px; row-gap:12px; color:var(--nw-fg); }
+    grid-template-areas:"head now" "main now" "blocks blocks"; column-gap:24px; row-gap:12px; color:var(--nw-fg); }
   .nw-hero .sky { --k:1; }
   /* The text side stays readable; the bottom fades softly towards the next section, light enough for the ground (puddles, snow) to show. */
   .nw-hero .veil { background:linear-gradient(90deg, var(--nw-bg) 0%, color-mix(in srgb, var(--nw-bg) 92%, transparent) 30%,
@@ -60,13 +66,14 @@ export const heroStyles = css`
   .nw-hero > .nw-now { grid-area:now; align-self:start; gap:4px; }
   .nw-hero > .nw-now .temp { font-size:var(--nw-fs-temp); }
   .nw-hero > .nw-now .temp small { font-size:var(--nw-fs-title); }
-  .nw-hero > .nw-events { grid-area:frise; margin-top:4px; display:flex; flex-direction:column; gap:6px; }
+  .hero-blocks { grid-area:blocks; display:flex; flex-direction:column; gap:14px; margin-top:4px; min-width:0; }
+  .hero-blocks > .nw-events, .hero-blocks > .hero-bulletin, .hero-blocks > .block { display:flex; flex-direction:column; gap:6px; }
   .brief-group { margin-top:10px; }
   .brief-group ul { list-style:none; margin:4px 0 0; padding:0; display:grid; gap:4px; }
   .brief-group li { display:flex; align-items:flex-start; gap:7px; font-size:var(--nw-fs-small); }
   .brief-group li ha-icon { --mdc-icon-size:15px; color:var(--nw-fg2); margin-top:1px; }
   @media (prefers-reduced-motion:reduce) { .nw-hero .nw-bulletin { animation:none; } }
   @container (max-width:650px) {
-    .nw-hero { grid-template-columns:minmax(0,1fr); grid-template-areas:"head" "now" "main" "frise"; padding:16px 14px 18px; }
+    .nw-hero { grid-template-columns:minmax(0,1fr); grid-template-areas:"head" "now" "main" "blocks"; padding:16px 14px 18px; }
   }
 `;

@@ -1,17 +1,20 @@
 // The full card: the banner, then « Aujourd'hui » and « Prévisions », each folded or unfolded with a tap on its title.
 import { css, html, nothing, type TemplateResult } from 'lit';
 import type { WeatherView } from '../view';
+import type { FullBlock } from '../types';
 import { renderAir } from './air';
 import { renderForecasts } from './forecasts';
-import { renderHero } from './hero';
+import { renderHero, type BannerBlock } from './hero';
 import { renderToday } from './today';
 
-export type SectionId = 'today' | 'predictions';
+export type SectionId = 'today' | 'predictions' | 'air';
 export interface FullOptions {
   sky: TemplateResult; uid: string; entity: string;
   /** A local thermometer: the feel is compared with it rather than with the bulletin. */
   station: boolean;
   show: { synthesis: boolean; today: boolean; predictions: boolean };
+  /** The blocks chosen, in their order; unset, `show` decides as before. */
+  blocks?: FullBlock[];
   folded: Record<SectionId, boolean>;
   onFold: (id: SectionId) => void;
 }
@@ -28,6 +31,16 @@ function section(id: SectionId, title: string, subtitle: string, o: FullOptions,
 }
 
 export function renderFull(v: WeatherView, o: FullOptions): TemplateResult {
+  if (o.blocks) {
+    const banner = o.blocks.filter((b): b is BannerBlock => b === 'bulletin' || b === 'events' || b === 'moments');
+    const air = [...v.air.today, ...v.air.tomorrow];
+    return html`<div class="nw-full">${renderHero(v, o.sky, o.uid, banner)}
+      ${o.blocks.map(b => b === 'today' ? section('today', 'Aujourd’hui', v.comfort ? 'Mesures et ressenti' : 'Conditions actuelles', o,
+          () => renderToday(v, o.uid, o.station, nothing))
+        : b === 'predictions' ? section('predictions', 'Prévisions', v.forecastSource, o, () => renderForecasts(v, o.entity, o.uid, nothing))
+        : b === 'air' && air.length ? section('air', 'Air et pollens', 'Aujourd’hui et demain', o, () => renderAir(air) as TemplateResult)
+        : nothing)}</div>`;
+  }
   return html`<div class="nw-full">
     ${o.show.synthesis ? renderHero(v, o.sky, o.uid) : nothing}
     ${o.show.today ? section('today', 'Aujourd’hui', v.comfort ? 'Mesures et ressenti' : 'Conditions actuelles', o,

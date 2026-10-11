@@ -21,6 +21,8 @@ export interface HomeAssistant {
 
 /** A block of the unfolded tile. */
 export type TileBlock = 'bulletin' | 'events' | 'moments' | 'forecast';
+/** A block of the full card: the first three go in the banner, the others are its sections. */
+export type FullBlock = 'bulletin' | 'events' | 'moments' | 'today' | 'predictions' | 'air';
 
 /** The card's own settings: what it shows and how. Its sources (weather, station, air) are set in the Niak Weather integration. */
 export interface WeatherCardConfig {
@@ -34,6 +36,9 @@ export interface WeatherCardConfig {
   format?: 'full' | 'intermediate' | 'tile' | 'mini' | 'forecast' | 'rain' | 'alert';
   /** What the unfolded tile shows, in this order. Default: the bulletin, then the events. */
   tile_blocks?: TileBlock[];
+  /** What the full card shows, in this order: in the banner (bulletin, events, moments), then its sections (today, predictions, air).
+   *  Unset, the switches of the full card (show_*) decide, as before. */
+  full_blocks?: FullBlock[];
   /** What a long press on the tile (a tap on mini and alert) does: popup, the full weather over the page; page, opens weather_path;
    *  none, nothing (the tile then only folds and unfolds). Default: page when weather_path is set, popup otherwise. */
   hold_action?: 'popup' | 'page' | 'none';

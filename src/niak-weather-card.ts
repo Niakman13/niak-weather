@@ -56,7 +56,7 @@ export class NiakWeatherCard extends LitElement {
   @state() private open = false;
   /** The full card is shown over the page, after a long press on the tile. */
   @state() private dialogOpen = false;
-  @state() private folded: Record<SectionId, boolean> = { today: false, predictions: false };
+  @state() private folded: Record<SectionId, boolean> = { today: false, predictions: false, air: false };
   private readonly uid = `nw${++instances}`;
   private subscription?: Promise<() => Promise<void>>;
   private subscribedTo?: string;
@@ -68,7 +68,7 @@ export class NiakWeatherCard extends LitElement {
     if (old && JSON.stringify(old) === JSON.stringify(next)) return;
     this.config = next;
     if (!old || old.collapse_today !== next.collapse_today || old.collapse_predictions !== next.collapse_predictions)
-      this.folded = { today: next.collapse_today === true, predictions: next.collapse_predictions === true };
+      this.folded = { today: next.collapse_today === true, predictions: next.collapse_predictions === true, air: false };
     if (!old || old.format !== next.format || old.entry_id !== next.entry_id) this.open = this.remembered(next);
     if (!old || old.forecast_tab !== next.forecast_tab || old.entry_id !== next.entry_id) this.tab = this.rememberedTab(next);
     // Another place: its own view, from a new subscription.
@@ -182,6 +182,7 @@ export class NiakWeatherCard extends LitElement {
       .quality=${config.weather_animation_quality ?? (this.tile && LIGHT_SKY.matches ? 'low' : 'standard')} .wind=${view.now.wind ?? 0} .season=${view.season.info.season}></niak-weather-sky>`;
     const full = () => renderFull(view, { sky, uid: this.uid, entity: view.weatherEntity, station: view.station,
       show: { synthesis: config.show_synthesis !== false, today: config.show_today !== false, predictions: config.show_predictions !== false },
+      blocks: config.full_blocks?.length ? config.full_blocks : undefined,
       folded: this.folded, onFold: id => { this.folded = { ...this.folded, [id]: !this.folded[id] }; } });
     const title = `Météo${view.location ? ` · ${view.location}` : ''}`;
     const dialog = () => this.dialogOpen ? html`<dialog class="nw-dialog" aria-label=${title} @close=${() => { this.dialogOpen = false; }} @click=${this.openEntity} @keydown=${this.entityKey}>

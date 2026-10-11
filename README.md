@@ -46,7 +46,10 @@ Dans **Ajouter une carte**, cherchez « Niak Weather » : chaque carte a son ape
 | **Pluie** (`rain`) | La pluie à venir (dans l’heure, sur 6 h, la prochaine averse), celle qui tombe et celle des 7 derniers jours. |
 | **Alerte** (`alert`) | Visible seulement en cas de vigilance, d’alerte mesurée chez vous ou de point sérieux à venir. Cachée quand tout est calme. Un appui ouvre la carte complète. |
 
-**Le contenu de la tuile dépliée se choisit**, dans l’ordre voulu : le bulletin du jour, les événements (la frise), les prochains moments (cet après-midi, ce soir, cette nuit, demain matin) et les prévisions avec **Heures / Jours**. Par défaut : le bulletin et les événements.
+**Le contenu se choisit**, dans l’ordre voulu :
+
+- **Tuile dépliée** : le bulletin du jour, les événements (la frise), les prochains moments (cet après-midi, ce soir, cette nuit, demain matin) et les prévisions avec **Heures / Jours** (température, pluie, vent et sa direction). Par défaut : le bulletin et les événements.
+- **Complète** : le bulletin, les événements et les moments dans le bandeau, puis les sections Aujourd’hui, Prévisions et Air et pollens.
 
 ![Niak Weather — tuile pleine et demi-largeur repliées, puis tuile dépliée, par temps d’orage avec vigilance jaune](docs/images/niak-weather-formats.png)
 
@@ -89,6 +92,7 @@ Tout se règle dans l’éditeur de la carte, rangé en blocs : le lieu et le fo
 | --- | --- | --- | --- |
 | En haut | `entry_id` | — | Le lieu à afficher, s’il y en a plusieurs dans l’intégration |
 | En haut | `format` | `full` | `full`, `tile`, `intermediate`, `mini`, `forecast`, `rain` ou `alert` |
+| Contenu (complète) | `full_blocks` | — | Ce que montre la carte complète, dans l’ordre : dans le bandeau `bulletin`, `events`, `moments`, puis les sections `today`, `predictions`, `air`. Le lieu, la vigilance et la météo du moment restent en tête. Sans cette liste, les interrupteurs ci-dessous décident |
 | Contenu (tuile) | `tile_blocks` | `bulletin`, `events` | Ce que montre la tuile dépliée, dans l’ordre : `bulletin`, `events`, `moments`, `forecast` |
 | Contenu (tuile), Prévisions | `forecast_tab` | `hours` | Les prévisions s’ouvrent sur les heures (`hours`) ou les jours (`days`). Un appui sur Heures / Jours change l’affichage, gardé sur chaque appareil |
 | Visuel et performance | `weather_animations` | `true` | Ciel animé, défilement et halos. Coupées, le décor reste fixe |

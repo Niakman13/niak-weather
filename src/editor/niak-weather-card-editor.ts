@@ -15,7 +15,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   show_predictions: 'Section Prévisions', collapse_predictions: 'Prévisions repliées au départ',
   show_atmo_details: 'Détail des polluants et des pollens', show_atmo_tomorrow: 'Air et pollens de demain',
   weather_path: 'Page à ouvrir',
-  tile_blocks: 'Contenu de la tuile dépliée', forecast_tab: 'Prévisions affichées au départ',
+  tile_blocks: 'Contenu de la tuile dépliée', forecast_tab: 'Prévisions affichées au départ', full_blocks: 'Contenu de la carte',
   hold_action: 'Appui long',
 };
 /** One line under the settings that need it. */
@@ -26,6 +26,7 @@ const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
   smart_brief: 'La vigilance, l’alerte mesurée chez vous et la frise des événements. Coupé, la frise ne montre que le ciel prévu.',
   weather_path: 'Le chemin de la page, par exemple /meteo ou /lovelace/meteo.',
   tile_blocks: 'Cochez ce qui s’affiche quand la tuile est dépliée, et faites glisser pour changer l’ordre.',
+  full_blocks: 'Le lieu, la vigilance et la météo du moment restent en tête. Le bulletin, les événements et les moments vont dans le bandeau ; Aujourd’hui, Prévisions et Air et pollens suivent, dans l’ordre choisi.',
   forecast_tab: 'Un appui sur Heures ou Jours change l’affichage ; ce choix est gardé sur chaque appareil.',
   hold_action: 'La météo complète par-dessus la page, une page de votre tableau de bord, ou rien.',
 };
@@ -100,15 +101,22 @@ export class NiakWeatherCardEditor extends LitElement {
     if (this.small) return [...place, format, look,
       group('Contenu', 'mdi:view-list-outline', [blocks, ...((this.config?.tile_blocks ?? []).includes('forecast') ? [tab] : [])], true),
       group('Fonctionnalités', 'mdi:tune-variant', path)];
+    const fullBlocks = { name: 'full_blocks', selector: { select: { multiple: true, reorder: true, mode: 'list', options: [
+      { value: 'bulletin', label: 'Bulletin du jour' }, { value: 'events', label: 'Événements (la frise)' },
+      { value: 'moments', label: 'Les prochains moments (soir, nuit, matin…)' }, { value: 'today', label: 'Aujourd’hui (mesures et ressenti)' },
+      { value: 'predictions', label: 'Prévisions (heures et jours)' }, { value: 'air', label: 'Air et pollens' }] } } };
     return [...place, format, look,
-      group('Bandeau', 'mdi:view-day-outline', toggles('show_synthesis', 'show_bulletin', 'smart_brief')),
-      group('Sections', 'mdi:view-agenda-outline', toggles('show_today', 'collapse_today', 'show_predictions', 'collapse_predictions')),
+      group('Contenu', 'mdi:view-list-outline', [fullBlocks], true),
+      group('Sections', 'mdi:view-agenda-outline', toggles('collapse_today', 'collapse_predictions')),
       group('Air et pollens', 'mdi:flower-pollen-outline', toggles('show_atmo_details', 'show_atmo_tomorrow'))];
   }
   protected render() {
     if (!this.config || !this.hass) return nothing;
-    // An older tile without its bulletin shows only the events: the list says so.
-    const blocks = this.config.show_bulletin === false ? { tile_blocks: ['events'] } : {};
+    // An older card shows what its switches allowed: the lists start from there.
+    const c = this.config, banner = c.show_synthesis !== false;
+    const blocks = { ...(c.show_bulletin === false ? { tile_blocks: ['events'] } : {}),
+      full_blocks: [...(banner && c.show_bulletin !== false ? ['bulletin'] : []), ...(banner && c.smart_brief !== false ? ['events'] : []),
+        ...(c.show_today !== false ? ['today'] : []), ...(c.show_predictions !== false ? ['predictions'] : []), 'air'] };
     const data = Object.fromEntries(Object.entries({ ...defaults, ...blocks, ...this.config }).filter(([key]) => key !== 'type'));
     const one = this.entries?.length === 1 ? this.entries[0] : undefined;
     return html`

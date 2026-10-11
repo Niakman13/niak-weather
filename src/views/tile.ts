@@ -3,7 +3,7 @@
 import { css, html, nothing, type TemplateResult } from 'lit';
 import type { BulletinPeriod, WeatherView } from '../view';
 import type { TileBlock } from '../types';
-import { alertPill, label, nf, tint, unbroken } from '../ui/parts';
+import { alertPill, label, nf, rose, tint, unbroken, windArrow } from '../ui/parts';
 import '../ui/ticker';
 import '../ui/frise';
 
@@ -25,6 +25,12 @@ function glassTile(title: string, icon: string, value: string, extra: unknown = 
 }
 /** Rain in the rain colour, or an empty line so the tiles keep the same height. */
 const rainLine = (mm: number, min = .1) => mm >= min ? html`<span class="nw-ink" style=${tint('rain')}>${nf(mm)} mm</span>` : html`<span class="nw-ink">&nbsp;</span>`;
+/** The wind: an arrow where it goes and its speed in km/h, the gusts in the tooltip; an empty line keeps the tiles level. */
+function windLine(wind?: number, bearing?: number, gust?: number): TemplateResult {
+  if (wind === undefined) return html`<span class="tile-wind">&nbsp;</span>`;
+  const tip = `Vent ${bearing === undefined ? '' : `du ${rose(bearing)} `}${nf(wind, 0)} km/h${gust !== undefined && gust > wind ? `, rafales ${nf(gust, 0)} km/h` : ''}`;
+  return html`<span class="tile-wind" title=${tip} aria-label=${tip}>${bearing === undefined ? nothing : windArrow(bearing)}${nf(wind, 0)}</span>`;
+}
 const temps = (p: BulletinPeriod) => p.tmin === undefined ? '—' : p.tmin === p.tmax ? `${p.tmin} °C` : `${p.tmin}–${p.tmax} °C`;
 
 /** The four moments of the day: evening, night, morning, afternoon. */
@@ -43,9 +49,10 @@ export function forecastStrip(v: WeatherView, tab: 'hours' | 'days', onTab: (tab
         <button type="button" aria-pressed=${shown === 'hours'} @click=${select('hours')} @pointerdown=${stopPress}>Heures</button>
         <button type="button" aria-pressed=${shown === 'days'} @click=${select('days')} @pointerdown=${stopPress}>Jours</button></span>` : nothing}</div>
     ${shown === 'hours'
-      ? html`<div class="hours">${hours.map(h => glassTile(`${h.hour} h`, h.icon, `${nf(h.temperature!, 0)}°`, rainLine(h.precipitation), h.conditionLabel))}</div>`
+      ? html`<div class="hours">${hours.map(h => glassTile(`${h.hour} h`, h.icon, `${nf(h.temperature!, 0)}°`,
+          html`${rainLine(h.precipitation)}${windLine(h.wind, h.bearing, h.gust)}`, h.conditionLabel))}</div>`
       : html`<div class="days">${days.map(d => glassTile(d.label, d.icon, d.high === undefined ? '—' : `${d.high}°`,
-          html`<span class="lo">${d.low === undefined ? '' : `${d.low}°`}</span>${rainLine(d.rain)}`, d.conditionLabel))}</div>`}</div>`;
+          html`<span class="lo">${d.low === undefined ? '' : `${d.low}°`}</span>${rainLine(d.rain)}${windLine(d.wind, d.bearing, d.gust)}`, d.conditionLabel))}</div>`}</div>`;
 }
 /** The hours/days switch must not start a long press on the card. */
 const stopPress = (e: Event) => e.stopPropagation();
@@ -149,6 +156,8 @@ export const tileStyles = css`
   .hours .nw-tile, .days .nw-tile { grid-template-columns:1fr; justify-items:center; text-align:center; padding:9px 6px; }
   .hours .nw-tile strong, .days .nw-tile strong { font-size:var(--nw-fs-text); }
   .days .lo { font-size:var(--nw-fs-small); font-weight:600; color:var(--nw-fg2); }
+  .tile-wind { display:inline-flex; align-items:center; justify-content:center; gap:3px; font-size:var(--nw-fs-small); color:var(--nw-fg2); white-space:nowrap; }
+  .tile-wind svg { width:10px; height:10px; fill:color-mix(in oklab, var(--nw-wind) 70%, var(--nw-fg)); }
   .block-title { display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .seg { display:inline-flex; padding:2px; border-radius:var(--nw-radius-pill); border:1px solid var(--nw-line); background:color-mix(in srgb, var(--nw-bg) 72%, transparent); }
   .seg button { font-size:var(--nw-fs-small); line-height:1; font-weight:600; border:0; background:none; color:var(--nw-fg2); padding:5px 10px; border-radius:var(--nw-radius-pill); cursor:pointer; }
