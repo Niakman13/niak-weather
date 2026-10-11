@@ -187,7 +187,8 @@ try {
     return { full: await run('full'), tile: await run('tile') };
   });
   for (const name of ['collapse_today', 'collapse_predictions']) assert.ok(editor.full.includes(name), `Full card setting ${name}`);
-  assert.ok(editor.tile.includes('weather_path') && !editor.tile.includes('collapse_today'), 'Tile settings');
+  // The tile's own settings: its blocks and its long press (the page's path only shows once « Ouvrir une page » is chosen).
+  assert.ok(editor.tile.includes('hold_action') && editor.tile.includes('tile_blocks') && !editor.tile.includes('collapse_today'), 'Tile settings');
   report.editor = editor;
 
   // 10. Without the integration, or before it is set up, the card says what to do instead of staying empty.
