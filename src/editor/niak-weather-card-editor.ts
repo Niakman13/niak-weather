@@ -6,7 +6,7 @@ import type { HomeAssistant, WeatherCardConfig } from '../types';
 /** The card's editor: which place, then how to show it. The sources are set in the integration. */
 const defaults: Partial<WeatherCardConfig> = { format: 'full', show_synthesis: true, show_bulletin: true, show_today: true, show_predictions: true,
   collapse_today: false, collapse_predictions: false, smart_brief: true, weather_animations: true, weather_animation_quality: 'standard',
-  show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true, tile_blocks: ['bulletin', 'events'], forecast_tab: 'hours', full_popup: true };
+  show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true, tile_blocks: ['bulletin', 'events'], forecast_tab: 'hours' };
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   entry_id: 'Lieu', format: 'Format',
   weather_animations: 'Ciel animé et halos', weather_animation_quality: 'Qualité des animations', glass_effect: 'Effet verre dépoli',
@@ -14,9 +14,9 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   show_today: 'Section Aujourd’hui', collapse_today: 'Aujourd’hui replié au départ',
   show_predictions: 'Section Prévisions', collapse_predictions: 'Prévisions repliées au départ',
   show_atmo_details: 'Détail des polluants et des pollens', show_atmo_tomorrow: 'Air et pollens de demain',
-  weather_path: 'Page ouverte par un appui long',
+  weather_path: 'Page à ouvrir',
   tile_blocks: 'Contenu de la tuile dépliée', forecast_tab: 'Prévisions affichées au départ',
-  full_popup: 'Appui long : météo complète en fenêtre',
+  hold_action: 'Appui long',
 };
 /** One line under the settings that need it. */
 const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
@@ -24,10 +24,10 @@ const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
   weather_animation_quality: 'Allégée : moins de gouttes, de flocons et de nuages.',
   glass_effect: 'Le flou demande beaucoup de ressources : à couper sur un appareil lent. Coupé, le verre devient plus opaque.',
   smart_brief: 'La vigilance, l’alerte mesurée chez vous et la frise des événements. Coupé, la frise ne montre que le ciel prévu.',
-  weather_path: 'Par exemple /meteo. Vide : l’appui long ouvre la carte complète.',
+  weather_path: 'Le chemin de la page, par exemple /meteo ou /lovelace/meteo.',
   tile_blocks: 'Cochez ce qui s’affiche quand la tuile est dépliée, et faites glisser pour changer l’ordre.',
   forecast_tab: 'Un appui sur Heures ou Jours change l’affichage ; ce choix est gardé sur chaque appareil.',
-  full_popup: 'Coupé, l’appui long ne fait rien de plus qu’un appui, sauf si une page est indiquée ci-dessous.',
+  hold_action: 'La météo complète par-dessus la page, une page de votre tableau de bord, ou rien.',
 };
 const SETTINGS = '/config/integrations/integration/niak_weather';
 
@@ -39,9 +39,9 @@ export class NiakWeatherCardEditor extends LitElement {
   @state() private entries?: Array<{ entry_id: string; title: string }> | null;
   private asked = false;
   private readonly computeLabel = (item: { name: keyof WeatherCardConfig; title?: string }) =>
-    item.title ?? (item.name === 'weather_path' && this.tapped ? 'Page ouverte par un appui' : labels[item.name] ?? item.name);
+    item.title ?? (item.name === 'hold_action' && this.tapped ? 'Appui' : labels[item.name] ?? item.name);
   private readonly computeHelper = (item: { name: keyof WeatherCardConfig }) =>
-    item.name === 'weather_path' && this.tapped ? 'Par exemple /meteo. Vide : un appui ouvre la carte complète.' : helpers[item.name] ?? '';
+    helpers[item.name] ?? '';
   private get small(): boolean { return !!this.config?.format && this.config.format !== 'full'; }
   /** Mini and alert open the full card on a simple tap. */
   private get tapped(): boolean { return this.config?.format === 'mini' || this.config?.format === 'alert'; }
@@ -82,7 +82,11 @@ export class NiakWeatherCardEditor extends LitElement {
       { value: 'bulletin', label: 'Bulletin du jour' }, { value: 'events', label: 'Événements (la frise)' },
       { value: 'moments', label: 'Les prochains moments (soir, nuit, matin…)' }, { value: 'forecast', label: 'Prévisions (heures ou jours)' }] } } };
     const tab = { name: 'forecast_tab', selector: { select: { mode: 'dropdown', options: [{ value: 'hours', label: 'Heures' }, { value: 'days', label: 'Jours' }] } } };
-    const path = { name: 'weather_path', selector: { text: {} } };
+    // The long press (a tap on mini and alert): the popup, a page (then its path), or nothing.
+    const action = this.config?.hold_action ?? (this.config?.weather_path ? 'page' : 'popup');
+    const path = [{ name: 'hold_action', required: true, selector: { select: { mode: 'dropdown', options: [
+      { value: 'popup', label: 'Ouvrir la météo complète en fenêtre' }, { value: 'page', label: 'Ouvrir une page' }, { value: 'none', label: 'Rien' }] } } },
+      ...(action === 'page' ? [{ name: 'weather_path', selector: { text: {} } }] : [])];
     const place = this.entries && this.entries.length > 1
       ? [{ name: 'entry_id', selector: { select: { options: this.entries.map(e => ({ value: e.entry_id, label: e.title })) } } }] : [];
     const look = group('Visuel et performance', 'mdi:palette-outline', [...toggles('weather_animations'),
@@ -90,12 +94,12 @@ export class NiakWeatherCardEditor extends LitElement {
       ...toggles('glass_effect')], true);
     // The tile unfolds on a tap and opens the full card on a long press: its own options.
     const kind = this.config?.format;
-    if (kind === 'mini' || kind === 'alert') return [...place, format, group('Fonctionnalités', 'mdi:tune-variant', [path], true)];
+    if (kind === 'mini' || kind === 'alert') return [...place, format, group('Fonctionnalités', 'mdi:tune-variant', path, true)];
     if (kind === 'forecast') return [...place, format, group('Fonctionnalités', 'mdi:tune-variant', [tab], true)];
     if (kind === 'rain') return [...place, format];
     if (this.small) return [...place, format, look,
       group('Contenu', 'mdi:view-list-outline', [blocks, ...((this.config?.tile_blocks ?? []).includes('forecast') ? [tab] : [])], true),
-      group('Fonctionnalités', 'mdi:tune-variant', [...toggles('full_popup'), path])];
+      group('Fonctionnalités', 'mdi:tune-variant', path)];
     return [...place, format, look,
       group('Bandeau', 'mdi:view-day-outline', toggles('show_synthesis', 'show_bulletin', 'smart_brief')),
       group('Sections', 'mdi:view-agenda-outline', toggles('show_today', 'collapse_today', 'show_predictions', 'collapse_predictions')),

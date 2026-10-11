@@ -101,8 +101,8 @@ Tout se règle dans l’éditeur de la carte, rangé en blocs : le lieu et le fo
 | Sections | `collapse_today`, `collapse_predictions` | `false` | Complète : section repliée au départ |
 | Air et pollens | `show_atmo_details` | `true` | Le pli « Détail » des polluants et des pollens |
 | Air et pollens | `show_atmo_tomorrow` | `true` | L’air et les pollens de demain |
-| Fonctionnalités (tuile) | `full_popup` | `true` | L’appui long ouvre la météo complète en fenêtre. Coupé, il ne fait rien de plus qu’un appui (sauf si `weather_path` est indiqué) |
-| Fonctionnalités (tuile, mini, alerte) | `weather_path` | — | L’appui long (l’appui pour Mini et Alerte) ouvre cette page (par exemple `/meteo`) au lieu de la carte complète |
+| Fonctionnalités (tuile, mini, alerte) | `hold_action` | `popup` | Ce que fait l’appui long (l’appui pour Mini et Alerte) : `popup` ouvre la météo complète en fenêtre, `page` ouvre la page `weather_path`, `none` ne fait rien (la tuile se déplie seulement) |
+| Fonctionnalités (tuile, mini, alerte) | `weather_path` | — | La page ouverte avec `hold_action: page`, par exemple `/meteo` |
 
 Configuration minimale, avec un seul lieu :
 
@@ -115,6 +115,7 @@ Une tuile qui mène à votre page météo :
 ```yaml
 type: custom:niak-weather-card
 format: tile
+hold_action: page
 weather_path: /meteo
 ```
 

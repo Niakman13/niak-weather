@@ -189,7 +189,7 @@ export class NiakWeatherCard extends LitElement {
     const holdTarget = this.holdTarget;
     switch (config.format) {
       case 'mini':
-        return html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${renderMini(view, holdTarget === 'page' ? 'page' : 'card')}</div>${dialog()}</ha-card>`;
+        return html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${renderMini(view, holdTarget)}</div>${dialog()}</ha-card>`;
       case 'alert': {
         const body = renderAlert(view, this.editing);
         return body === nothing ? nothing : html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${body}</div>${dialog()}</ha-card>`;
@@ -226,9 +226,11 @@ export class NiakWeatherCard extends LitElement {
   }
 
   /** The user's weather page, when one is set: a long press goes there instead of opening the full card. */
-  /** What a long press on the tile (a tap on mini and alert) opens: the weather page when set, else the full card, unless the tile's popup is off. */
+  /** What a long press on the tile (a tap on mini and alert) opens: the full card, the user's weather page, or nothing. */
   private get holdTarget(): 'card' | 'page' | 'none' {
-    return this.weatherPath ? 'page' : this.tile && this.config?.full_popup === false ? 'none' : 'card';
+    const action = this.config?.hold_action ?? (this.weatherPath ? 'page' : 'popup');
+    // A page without a valid path falls back to the full card rather than doing nothing.
+    return action === 'none' ? 'none' : action === 'page' && this.weatherPath ? 'page' : 'card';
   }
   private get weatherPath(): string | undefined {
     const path = this.config?.weather_path;
@@ -268,9 +270,9 @@ export class NiakWeatherCard extends LitElement {
     if (e.shiftKey && this.holdTarget !== 'none') this.hold(); else this.toggle();
   };
   /** Mini and alert: a tap opens the full card (or the weather page). */
-  private tap = (e: Event) => { if (!(e.target as HTMLElement).closest('dialog')) this.hold(); };
+  private tap = (e: Event) => { if (!(e.target as HTMLElement).closest('dialog') && this.holdTarget !== 'none') this.hold(); };
   private tapKey = (e: KeyboardEvent) => {
-    if (!['Enter', ' '].includes(e.key) || (e.target as HTMLElement).closest('dialog')) return;
+    if (!['Enter', ' '].includes(e.key) || (e.target as HTMLElement).closest('dialog') || this.holdTarget === 'none') return;
     e.preventDefault(); this.hold();
   };
   private toggle() {
@@ -279,7 +281,7 @@ export class NiakWeatherCard extends LitElement {
   }
   private hold() {
     const path = this.weatherPath;
-    if (path) { this.go(path); return; }
+    if (this.holdTarget === 'page' && path) { this.go(path); return; }
     this.dialogOpen = true;
   }
   private closeDialog = () => { this.renderRoot.querySelector('dialog')?.close(); };

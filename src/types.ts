@@ -30,13 +30,13 @@ export interface WeatherCardConfig {
   /** full (default): the weather page. tile: one band that unfolds on tap. intermediate: the same tile, unfolded at first.
    *  mini: one line. forecast: the hours and the days alone. rain: the rain to come and the rain that fell.
    *  alert: only while there is a vigilance or an alert, hidden otherwise.
-   *  On the small formats a long press (a tap on mini and alert) opens the full card, or weather_path when it is set. */
+   *  On the small formats a long press (a tap on mini and alert) does what hold_action says. */
   format?: 'full' | 'intermediate' | 'tile' | 'mini' | 'forecast' | 'rain' | 'alert';
   /** What the unfolded tile shows, in this order. Default: the bulletin, then the events. */
   tile_blocks?: TileBlock[];
-  /** Tile: a long press opens the full weather over the page (default). Off, the long press does nothing more than a tap,
-   *  unless weather_path names a page to open. */
-  full_popup?: boolean;
+  /** What a long press on the tile (a tap on mini and alert) does: popup, the full weather over the page; page, opens weather_path;
+   *  none, nothing (the tile then only folds and unfolds). Default: page when weather_path is set, popup otherwise. */
+  hold_action?: 'popup' | 'page' | 'none';
   /** The forecasts open on the hours or on the days (the tile's « Prévisions » block and the forecast card). */
   forecast_tab?: 'hours' | 'days';
   /** Full card: start with « Aujourd'hui » or « Prévisions » folded. */

@@ -7,9 +7,11 @@ import { hoursChart, week } from './forecasts';
 import { rainPanel } from './today';
 
 /** One line: the sky and the temperature now, the place, and the most serious alert. */
-export function renderMini(v: WeatherView, holdTarget: 'card' | 'page'): TemplateResult {
+export function renderMini(v: WeatherView, holdTarget: 'card' | 'page' | 'none'): TemplateResult {
   const n = v.now, alert = v.alerts.find(a => a.official) ?? v.alerts[0];
-  return html`<div class="nw-mini" role="button" tabindex="0" aria-label=${`Météo${v.location ? ` à ${v.location}` : ''} : appui pour ${holdTarget === 'page' ? 'la page météo' : 'la carte complète'}`}>
+  const place = `Météo${v.location ? ` à ${v.location}` : ''}`;
+  return html`<div class=${`nw-mini${holdTarget === 'none' ? ' still' : ''}`} role=${holdTarget === 'none' ? 'group' : 'button'} tabindex=${holdTarget === 'none' ? -1 : 0}
+      aria-label=${holdTarget === 'none' ? place : `${place} : appui pour ${holdTarget === 'page' ? 'la page météo' : 'la carte complète'}`}>
     <ha-icon class="mini-icon" icon=${n.icon}></ha-icon>
     <span class="mini-temp">${n.temperature === undefined ? '—' : nf(n.temperature)}<small>°C</small></span>
     <span class="mini-text"><b>${n.label}</b>${v.location ? html`<span>${v.location}</span>` : nothing}</span>
@@ -73,6 +75,7 @@ export function renderRain(v: WeatherView): TemplateResult {
 
 export const compactStyles = css`
   .nw-mini { display:flex; align-items:center; gap:10px; padding:10px 14px; min-height:56px; box-sizing:border-box; cursor:pointer; color:var(--nw-fg); }
+  .nw-mini.still { cursor:default; }
   .nw-mini:focus-visible, .nw-alertcard:focus-visible { outline:2px solid var(--nw-accent); outline-offset:-2px; }
   .mini-icon { --mdc-icon-size:30px; color:color-mix(in oklab, var(--nw-wind) var(--nw-ink), var(--nw-fg)); flex:none; }
   .mini-temp { font-size:24px; font-weight:700; letter-spacing:-.6px; white-space:nowrap; line-height:1; }
