@@ -34,6 +34,9 @@ export interface WeatherCardConfig {
   format?: 'full' | 'intermediate' | 'tile' | 'mini' | 'forecast' | 'rain' | 'alert';
   /** What the unfolded tile shows, in this order. Default: the bulletin, then the events. */
   tile_blocks?: TileBlock[];
+  /** Tile: a long press opens the full weather over the page (default). Off, the long press does nothing more than a tap,
+   *  unless weather_path names a page to open. */
+  full_popup?: boolean;
   /** The forecasts open on the hours or on the days (the tile's « Prévisions » block and the forecast card). */
   forecast_tab?: 'hours' | 'days';
   /** Full card: start with « Aujourd'hui » or « Prévisions » folded. */

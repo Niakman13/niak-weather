@@ -101,6 +101,7 @@ Tout se règle dans l’éditeur de la carte, rangé en blocs : le lieu et le fo
 | Sections | `collapse_today`, `collapse_predictions` | `false` | Complète : section repliée au départ |
 | Air et pollens | `show_atmo_details` | `true` | Le pli « Détail » des polluants et des pollens |
 | Air et pollens | `show_atmo_tomorrow` | `true` | L’air et les pollens de demain |
+| Fonctionnalités (tuile) | `full_popup` | `true` | L’appui long ouvre la météo complète en fenêtre. Coupé, il ne fait rien de plus qu’un appui (sauf si `weather_path` est indiqué) |
 | Fonctionnalités (tuile, mini, alerte) | `weather_path` | — | L’appui long (l’appui pour Mini et Alerte) ouvre cette page (par exemple `/meteo`) au lieu de la carte complète |
 
 Configuration minimale, avec un seul lieu :

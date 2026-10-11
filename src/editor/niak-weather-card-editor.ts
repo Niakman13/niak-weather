@@ -6,7 +6,7 @@ import type { HomeAssistant, WeatherCardConfig } from '../types';
 /** The card's editor: which place, then how to show it. The sources are set in the integration. */
 const defaults: Partial<WeatherCardConfig> = { format: 'full', show_synthesis: true, show_bulletin: true, show_today: true, show_predictions: true,
   collapse_today: false, collapse_predictions: false, smart_brief: true, weather_animations: true, weather_animation_quality: 'standard',
-  show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true, tile_blocks: ['bulletin', 'events'], forecast_tab: 'hours' };
+  show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true, tile_blocks: ['bulletin', 'events'], forecast_tab: 'hours', full_popup: true };
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   entry_id: 'Lieu', format: 'Format',
   weather_animations: 'Ciel animé et halos', weather_animation_quality: 'Qualité des animations', glass_effect: 'Effet verre dépoli',
@@ -16,6 +16,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   show_atmo_details: 'Détail des polluants et des pollens', show_atmo_tomorrow: 'Air et pollens de demain',
   weather_path: 'Page ouverte par un appui long',
   tile_blocks: 'Contenu de la tuile dépliée', forecast_tab: 'Prévisions affichées au départ',
+  full_popup: 'Appui long : météo complète en fenêtre',
 };
 /** One line under the settings that need it. */
 const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
@@ -26,6 +27,7 @@ const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
   weather_path: 'Par exemple /meteo. Vide : l’appui long ouvre la carte complète.',
   tile_blocks: 'Cochez ce qui s’affiche quand la tuile est dépliée, et faites glisser pour changer l’ordre.',
   forecast_tab: 'Un appui sur Heures ou Jours change l’affichage ; ce choix est gardé sur chaque appareil.',
+  full_popup: 'Coupé, l’appui long ne fait rien de plus qu’un appui, sauf si une page est indiquée ci-dessous.',
 };
 const SETTINGS = '/config/integrations/integration/niak_weather';
 
@@ -93,7 +95,7 @@ export class NiakWeatherCardEditor extends LitElement {
     if (kind === 'rain') return [...place, format];
     if (this.small) return [...place, format, look,
       group('Contenu', 'mdi:view-list-outline', [blocks, ...((this.config?.tile_blocks ?? []).includes('forecast') ? [tab] : [])], true),
-      group('Fonctionnalités', 'mdi:tune-variant', [path])];
+      group('Fonctionnalités', 'mdi:tune-variant', [...toggles('full_popup'), path])];
     return [...place, format, look,
       group('Bandeau', 'mdi:view-day-outline', toggles('show_synthesis', 'show_bulletin', 'smart_brief')),
       group('Sections', 'mdi:view-agenda-outline', toggles('show_today', 'collapse_today', 'show_predictions', 'collapse_predictions')),

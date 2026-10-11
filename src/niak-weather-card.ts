@@ -186,10 +186,10 @@ export class NiakWeatherCard extends LitElement {
     const title = `Météo${view.location ? ` · ${view.location}` : ''}`;
     const dialog = () => this.dialogOpen ? html`<dialog class="nw-dialog" aria-label=${title} @close=${() => { this.dialogOpen = false; }} @click=${this.openEntity} @keydown=${this.entityKey}>
         <header><b>${title}</b><button type="button" @click=${this.closeDialog}>Fermer</button></header>${full()}</dialog>` : nothing;
-    const holdTarget = this.weatherPath ? 'page' : 'card';
+    const holdTarget = this.holdTarget;
     switch (config.format) {
       case 'mini':
-        return html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${renderMini(view, holdTarget)}</div>${dialog()}</ha-card>`;
+        return html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${renderMini(view, holdTarget === 'page' ? 'page' : 'card')}</div>${dialog()}</ha-card>`;
       case 'alert': {
         const body = renderAlert(view, this.editing);
         return body === nothing ? nothing : html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${body}</div>${dialog()}</ha-card>`;
@@ -226,6 +226,10 @@ export class NiakWeatherCard extends LitElement {
   }
 
   /** The user's weather page, when one is set: a long press goes there instead of opening the full card. */
+  /** What a long press on the tile (a tap on mini and alert) opens: the weather page when set, else the full card, unless the tile's popup is off. */
+  private get holdTarget(): 'card' | 'page' | 'none' {
+    return this.weatherPath ? 'page' : this.tile && this.config?.full_popup === false ? 'none' : 'card';
+  }
   private get weatherPath(): string | undefined {
     const path = this.config?.weather_path;
     return path?.startsWith('/') && !path.startsWith('//') ? path : undefined;
@@ -243,8 +247,10 @@ export class NiakWeatherCard extends LitElement {
       ring?.style.setProperty('--p', String(p)); card.classList.toggle('pressing', p > .15);
       if (p < 1 && this.press) this.press.frame = requestAnimationFrame(tick);
     };
-    this.press = { x: e.clientX, y: e.clientY, long: false, frame: requestAnimationFrame(tick),
-      timer: setTimeout(() => { if (!this.press) return; this.press.long = true; this.stopRing(); this.hold(); }, HOLD_MS) };
+    // Without a long press to give, a press is only a tap: no ring fills up.
+    const holdable = this.holdTarget !== 'none';
+    this.press = { x: e.clientX, y: e.clientY, long: false, frame: holdable ? requestAnimationFrame(tick) : 0,
+      timer: setTimeout(() => { if (!this.press || !holdable) return; this.press.long = true; this.stopRing(); this.hold(); }, HOLD_MS) };
   };
   private move = (e: PointerEvent) => { if (this.press && Math.hypot(e.clientX - this.press.x, e.clientY - this.press.y) > 10) this.cancelPress(); };
   private up = () => { const press = this.press; this.cancelPress(); if (press && !press.long) this.toggle(); };
@@ -259,7 +265,7 @@ export class NiakWeatherCard extends LitElement {
   private tileKey = (e: KeyboardEvent) => {
     if (e.target !== this.tileCard() || !['Enter', ' '].includes(e.key)) return;
     e.preventDefault();
-    if (e.shiftKey) this.hold(); else this.toggle();
+    if (e.shiftKey && this.holdTarget !== 'none') this.hold(); else this.toggle();
   };
   /** Mini and alert: a tap opens the full card (or the weather page). */
   private tap = (e: Event) => { if (!(e.target as HTMLElement).closest('dialog')) this.hold(); };

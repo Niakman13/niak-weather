@@ -9,8 +9,8 @@ import '../ui/frise';
 
 export interface TileState {
   open: boolean;
-  /** What a long press opens: the full card over the page, or the user's weather page. */
-  holdTarget: 'card' | 'page';
+  /** What a long press opens: the full card over the page, the user's weather page, or nothing. */
+  holdTarget: 'card' | 'page' | 'none';
   /** What the unfolded tile shows, in this order. */
   blocks: TileBlock[];
   tab: 'hours' | 'days';
@@ -73,7 +73,7 @@ export function renderTile(v: WeatherView, sky: TemplateResult, s: TileState): T
   const headline = v.bulletin?.summary;
   return html`<div class=${`nw-tilecard${s.open ? ' open' : ''}${v.now.darkSky ? ' dark-sky' : ''}${ticker.length ? '' : ' quiet'}`}
       role="button" tabindex="0" aria-expanded=${s.open}
-      aria-label=${`Météo${v.location ? ` à ${v.location}` : ''} : appui pour ${s.open ? 'replier' : 'déplier'}, appui long pour ${s.holdTarget === 'page' ? 'la page météo' : 'la carte complète'}`}>
+      aria-label=${`Météo${v.location ? ` à ${v.location}` : ''} : appui pour ${s.open ? 'replier' : 'déplier'}${s.holdTarget === 'none' ? '' : `, appui long pour ${s.holdTarget === 'page' ? 'la page météo' : 'la carte complète'}`}`}>
     <div class="sky" aria-hidden="true">${sky}</div><div class="veil" aria-hidden="true"></div><i class="press-ring" aria-hidden="true"></i>
     <div class="top">
       <div class="meta">${v.location ? html`<span class="place">${v.location}</span>` : nothing}${first ? alertPill(first) : nothing}
@@ -86,7 +86,7 @@ export function renderTile(v: WeatherView, sky: TemplateResult, s: TileState): T
       ${s.blocks.map(block => block === 'bulletin' ? (headline ? html`<div class="bulletin">${label('Bulletin du jour')}<p class="nw-bulletin">${unbroken(headline)}</p></div>` : nothing)
         : block === 'events' ? frise(v) : block === 'moments' ? moments(v) : forecastStrip(v, s.tab, s.onTab))}
       <div class="foot"><span>${v.forecastSource}${v.now.temperatureSource !== v.forecastSource ? ` · ${v.now.temperatureSource.toLowerCase()}` : ''}</span>
-        <span>Appui long : ${s.holdTarget === 'page' ? 'page météo' : 'carte complète'}</span></div>
+        ${s.holdTarget === 'none' ? nothing : html`<span>Appui long : ${s.holdTarget === 'page' ? 'page météo' : 'carte complète'}</span>`}</div>
     </div></div></div>
   </div>`;
 }
