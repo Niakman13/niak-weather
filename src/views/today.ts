@@ -37,8 +37,8 @@ function comfortPanel(c: ComfortView, uid: string, station: boolean): TemplateRe
 export function rainPanel(r: RainView): TemplateResult {
   const top = Math.max(1, ...(r.days ?? []).map(d => d.value ?? 0));
   const now = r.rate !== undefined && r.rate > 0 ? chip({ theme: 'rain', icon: 'mdi:weather-rainy', value: `${nf(r.rate)} mm/h`, label: 'en ce moment', entity: r.rateEntity })
-    : r.status ? chip({ theme: 'rain', icon: 'mdi:weather-rainy', label: r.status })
-    : r.rate === 0 ? chip({ theme: 'rain', icon: 'mdi:weather-sunny', label: 'Pas de pluie', entity: r.rateEntity }) : nothing;
+    // Only while it rains: « no rain » tells nothing the sky does not already say.
+    : r.status ? chip({ theme: 'rain', icon: 'mdi:weather-rainy', label: r.status }) : nothing;
   return html`<section class="nw-panel" aria-label="Pluie">${panelHead('mdi:weather-rainy', 'rain', 'Pluie', r.source)}
     <div class="metric-row"><div class="metric" data-entity=${r.entity}>
       ${r.text ? html`<div class="metric-main"><b class="word">${r.text}</b></div>`
