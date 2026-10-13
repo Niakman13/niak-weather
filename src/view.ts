@@ -123,8 +123,10 @@ export interface AirPanel {
   kind: 'air' | 'pollen'; tomorrow: boolean; zone: string; primary?: AtmoReading;
   /** A sub-index worse than the global index: it stays visible under it. */
   worse?: AirItem; details: AirItem[]; updated: string; stale: boolean;
-  /** The top of the index: 6 for Atmo France (when absent), 4 for Polleninformation, whose level starts at 0 (none). */
+  /** The top of the index: 6 for Atmo France (when absent), 4 for Polleninformation and IRM KMI, whose level starts at 0 (none). */
   scale?: number;
+  /** Who gives it when it is not Atmo France (« Polleninformation », « IRM KMI »); absent from integrations before 2.1. */
+  source?: string;
 }
 
 export interface WeatherView {

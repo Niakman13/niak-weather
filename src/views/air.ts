@@ -1,4 +1,4 @@
-// Air and pollens from Atmo France (index 1 to 6) or Polleninformation (0 to 4): the same panel for today (in « Aujourd'hui »)
+// Air and pollens from Atmo France (index 1 to 6), Polleninformation or IRM KMI (0 to 4): the same panel for today (in « Aujourd'hui »)
 // and tomorrow (in « Prévisions »).
 import { css, html, nothing, svg, type TemplateResult } from 'lit';
 import type { AirItem, AirPanel, AtmoReading } from '../view';
@@ -31,10 +31,11 @@ function detail(item: AirItem): string {
 
 function panel(p: AirPanel): TemplateResult {
   const air = p.kind === 'air', r = p.primary, scale = p.scale ?? 6, value = known(r, scale), atmo = scale === 6;
+  const source = atmo ? 'Atmo France' : p.source ?? 'Polleninformation';
   const worse = p.worse ? known(p.worse.reading, scale) ?? 0 : 0;
   const word = !r ? 'Indice non configuré' : r.stale ? 'Données anciennes' : r.value === 7 ? 'Événement signalé' : r.label;
   return html`<section class="nw-panel" aria-label=${`${air ? 'Air extérieur' : 'Pollens'} ${p.tomorrow ? 'demain' : 'aujourd’hui'}`}>
-    ${panelHead(air ? 'mdi:air-filter' : 'mdi:flower-pollen-outline', 'calm', air ? 'Air extérieur' : 'Pollens', atmo ? 'Atmo France' : 'Polleninformation')}
+    ${panelHead(air ? 'mdi:air-filter' : 'mdi:flower-pollen-outline', 'calm', air ? 'Air extérieur' : 'Pollens', source)}
     <p class="nw-sub">${p.tomorrow ? 'Demain' : 'Aujourd’hui'}${p.zone ? ` · ${p.zone}` : ''}</p>
     <div class="aq" data-entity=${r?.entityId ?? nothing} role=${r ? 'button' : nothing} tabindex=${r ? 0 : nothing}>${disc(r, scale)}
       <div class="txt">${label(p.tomorrow ? 'Indice de demain' : 'Indice du jour')}<strong>${word}</strong>
@@ -43,7 +44,7 @@ function panel(p: AirPanel): TemplateResult {
       value: p.worse.label, label: p.worse.reading.label.toLowerCase(), entity: p.worse.reading.entityId })}</div>` : nothing}
     ${p.details.length || p.updated ? html`<details class="nw-details"><summary><ha-icon icon="mdi:chevron-right"></ha-icon>${air ? 'Détail des polluants' : 'Détail des pollens'}</summary>
       ${p.details.length ? html`<ul>${p.details.map(d => html`<li data-entity=${d.reading.entityId}><span>${d.label}</span><b>${detail(d)}</b></li>`)}</ul>` : nothing}
-      ${p.updated ? html`<p>${atmo ? 'Publication Atmo' : 'Mise à jour Polleninformation'} : ${p.updated}.${p.stale ? ' Certaines données sont anciennes : à vérifier dans l’intégration.' : ''}</p>` : nothing}</details>` : nothing}
+      ${p.updated ? html`<p>${atmo ? 'Publication Atmo' : `Mise à jour ${source}`} : ${p.updated}.${p.stale ? ' Certaines données sont anciennes : à vérifier dans l’intégration.' : ''}</p>` : nothing}</details>` : nothing}
   </section>`;
 }
 
