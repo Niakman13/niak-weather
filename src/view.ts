@@ -2,21 +2,6 @@
 // It mirrors the integration's engine/view.py. Times are seconds since 1970; an unknown value is absent, never null.
 
 export const VIEW_VERSION = 1;
-/** The oldest integration this card works fully with; an older one still shows, with a word to update it. */
-export const MIN_INTEGRATION = '2.0.9';
-
-/** Whether the integration is older than `min`. Before 2.0.9 it did not send its version: older too.
- *  A beta counts as its release (2.0.9b1 ≥ 2.0.9), so testers are not told to update. */
-export function integrationOutdated(version: string | undefined, min = MIN_INTEGRATION): boolean {
-  if (!version) return true;
-  const parts = (v: string) => (v.match(/^\d+(?:\.\d+)*/)?.[0] ?? '0').split('.').map(Number);
-  const a = parts(version), b = parts(min);
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    const d = (a[i] ?? 0) - (b[i] ?? 0);
-    if (d) return d < 0;
-  }
-  return false;
-}
 
 export type Theme = 'rain' | 'wind' | 'heat' | 'cold' | 'calm' | 'pressure' | 'level1' | 'level2' | 'level3';
 /** A small tinted pill: a value and what it is (« +1,2 °C soleil », « 78 % humidité »). */
@@ -145,5 +130,5 @@ export interface WeatherView {
 }
 
 /** One message of the integration's `niak_weather/subscribe`. */
-/** `integration`: the integration's version, sent since 2.0.9. */
+/** `integration`: the integration's version (the card comes with it, since 2.3). */
 export interface ViewMessage { version: number; integration?: string; entryId: string; title: string; view: WeatherView }

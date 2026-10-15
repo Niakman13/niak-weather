@@ -1,5 +1,10 @@
 # Niak Weather
 
+> [!IMPORTANT]
+> **La carte Niak Weather est maintenant fournie par l’intégration [Niak Weather](https://github.com/Niakman13/niak-weather-integration) (2.3.0 ou plus).**
+> Ce dépôt est archivé : il ne reçoit plus de mises à jour.
+> Installez l’intégration depuis HACS, puis retirez cette carte de HACS et rechargez la page. Vos cartes restent en place, sans rien changer.
+
 [![release](https://img.shields.io/github/v/release/Niakman13/niak-weather?cacheSeconds=86400)](https://github.com/Niakman13/niak-weather/releases)
 [![Validate](https://github.com/Niakman13/niak-weather/actions/workflows/validate.yml/badge.svg)](https://github.com/Niakman13/niak-weather/actions/workflows/validate.yml)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)

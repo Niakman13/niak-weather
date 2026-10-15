@@ -216,20 +216,17 @@ try {
     unknown_error: ['L’intégration Niak Weather a renvoyé une erreur', '/config/logs', '« Erreur de test · unknown_error »'] }, 'Messages without the integration');
   report.problems = problems;
 
-  // 11. An integration older than the card (updated alone): the weather still shows, under a word to update the integration.
+  // 11. The card loaded twice (one from HACS next to the integration's): nothing breaks, each format is offered once.
   //     And the rain panel says nothing about rain while it is dry.
   await show({ format: 'full', width: 1180, condition: 'sunny', animated: false });
-  const notice = () => inCard(root => root.querySelector('.nw-notice')?.textContent.replace(/\s+/g, ' ').trim() ?? null);
-  assert.equal(await notice(), null, 'No notice with an up-to-date integration');
   assert.equal(await inCard(root => root.querySelectorAll('[aria-label="Pluie"] .nw-chip').length), 0, 'No « no rain » chip while dry');
-  const outdated = {};
-  for (const integration of [undefined, '2.0.8']) {
-    await inCard((root, card, integration) => { card.receive({ version: 1, integration, entryId: 'demo', title: 'Gardanne', view: card.view }); return card.updateComplete; }, integration);
-    outdated[integration ?? 'absent'] = [await notice(), await inCard(root => !!root.querySelector('.hero-main'))];
-  }
-  const word = 'Mettez à jour l’intégration Niak Weather (2.0.9 ou plus) : cette carte est plus récente qu’elle. HACS';
-  assert.deepEqual(outdated, { absent: [word, true], '2.0.8': [word, true] }, 'Notice with an older integration, weather still shown');
-  report.outdated = outdated;
+  await page.evaluate(() => import('/card.js?twice'));
+  const offered = await page.evaluate(() => window.customCards.map(c => c.type));
+  assert.equal(offered.length, 7, 'Seven formats in « Add card »');
+  assert.equal(new Set(offered).size, offered.length, 'Each format offered once, though the card loaded twice');
+  await show({ format: 'tile', width: 768, condition: 'sunny', animated: false });
+  assert.ok(await inCard(root => !!root.querySelector('.hero-main, .nw-tile, ha-card')), 'The card still draws after loading twice');
+  report.twice = offered;
 
   assert.deepEqual(errors, [], 'Browser errors');
   writeFileSync(`${out}/browser-report.json`, JSON.stringify(report, null, 2));

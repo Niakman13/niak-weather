@@ -1,7 +1,8 @@
 // The banner's timeline, drawn: a sentence that scrolls through the points over a track cut by the forecast sky,
 // the points as dated labels above it. The labels are placed after measuring, so they never overlap; when they cannot all fit, they keep only their icons.
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
+import { define } from './define';
 import { buildFrise, type Frise, type FriseGroup, type FriseItem } from '../frise';
 import type { AlertPoint, Slot, TickerPoint } from '../view';
 
@@ -15,7 +16,7 @@ const GAP = 6, EDGE = 10;
 const tone = (i: FriseItem) => `--tone:var(--nw-${i.theme ?? (i.alert ? `level${i.alert}` : 'calm')})`;
 const stop = (e: Event) => e.stopPropagation();
 
-@customElement('niak-frise')
+@define('niak-frise')
 export class NiakFrise extends LitElement {
   @property({ attribute: false }) points: TickerPoint[] = [];
   @property({ attribute: false }) alerts: AlertPoint[] = [];

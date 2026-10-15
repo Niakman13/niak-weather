@@ -1,5 +1,6 @@
 import { css, html, LitElement, nothing, svg } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
+import { define } from './define';
 
 /** Bolt artwork and phase offset in the 6 s storm cycle. Offsets keep successive strikes ≥ 1.8 s apart. */
 const BOLTS=[
@@ -9,7 +10,7 @@ const BOLTS=[
 ];
 
 /** Original vector/CSS weather scene. All artwork is bundled; no remote assets. */
-@customElement('niak-weather-sky')
+@define('niak-weather-sky')
 export class NiakWeatherSky extends LitElement {
   @property() condition='unknown';
   @property() phase='unknown';

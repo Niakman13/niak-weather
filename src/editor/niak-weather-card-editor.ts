@@ -1,5 +1,6 @@
 import { css, html, LitElement, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
+import { define } from '../ui/define';
 import { cleanConfig, sections } from '../config';
 import type { HomeAssistant, WeatherCardConfig } from '../types';
 
@@ -34,7 +35,7 @@ const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
 };
 const SETTINGS = '/config/integrations/integration/niak_weather';
 
-@customElement('niak-weather-card-editor')
+@define('niak-weather-card-editor')
 export class NiakWeatherCardEditor extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistant;
   @state() private config?: WeatherCardConfig;

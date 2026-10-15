@@ -1,5 +1,6 @@
 import { css, html, LitElement, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
+import { define } from './define';
 import type { AlertPoint, TickerPoint } from '../view';
 import { bubbles } from './charter';
 import { alertBubble, bubble } from './parts';
@@ -11,7 +12,7 @@ export type TickerItem = TickerPoint | (AlertPoint & { alert: true });
  * Shows the points one at a time, every 5 s. Hovering or focusing the card pauses it.
  * When the list changes (the tile unfolds), the bubble on screen stays if it is still in the list: nothing moves.
  */
-@customElement('niak-ticker')
+@define('niak-ticker')
 export class NiakTicker extends LitElement {
   @property({ attribute: false }) points: TickerItem[] = [];
   @state() private index = 0;

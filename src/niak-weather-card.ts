@@ -1,5 +1,6 @@
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
+import { define } from './ui/define';
 import { cleanConfig, sections } from './config';
 import { displayed } from './display';
 import { bubbles, pieces, tokens } from './ui/charter';
@@ -12,7 +13,7 @@ import { forecastStyles } from './views/forecasts';
 import { airStyles } from './views/air';
 import './ui/weather-sky';
 import './editor/niak-weather-card-editor';
-import { integrationOutdated, MIN_INTEGRATION, VIEW_VERSION, type ViewMessage, type WeatherView } from './view';
+import { VIEW_VERSION, type ViewMessage, type WeatherView } from './view';
 import type { HomeAssistant, WeatherCardConfig } from './types';
 
 const HOLD_MS = 500;
@@ -32,13 +33,13 @@ const PROBLEMS: Record<Problem, { title: string; text: string; links?: [string, 
     links: [['Ajouter l’intégration', '/config/integrations/dashboard/add?domain=niak_weather']] },
   choose_entry: { title: 'Choisissez un lieu', text: 'Plusieurs lieux Niak Weather sont configurés : choisissez celui de cette carte dans ses réglages.' },
   not_found: { title: 'Lieu introuvable', text: 'Le lieu de cette carte n’existe plus : choisissez-en un autre dans ses réglages.' },
-  version: { title: 'Mettez à jour la carte', text: 'L’intégration Niak Weather est plus récente que cette carte : mettez la carte à jour dans HACS.' },
+  version: { title: 'Rechargez la page', text: 'L’intégration Niak Weather vient d’être mise à jour : rechargez la page pour afficher sa carte.' },
   // The integration answered, with an error: say which, it tells what went wrong.
   error: { title: 'L’intégration Niak Weather a renvoyé une erreur',
     text: 'Les journaux de Home Assistant disent pourquoi : Paramètres → Système → Journaux, cherchez « niak ».', links: [['Voir les journaux', '/config/logs']] },
 };
 
-@customElement('niak-weather-card')
+@define('niak-weather-card')
 export class NiakWeatherCard extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistant;
   /** Set by Home Assistant while the dashboard is edited, and in the card picker: the alert card then shows when it would hide. */
@@ -50,8 +51,6 @@ export class NiakWeatherCard extends LitElement {
   /** What the integration computed, as it last sent it. */
   @state() private view?: WeatherView;
   @state() private problem?: Problem;
-  /** The integration is older than this card needs: the card still shows, with a word to update it. */
-  @state() private outdated = false;
   /** The integration's own words when it answered with an error. */
   private failure = '';
   /** The tile is unfolded (remembered on this device). */
@@ -162,7 +161,6 @@ export class NiakWeatherCard extends LitElement {
     if ('reload' in message) { this.unsubscribe(); this.retryLater(2_000); return; }
     if (message.version !== VIEW_VERSION) { this.problem = 'version'; return; }
     this.problem = undefined;
-    this.outdated = integrationOutdated(message.integration);
     this.view = message.view;
   }
   private unsubscribe(): void {
@@ -192,19 +190,19 @@ export class NiakWeatherCard extends LitElement {
     const holdTarget = this.holdTarget;
     switch (config.format) {
       case 'mini':
-        return html`<ha-card>${this.notice()}<div @click=${this.tap} @keydown=${this.tapKey}>${renderMini(view, holdTarget)}</div>${dialog()}</ha-card>`;
+        return html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${renderMini(view, holdTarget)}</div>${dialog()}</ha-card>`;
       case 'alert': {
         const body = renderAlert(view, this.editing);
-        return body === nothing ? nothing : html`<ha-card>${this.notice()}<div @click=${this.tap} @keydown=${this.tapKey}>${body}</div>${dialog()}</ha-card>`;
+        return body === nothing ? nothing : html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${body}</div>${dialog()}</ha-card>`;
       }
       case 'rain':
-        return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${this.notice()}${renderRain(view)}</ha-card>`;
+        return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${renderRain(view)}</ha-card>`;
       case 'forecast':
-        return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${this.notice()}${renderForecastCard(view, this.tab, this.setTab, view.weatherEntity, this.uid)}</ha-card>`;
+        return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${renderForecastCard(view, this.tab, this.setTab, view.weatherEntity, this.uid)}</ha-card>`;
     }
-    if (!this.tile) return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${this.notice()}${full()}</ha-card>`;
+    if (!this.tile) return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${full()}</ha-card>`;
     const blocks = config.tile_blocks?.length ? config.tile_blocks : config.show_bulletin === false ? ['events' as const] : DEFAULT_BLOCKS;
-    return html`<ha-card>${this.notice()}
+    return html`<ha-card>
       <div @pointerdown=${this.down} @pointermove=${this.move} @pointerup=${this.up} @pointercancel=${this.cancelPress} @pointerleave=${this.cancelPress}
         @contextmenu=${this.noMenu} @keydown=${this.tileKey}>
         ${renderTile(view, sky, { open: this.open, holdTarget, blocks, tab: this.tab, onTab: this.setTab })}</div>
@@ -216,13 +214,6 @@ export class NiakWeatherCard extends LitElement {
     return html`<ha-card><div class="nw-problem" role="status"><ha-icon icon="mdi:weather-partly-cloudy"></ha-icon>
       <div><b>${p.title}</b>${p === PROBLEMS.error && this.failure ? html`<p class="failure">« ${this.failure} »</p>` : nothing}<p>${p.text}</p>${p.links ? html`<div class="links">${p.links.map(([label, href], i) => html`<a class=${i ? 'second' : ''} href=${href}
         target=${href.startsWith('/') ? nothing : '_blank'} rel="noopener noreferrer" @click=${this.follow}>${label}</a>`)}</div>` : nothing}</div></div></ha-card>`;
-  }
-  /** Above the weather, while the integration is older than this card: what to do, without hiding anything. */
-  private notice() {
-    if (!this.outdated) return nothing;
-    return html`<div class="nw-notice" role="status"><ha-icon icon="mdi:update"></ha-icon>
-      <span>Mettez à jour l’intégration Niak Weather (${MIN_INTEGRATION} ou plus) : cette carte est plus récente qu’elle.</span>
-      <a href="/hacs/dashboard" @click=${this.follow}>HACS</a></div>`;
   }
   /** A link inside Home Assistant opens there, without reloading the page. */
   private follow = (e: MouseEvent) => {
@@ -317,11 +308,6 @@ export class NiakWeatherCard extends LitElement {
     :host([flat]) { --nw-blur:none; --nw-frost:none; --nw-glass-clear:color-mix(in srgb, var(--nw-bg) 86%, transparent); --nw-glass-strong:color-mix(in srgb, var(--nw-bg) 92%, transparent); }
     ha-card { padding:0; overflow:hidden; container-type:inline-size; }
     .nw-wait { min-height:96px; background:var(--nw-bg); }
-    .nw-notice { display:flex; gap:10px; align-items:center; padding:8px 14px; color:var(--nw-fg); font-size:var(--nw-fs-small); line-height:1.4;
-      background:color-mix(in srgb, var(--nw-accent) 14%, transparent); border-bottom:1px solid var(--nw-line); }
-    .nw-notice > ha-icon { --mdc-icon-size:18px; color:var(--nw-accent); flex:none; }
-    .nw-notice span { flex:1; min-width:0; }
-    .nw-notice a { flex:none; padding:3px 12px; border-radius:var(--nw-radius-pill); background:var(--nw-accent); color:var(--nw-bg); text-decoration:none; font-weight:600; }
     .nw-problem { display:flex; gap:14px; align-items:flex-start; padding:18px 20px; color:var(--nw-fg); font-size:var(--nw-fs-text); line-height:1.5; }
     .nw-problem > ha-icon { --mdc-icon-size:28px; color:var(--nw-accent); flex:none; }
     .nw-problem b { font-size:var(--nw-fs-title); }
@@ -362,6 +348,7 @@ for (const [format, name, description] of FORMATS) {
     public setConfig(config: WeatherCardConfig): void { super.setConfig({ format, ...config }); }
   });
   window.customCards = window.customCards || [];
-  window.customCards.push({ type, name, description, preview: true });
+  // A card from HACS still installed next to the integration's has offered them already.
+  if (!window.customCards.some(card => card.type === type)) window.customCards.push({ type, name, description, preview: true });
 }
 declare global { interface Window { customCards: Array<Record<string, unknown>>; } }
